@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Roda — A Lexicon of Capoeira Movement</title>
+<title>Roda · Capoeira</title>
 <meta name="description" content="A field guide to the vocabulary of capoeira — kicks, escapes, flourishes and takedowns, each an animated pictogram.">
 <meta name="theme-color" content="#17120D">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -602,7 +602,6 @@
         <button class="tab" type="button" role="tab" data-world="moves" aria-selected="true" data-i18n="tabMoves">Moves</button>
         <button class="tab" type="button" role="tab" data-world="music" aria-selected="false" data-i18n="tabMusic">Music</button>
         <button class="tab" type="button" role="tab" data-world="history" aria-selected="false" data-i18n="tabHistory">History</button>
-        <button class="tab" type="button" role="tab" data-world="groups" aria-selected="false" data-i18n="tabGroups">Groups</button>
       </div>
     </div>
     <nav class="links" id="navTitles" aria-label="Sections"></nav>
@@ -1221,14 +1220,13 @@ const PAGES = {
   histLineages: { world:'history', els:['#historyView'], hash:'#history/lineages', topic:'lineages' },
   histMestres:  { world:'history', els:['#historyView'], hash:'#history/mestres',  topic:'mestres' },
   histGlossary: { world:'history', els:['#historyView'], hash:'#history/glossary', topic:'glossary' },
-  groups:       { world:'groups',  els:['#groupsView'],  hash:'#groups' },
+  groups:       { world:'history', els:['#groupsView'],  hash:'#history/groups' },
 };
-const WORLD_DEFAULT = { moves:'lexicon', music:'music', history:'histTimeline', groups:'groups' };
+const WORLD_DEFAULT = { moves:'lexicon', music:'music', history:'histTimeline' };
 const WORLD_TITLES = {
   moves:   [['lexicon','navLexicon'], ['sequences','navSeq'], ['study','navStudy']],
   music:   [],
-  history: [['histTimeline','navTimeline'], ['histLineages','navLineages'], ['histMestres','navMestres'], ['histGlossary','navGlossary']],
-  groups:  [],
+  history: [['histTimeline','navTimeline'], ['histLineages','navLineages'], ['histMestres','navMestres'], ['groups','navGroups'], ['histGlossary','navGlossary']],
 };
 const HASH_PAGE = {}; Object.entries(PAGES).forEach(([k,v])=>{ if(!(v.hash in HASH_PAGE)) HASH_PAGE[v.hash]=k; });
 HASH_PAGE['#moves']='lexicon';
@@ -1908,7 +1906,7 @@ const STR = {
   en: {
     tabMoves: 'Moves', tabMusic: 'Music', tabHistory: 'History', tabGroups: 'Groups',
     navLexicon: 'Library', navSeq: 'Sequences', navStudy: 'Study',
-    navTimeline: 'Timeline', navLineages: 'Lineages', navMestres: 'Mestres', navGlossary: 'Glossary',
+    navTimeline: 'Timeline', navLineages: 'Lineages', navMestres: 'Mestres', navGlossary: 'Glossary', navGroups: 'Groups',
     navGolpes: 'Kicks', navEsquivas: 'Dodges', navFloreios: 'Acrobatics', navQuedas: 'Takedowns',
     indexSearch: 'Search moves…', indexAll: 'All', indexNone: 'No moves match — try clearing the filters.',
     seqEyebrow: 'Build a repertoire',
@@ -1944,7 +1942,7 @@ const STR = {
   pt: {
     tabMoves: 'Movimento', tabMusic: 'Música', tabHistory: 'História', tabGroups: 'Grupos',
     navLexicon: 'Biblioteca', navSeq: 'Sequências', navStudy: 'Estudo',
-    navTimeline: 'Linha do tempo', navLineages: 'Linhagens', navMestres: 'Mestres', navGlossary: 'Glossário',
+    navTimeline: 'Linha do tempo', navLineages: 'Linhagens', navMestres: 'Mestres', navGlossary: 'Glossário', navGroups: 'Grupos',
     navGolpes: 'Golpes', navEsquivas: 'Esquivas', navFloreios: 'Floreios', navQuedas: 'Quedas',
     indexSearch: 'Buscar movimentos…', indexAll: 'Todos', indexNone: 'Nenhum movimento corresponde — tente limpar os filtros.',
     seqEyebrow: 'Monte um repertório',
