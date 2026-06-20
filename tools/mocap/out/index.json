@@ -1,0 +1,24 @@
+[
+  {
+    "file": "yt-meia-lua-de-compasso.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 130.9,
+    "n": 1047,
+    "detected": 997,
+    "meanconf": 0.734,
+    "source": {
+      "title": "How to Do the Meia Lua de Compasso | Capoeira",
+      "page": "https://www.youtube.com/watch?v=IiLqVCyyoPs",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "meia-lua-de-compasso"
+      ],
+      "slug": "meia-lua-de-compasso",
+      "query": "capoeira meia lua de compasso tutorial how to"
+    },
+    "pose": "yt-meia-lua-de-compasso.pose.json"
+  }
+]

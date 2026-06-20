@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Roda">
+  <rect width="32" height="32" rx="7" fill="#17120D"/>
+  <path d="M22 5 Q9 16 22 27" fill="none" stroke="#EBA63C" stroke-width="2.4" stroke-linecap="round"/>
+  <line x1="22" y1="5" x2="22" y2="27" stroke="#caa15f" stroke-width="0.9"/>
+  <ellipse cx="16.5" cy="20" rx="4.2" ry="4.8" fill="#2C2117" stroke="#D2502A" stroke-width="1.2"/>
+</svg>

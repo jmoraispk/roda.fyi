@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="../../favicon.svg" />
+<title>Pose Editor · Roda</title>
+<!-- Bundled ginga capture (sets window.GINGA). Optional; "Load ginga" uses it. -->
+<script src="../../assets/ginga.keyframes.js"></script>
+<style>
+  :root{
+    --bg:#17120D; --bg-2:#1E1813; --card:#241D16; --card-2:#2C241B;
+    --line:#3A2F23; --cream:#E6D4B2; --sand:#C9B79A;
+    --muted:#9A8A72; --muted-2:#7A6E5A; --gold:#EBA63C; --gold-soft:#C98A2E;
+    --clay:#D2502A; --folha:#7FA651; --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--cream);font-family:var(--mono);font-size:13px;line-height:1.45}
+  a{color:var(--gold)}
+  header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--bg-2);position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  header h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0;color:var(--gold);font-weight:700}
+  header .src{color:var(--muted);font-size:12px}
+  header .edited{color:var(--clay);font-weight:700}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+  button,select,input[type=file]::file-selector-button{
+    font-family:var(--mono);font-size:12px;color:var(--cream);background:var(--card-2);
+    border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;transition:.15s;
+  }
+  button:hover,select:hover{border-color:var(--muted-2);color:#fff}
+  button.primary{background:var(--gold);color:#17120D;border-color:var(--gold);font-weight:700}
+  button.primary:hover{filter:brightness(1.06);color:#17120D}
+  button.warn{color:var(--clay)}
+  button:disabled{opacity:.4;cursor:default}
+  button[aria-pressed=true]{background:var(--gold);color:#17120D;border-color:var(--gold);font-weight:700}
+  select{padding:6px 8px;max-width:260px}
+  label.inl{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
+  input[type=number]{width:58px;font-family:var(--mono);font-size:12px;background:var(--card);color:var(--cream);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+  input[type=range]{accent-color:var(--gold)}
+
+  main{display:grid;grid-template-columns:1fr 300px;gap:16px;padding:16px 18px;align-items:start}
+  @media(max-width:900px){ main{grid-template-columns:1fr} }
+
+  .stage{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .canvas-wrap{position:relative;background:
+      radial-gradient(120% 90% at 50% 18%, #221B14 0%, var(--bg) 70%);
+    border:1px solid var(--line);border-radius:14px;padding:8px}
+  .canvas-wrap .cap{position:absolute;top:8px;left:12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2)}
+  svg.stagesvg{display:block;height:min(70vh,640px);width:auto;touch-action:none}
+  .floor{stroke:var(--line);stroke-width:.6;stroke-dasharray:3 3}
+  .centerline{stroke:rgba(235,166,60,.12);stroke-width:.5}
+  .bone{fill:none;stroke:var(--cream);stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
+  .bone.thin{stroke-width:7}
+  .ghost .bone{stroke:var(--clay);opacity:.32;stroke-width:7}
+  .ghost circle.head{fill:var(--clay);opacity:.32}
+  circle.head{fill:var(--cream)}
+  .handle{fill:var(--gold);stroke:#17120D;stroke-width:1.1;cursor:grab}
+  .handle.active{fill:#fff}
+  .hit{fill:transparent;cursor:grab}
+  .hlabel{fill:var(--muted-2);font-size:4px;font-family:var(--mono);pointer-events:none;opacity:0}
+  .canvas-wrap:hover .hlabel{opacity:.75}
+
+  aside{display:flex;flex-direction:column;gap:14px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 13px}
+  .panel h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:7px 0}
+  .row.spread{justify-content:space-between}
+  .frameno{font-size:12px;color:var(--sand)}
+  .frameno b{color:var(--gold)}
+  input[type=range].scrub{width:100%}
+  .hint{color:var(--muted-2);font-size:11px;line-height:1.5}
+
+  .film{grid-column:1 / -1;display:flex;gap:5px;overflow-x:auto;padding:10px;background:var(--bg-2);border:1px solid var(--line);border-radius:12px;margin:0 18px 18px}
+  .film .fr{flex:0 0 auto;width:48px;height:64px;border:1px solid var(--line);border-radius:7px;background:var(--bg);cursor:pointer;position:relative;overflow:hidden}
+  .film .fr.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+  .film .fr.dirty::after{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--clay)}
+  .film .fr svg{width:100%;height:100%;display:block}
+  .film .fr .n{position:absolute;bottom:1px;left:3px;font-size:8px;color:var(--muted-2)}
+
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--card-2);border:1px solid var(--gold);
+    color:var(--cream);padding:9px 16px;border-radius:10px;font-size:12px;opacity:0;pointer-events:none;transition:.25s;z-index:30}
+  .toast.show{opacity:1}
+  textarea{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Pose Editor</h1>
+  <div class="bar">
+    <button id="loadGinga">Load ginga</button>
+    <select id="clipSel" title="Captured clips from tools/mocap/out"><option value="">Captured clip…</option></select>
+    <label class="inl" title="Min keypoint confidence to import">conf <input type="number" id="impConf" value="0.30" min="0" max="1" step="0.05"></label>
+    <label class="inl" title="Use every Nth frame">step <input type="number" id="impStep" value="2" min="1" max="10" step="1"></label>
+    <button id="importClip" disabled>Import clip</button>
+    <span class="sep"></span>
+    <label class="inl">Open file <input type="file" id="fileIn" accept=".json,.js,application/json"></label>
+  </div>
+  <div class="bar" style="margin-left:auto">
+    <span class="src" id="srcLabel">no document loaded</span>
+    <span class="edited" id="editedBadge" hidden>● edited</span>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="stage">
+      <div class="canvas-wrap" id="mainWrap">
+        <span class="cap">edited</span>
+        <svg class="stagesvg" id="main" viewBox="0 0 120 160" aria-label="editable figure"></svg>
+      </div>
+      <div class="canvas-wrap" id="cmpWrap" hidden>
+        <span class="cap">original</span>
+        <svg class="stagesvg" id="cmp" viewBox="0 0 120 160" aria-label="original figure"></svg>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="panel">
+      <h2>Frame</h2>
+      <div class="row spread">
+        <span class="frameno">frame <b id="fIdx">–</b> / <span id="fTot">–</span></span>
+        <span class="bar">
+          <button id="prev" title="Previous (←)">‹</button>
+          <button id="next" title="Next (→)">›</button>
+        </span>
+      </div>
+      <input type="range" class="scrub" id="scrub" min="0" max="0" value="0" step="1" disabled>
+      <div class="row">
+        <label class="inl"><input type="checkbox" id="showGhost" checked> show original (ghost)</label>
+      </div>
+      <div class="row">
+        <label class="inl"><input type="checkbox" id="snap"> snap to 1px grid</label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Playback</h2>
+      <div class="row">
+        <button id="play" class="primary" disabled>▶ Play</button>
+        <button id="cmpToggle" aria-pressed="false" disabled>Compare ↔</button>
+      </div>
+      <div class="row">
+        <label class="inl" style="flex:1">speed
+          <input type="range" id="speed" min="0.25" max="2" step="0.25" value="1" style="flex:1">
+          <span id="speedV">1.0×</span>
+        </label>
+      </div>
+      <div class="hint">Compare plays the untouched capture beside your edit.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Edit</h2>
+      <div class="row">
+        <button id="resetFrame" disabled>Reset frame</button>
+        <button id="mirrorFrame" disabled title="Mirror this frame left↔right">Mirror</button>
+      </div>
+      <div class="row">
+        <button id="revertAll" class="warn" disabled>Revert all to original</button>
+      </div>
+      <div class="hint">Drag any joint. Edits autosave to this browser per source.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Export</h2>
+      <div class="row">
+        <button id="copyJson" disabled>Copy JSON</button>
+        <button id="dlJson" disabled>Download .json</button>
+      </div>
+      <div class="row">
+        <button id="dlGinga" disabled>Download ginga.keyframes.js</button>
+      </div>
+      <div class="hint">Drop the .js into <code>assets/</code> to update the hero, or keep the .json for a move.</div>
+    </div>
+  </aside>
+
+  <div class="film" id="film"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Pose Editor — a hand-correction tool for the stick-figure
+   keyframes the site renders.
+
+   Document model (matches window.GINGA in assets/ginga.keyframes.js):
+     { joints:[name...], bones:[[a,b]...], frames:[{name:[x,y]...}],
+       frameMs, viewBox:[120,160], source }
+
+   You can:
+     • load the bundled ginga, open a keyframes .json, or import a
+       captured COCO-17 clip from tools/mocap/out (auto-converted),
+     • scrub frames and drag any joint to fix it,
+     • see the original as a ghost / play original-vs-edited side by side,
+     • export corrected keyframes (.json or ginga.keyframes.js).
+   Edits autosave to localStorage keyed by the source id.
+   ============================================================ */
+
+/* Canonical 14-joint figure (same schema the app uses for the ginga). */
+const FIG = {
+  joints:['head','neck','shoulderL','shoulderR','elbowL','handL','elbowR','handR','hipL','hipR','kneeL','footL','kneeR','footR'],
+  bones:[['neck','head'],['shoulderL','shoulderR'],['hipL','hipR'],
+         ['neck','hipL'],['neck','hipR'],
+         ['shoulderL','elbowL'],['elbowL','handL'],['shoulderR','elbowR'],['elbowR','handR'],
+         ['hipL','kneeL'],['kneeL','footL'],['hipR','kneeR'],['kneeR','footR']],
+};
+const COCO = ['nose','eyeL','eyeR','earL','earR','shoL','shoR','elbL','elbR','wriL','wriR','hipL','hipR','kneeL','kneeR','ankL','ankR'];
+const VBW=120, VBH=160;
+const SVGNS='http://www.w3.org/2000/svg';
+
+/* ---- state ---- */
+let doc=null;            // working document (edited)
+let orig=null;          // pristine frames (deep clone) for ghost/reset
+let dirty=[];           // per-frame edited flag
+let cur=0;              // current frame index
+let sourceId='';        // localStorage key suffix
+let playing=false, compare=false, rafId=null, t0=0, speed=1;
+
+const $=id=>document.getElementById(id);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1700); }
+
+/* ---------- rendering ---------- */
+function bonesOf(d){ return (d.bones&&d.bones.length)?d.bones:FIG.bones; }
+function poseSvg(pose, cls){
+  let s='';
+  bonesOf(doc).forEach(([a,b])=>{
+    const pa=pose[a], pb=pose[b]; if(!pa||!pb) return;
+    s+=`<polyline class="bone${(a==='shoulderL'||a==='neck')?' thin':''}" points="${pa[0].toFixed(2)},${pa[1].toFixed(2)} ${pb[0].toFixed(2)},${pb[1].toFixed(2)}"/>`;
+  });
+  if(pose.head) s+=`<circle class="head" cx="${pose.head[0].toFixed(2)}" cy="${pose.head[1].toFixed(2)}" r="8"/>`;
+  return `<g class="${cls||''}">${s}</g>`;
+}
+function frameAt(frames, ft){
+  const n=frames.length; if(!n) return {};
+  const i=((Math.floor(ft)%n)+n)%n, j=(i+1)%n, f=ft-Math.floor(ft);
+  const A=frames[i], B=frames[j], o={};
+  FIG.joints.forEach(k=>{ const a=A[k],b=B[k]; if(a&&b) o[k]=[lerp(a[0],b[0],f),lerp(a[1],b[1],f)]; else o[k]=a||b; });
+  return o;
+}
+function decor(){
+  return `<line class="centerline" x1="60" y1="6" x2="60" y2="156"/>`+
+         `<line class="floor" x1="8" y1="150" x2="112" y2="150"/>`;
+}
+function renderMain(pose){
+  const svg=$('main');
+  let s=decor();
+  if($('showGhost').checked && !playing && orig) s+=poseSvg(orig[cur],'ghost');
+  s+=poseSvg(pose,'');
+  if(!playing){
+    // handles
+    FIG.joints.forEach(k=>{ const p=pose[k]; if(!p) return;
+      s+=`<circle class="hit" data-j="${k}" cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="6.5"/>`+
+         `<circle class="handle" data-j="${k}" cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="2.6"/>`+
+         `<text class="hlabel" x="${(p[0]+3).toFixed(2)}" y="${(p[1]-3).toFixed(2)}">${k}</text>`;
+    });
+  }
+  svg.innerHTML=s;
+}
+function renderCmp(pose){ $('cmp').innerHTML=decor()+poseSvg(pose,'ghost-solid'); }
+function render(){
+  if(playing){
+    const n=doc.frames.length, dt=doc.frameMs||60;
+    const ft=((performance.now()-t0)/dt)*speed;
+    renderMain(frameAt(doc.frames,ft));
+    if(compare) renderCmp(frameAt(orig,ft));
+    rafId=requestAnimationFrame(render);
+  }else{
+    renderMain(doc.frames[cur]);
+    if(compare) renderCmp(orig[cur]);
+  }
+}
+
+/* ---------- film strip ---------- */
+function buildFilm(){
+  const film=$('film'); film.innerHTML='';
+  doc.frames.forEach((fr,i)=>{
+    const d=document.createElement('div');
+    d.className='fr'+(i===cur?' sel':'')+(dirty[i]?' dirty':'');
+    d.dataset.i=i;
+    d.innerHTML=`<svg viewBox="0 0 120 160">${decor()}${poseSvg(fr,'')}</svg><span class="n">${i}</span>`;
+    film.appendChild(d);
+  });
+}
+function refreshFilmCell(i){
+  const cell=$('film').querySelector(`.fr[data-i="${i}"]`); if(!cell) return;
+  cell.classList.toggle('dirty',!!dirty[i]);
+  cell.querySelector('svg').innerHTML=`${decor()}${poseSvg(doc.frames[i],'')}`;
+}
+function selectFilm(){
+  $('film').querySelectorAll('.fr').forEach(c=>c.classList.toggle('sel',+c.dataset.i===cur));
+  const sel=$('film').querySelector('.fr.sel'); if(sel) sel.scrollIntoView({inline:'nearest',block:'nearest'});
+}
+
+/* ---------- editing ---------- */
+function setFrame(i){ cur=clamp(i,0,doc.frames.length-1); $('scrub').value=cur; $('fIdx').textContent=cur; selectFilm(); render(); }
+function markDirty(){ dirty[cur]=true; $('editedBadge').hidden=false; refreshFilmCell(cur); save(); }
+
+function svgPoint(svg,evt){
+  const pt=svg.createSVGPoint(); pt.x=evt.clientX; pt.y=evt.clientY;
+  const m=svg.getScreenCTM(); if(!m) return null;
+  const p=pt.matrixTransform(m.inverse()); return [p.x,p.y];
+}
+let drag=null;
+function onDown(e){
+  if(playing) return;
+  const t=e.target; if(!t.dataset||!t.dataset.j) return;
+  drag=t.dataset.j; $('main').querySelectorAll('.handle').forEach(h=>h.classList.toggle('active',h.dataset.j===drag));
+  e.preventDefault();
+  $('main').setPointerCapture && $('main').setPointerCapture(e.pointerId);
+}
+function onMove(e){
+  if(!drag) return;
+  const p=svgPoint($('main'),e); if(!p) return;
+  let x=clamp(p[0],2,VBW-2), y=clamp(p[1],2,VBH-2);
+  if($('snap').checked){ x=Math.round(x); y=Math.round(y); }
+  doc.frames[cur][drag]=[x,y];
+  renderMain(doc.frames[cur]);
+}
+function onUp(){ if(drag){ drag=null; markDirty(); } }
+
+/* ---------- import / load ---------- */
+function finalizeLoad(savedExisted){
+  dirty = doc.frames.map((f,i)=> savedExisted ? !samePose(f,orig[i]) : false );
+  const tot=doc.frames.length;
+  $('fTot').textContent=tot; $('scrub').max=tot-1; $('scrub').disabled=false;
+  ['play','cmpToggle','resetFrame','mirrorFrame','revertAll','copyJson','dlJson','dlGinga'].forEach(id=>$(id).disabled=false);
+  $('srcLabel').textContent=doc.source||sourceId;
+  $('editedBadge').hidden=!dirty.some(Boolean);
+  buildFilm(); setFrame(0);
+  toast('Loaded '+tot+' frames');
+}
+function samePose(a,b){ if(!a||!b) return false; return FIG.joints.every(k=>a[k]&&b[k]&&Math.abs(a[k][0]-b[k][0])<.01&&Math.abs(a[k][1]-b[k][1])<.01); }
+
+function loadDoc(raw, id, pristine){
+  // raw: {joints,bones,frames,frameMs,viewBox,source}
+  const d={ joints:raw.joints||FIG.joints.slice(), bones:raw.bones||FIG.bones.map(b=>b.slice()),
+            frames:clone(raw.frames), frameMs:raw.frameMs||60, viewBox:raw.viewBox||[VBW,VBH], source:raw.source||id };
+  d.__orig=clone(pristine||raw.frames);
+  doc=d; sourceId=id; cur=0;
+  const saved=loadSaved(id);
+  orig=clone(d.__orig);
+  if(saved && saved.length===d.frames.length){ doc.frames=saved; }
+  finalizeLoad(!!(saved && saved.length===d.frames.length));
+}
+
+function loadGinga(){
+  if(!window.GINGA||!window.GINGA.frames){ toast('window.GINGA not found'); return; }
+  loadDoc({joints:window.GINGA.joints,bones:window.GINGA.bones,frames:window.GINGA.frames,
+           frameMs:window.GINGA.frameMs,viewBox:window.GINGA.viewBox,source:'ginga (bundled)'}, 'ginga', window.GINGA.frames);
+}
+
+/* COCO-17 normalized capture -> 14-joint figure in the 120×160 box. */
+function cocoToFig(pose, conf, step){
+  const idx=n=>COCO.indexOf(n);
+  const src=pose.frames.filter((_,i)=> i%step===0);
+  const pt=(k,n)=>{ const a=k[idx(n)]; return (a && a[2]>=conf)?[a[0],a[1]]:null; };
+  const mid=(a,b)=> (a&&b)?[(a[0]+b[0])/2,(a[1]+b[1])/2]:(a||b||null);
+  const raw=src.map(fr=>{ const k=fr.k; const sL=pt(k,'shoL'),sR=pt(k,'shoR');
+    return { head:pt(k,'nose'), neck:mid(sL,sR), shoulderL:sL, shoulderR:sR,
+      elbowL:pt(k,'elbL'), handL:pt(k,'wriL'), elbowR:pt(k,'elbR'), handR:pt(k,'wriR'),
+      hipL:pt(k,'hipL'), hipR:pt(k,'hipR'), kneeL:pt(k,'kneeL'), footL:pt(k,'ankL'),
+      kneeR:pt(k,'kneeR'), footR:pt(k,'ankR') }; });
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  raw.forEach(f=>FIG.joints.forEach(j=>{ const p=f[j]; if(p){minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);} }));
+  const h=Math.max(1e-3,maxY-minY), scale=120/h, cx=(minX+maxX)/2, top=18;
+  const map=p=> p?[clamp(60+(p[0]-cx)*scale,2,VBW-2), clamp(top+(p[1]-minY)*scale,2,VBH-2)]:null;
+  const frames=raw.map(f=>{ const o={}; FIG.joints.forEach(j=>o[j]=map(f[j])); return o; });
+  // fill gaps: forward, then backward, then center default
+  FIG.joints.forEach(j=>{ let last=null; frames.forEach(fr=>{ if(fr[j])last=fr[j]; else if(last)fr[j]=last.slice(); });
+    let next=null; for(let i=frames.length-1;i>=0;i--){ if(frames[i][j])next=frames[i][j]; else if(next)frames[i][j]=next.slice(); }
+    frames.forEach(fr=>{ if(!fr[j])fr[j]=[60,80]; }); });
+  return { joints:FIG.joints.slice(), bones:FIG.bones.map(b=>b.slice()), frames,
+           frameMs:Math.round(1000/(pose.fps||12)), viewBox:[VBW,VBH], source:(pose.file||'clip') };
+}
+
+async function loadClips(){
+  try{
+    const r=await fetch('../mocap/out/index.json'); if(!r.ok) throw 0;
+    const list=await r.json();
+    const sel=$('clipSel');
+    list.forEach(c=>{ const o=document.createElement('option'); o.value=c.pose; o.textContent=`${c.file} · ${Math.round((c.detected/c.n)*100)}% · conf ${c.meanconf}`; sel.appendChild(o); });
+  }catch(e){ /* out/ not served or empty — fine */ }
+}
+async function importClip(){
+  const pose=$('clipSel').value; if(!pose) return;
+  try{
+    const r=await fetch(encodeURI('../mocap/out/'+pose)); const data=await r.json();
+    const d=cocoToFig(data, parseFloat($('impConf').value)||0.3, Math.max(1,parseInt($('impStep').value)||1));
+    loadDoc(d, 'clip:'+pose, d.frames);
+  }catch(e){ toast('Import failed: '+e); }
+}
+
+function handleFile(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    let text=String(reader.result), data;
+    try{
+      if(/window\.GINGA/.test(text)){ const m=text.match(/window\.GINGA\s*=\s*(\{[\s\S]*\})\s*;?/); data=JSON.parse(m[1]); }
+      else data=JSON.parse(text);
+    }catch(e){ toast('Could not parse file'); return; }
+    if(data.names && data.names.includes('nose')){ // COCO pose.json
+      const d=cocoToFig(data, parseFloat($('impConf').value)||0.3, Math.max(1,parseInt($('impStep').value)||1));
+      loadDoc(d, 'file:'+file.name, d.frames);
+    }else if(data.frames){ loadDoc({joints:data.joints,bones:data.bones,frames:data.frames,frameMs:data.frameMs,viewBox:data.viewBox,source:file.name}, 'file:'+file.name, data.frames); }
+    else toast('Unrecognised file');
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- persistence ---------- */
+function key(id){ return 'roda.poseedit.'+id; }
+function save(){ try{ localStorage.setItem(key(sourceId), JSON.stringify(doc.frames)); }catch(e){} }
+function loadSaved(id){ try{ return JSON.parse(localStorage.getItem(key(id))||'null'); }catch(e){ return null; } }
+function revertAll(){
+  if(!confirm('Discard all edits for this source and restore the original capture?')) return;
+  doc.frames=clone(orig); dirty=doc.frames.map(()=>false);
+  try{ localStorage.removeItem(key(sourceId)); }catch(e){}
+  $('editedBadge').hidden=true; buildFilm(); setFrame(cur); toast('Reverted to original');
+}
+function resetFrame(){ doc.frames[cur]=clone(orig[cur]); dirty[cur]=false; refreshFilmCell(cur);
+  if(!dirty.some(Boolean)) $('editedBadge').hidden=true; save(); render(); toast('Frame '+cur+' reset'); }
+function mirrorFrame(){
+  const f=doc.frames[cur], o={}; const swap={shoulderL:'shoulderR',shoulderR:'shoulderL',elbowL:'elbowR',elbowR:'elbowL',
+    handL:'handR',handR:'handL',hipL:'hipR',hipR:'hipL',kneeL:'kneeR',kneeR:'kneeL',footL:'footR',footR:'footL'};
+  FIG.joints.forEach(j=>{ const src=swap[j]||j; const p=f[src]; o[j]=p?[VBW-p[0],p[1]]:p; });
+  doc.frames[cur]=o; markDirty(); render(); toast('Mirrored');
+}
+
+/* ---------- export ---------- */
+function exportDoc(){ return { source:doc.source, joints:doc.joints, bones:doc.bones,
+  frameMs:doc.frameMs, fps:+(1000/(doc.frameMs||60)).toFixed(3), viewBox:doc.viewBox,
+  frames:doc.frames.map(fr=>{ const o={}; FIG.joints.forEach(j=>{ if(fr[j]) o[j]=[+fr[j][0].toFixed(2),+fr[j][1].toFixed(2)]; }); return o; }) }; }
+function download(name,text,type){ const b=new Blob([text],{type:type||'application/json'}); const u=URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=u; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }
+function copyJson(){ navigator.clipboard.writeText(JSON.stringify(exportDoc())).then(()=>toast('JSON copied'),()=>toast('Copy failed')); }
+function dlJson(){ download((sourceId.replace(/[^a-z0-9]+/gi,'_')||'pose')+'.json', JSON.stringify(exportDoc(),null,1)); }
+function dlGinga(){ const d=exportDoc();
+  const body='// Generated by tools/pose-editor — hand-corrected.\nwindow.GINGA = '+JSON.stringify({source:d.source,fps:d.fps,frameMs:d.frameMs,viewBox:d.viewBox,joints:d.joints,bones:d.bones,frames:d.frames})+';\n';
+  download('ginga.keyframes.js', body, 'text/javascript'); }
+
+/* ---------- playback ---------- */
+function setPlaying(p){ playing=p; $('play').textContent=p?'❚❚ Pause':'▶ Play'; $('play').classList.toggle('primary',!p);
+  $('scrub').disabled=p; if(p){ t0=performance.now(); render(); } else { if(rafId)cancelAnimationFrame(rafId); render(); } }
+function setCompare(c){ compare=c; $('cmpToggle').setAttribute('aria-pressed',String(c)); $('cmpWrap').hidden=!c; render(); }
+
+/* ---------- wire ---------- */
+$('loadGinga').addEventListener('click',loadGinga);
+$('clipSel').addEventListener('change',e=>{ $('importClip').disabled=!e.target.value; });
+$('importClip').addEventListener('click',importClip);
+$('fileIn').addEventListener('change',e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+$('scrub').addEventListener('input',e=>setFrame(+e.target.value));
+$('prev').addEventListener('click',()=>setFrame(cur-1));
+$('next').addEventListener('click',()=>setFrame(cur+1));
+$('showGhost').addEventListener('change',render);
+$('play').addEventListener('click',()=>setPlaying(!playing));
+$('cmpToggle').addEventListener('click',()=>setCompare(!compare));
+$('speed').addEventListener('input',e=>{ speed=+e.target.value; $('speedV').textContent=speed.toFixed(2).replace(/0$/,'')+'×'; if(playing){ /* keep continuity */ t0=performance.now(); } });
+$('resetFrame').addEventListener('click',resetFrame);
+$('mirrorFrame').addEventListener('click',mirrorFrame);
+$('revertAll').addEventListener('click',revertAll);
+$('copyJson').addEventListener('click',copyJson);
+$('dlJson').addEventListener('click',dlJson);
+$('dlGinga').addEventListener('click',dlGinga);
+$('film').addEventListener('click',e=>{ const fr=e.target.closest('.fr'); if(fr) setFrame(+fr.dataset.i); });
+
+const mainSvg=$('main');
+mainSvg.addEventListener('pointerdown',onDown);
+mainSvg.addEventListener('pointermove',onMove);
+window.addEventListener('pointerup',onUp);
+window.addEventListener('keydown',e=>{ if(!doc) return;
+  if(e.key==='ArrowLeft'){ setFrame(cur-1); } else if(e.key==='ArrowRight'){ setFrame(cur+1); }
+  else if(e.key===' '){ e.preventDefault(); setPlaying(!playing); } });
+
+loadClips();
+loadGinga();   // start on the bundled ginga
+</script>
+</body>
+</html>

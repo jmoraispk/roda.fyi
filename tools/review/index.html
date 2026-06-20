@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roda · Pose Review</title>
+<style>
+  :root{
+    --bg:#0e0b09; --panel:#16110d; --panel2:#1d1711; --line:#2a2017;
+    --ink:#ece3d2; --mut:#9c8e79; --mut2:#6e6354; --gold:#eba63c; --clay:#d2502a;
+    --good:#7fc36b; --mid:#e2c044; --bad:#d2502a;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header b{font-weight:800;letter-spacing:.04em}
+  header .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);display:inline-block}
+  header .sp{flex:1}
+  header small{color:var(--mut2);font-family:var(--mono);font-size:11px}
+  button,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 10px;cursor:pointer}
+  button:hover{border-color:var(--gold)}
+  button.gold{background:var(--gold);color:#1a130a;border-color:var(--gold);font-weight:700}
+  .main{flex:1;display:grid;grid-template-columns:260px 1fr 320px;min-height:0}
+  .col{min-height:0;overflow:auto;border-right:1px solid var(--line)}
+  .col.right{border-right:none;border-left:1px solid var(--line)}
+  .col h3{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--mut2);margin:14px 14px 8px;font-family:var(--mono)}
+  /* clip list */
+  .clip{padding:9px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+  .clip:hover{background:var(--panel)}
+  .clip.active{background:var(--panel2);box-shadow:inset 3px 0 0 var(--gold)}
+  .clip .nm{font-size:12.5px;word-break:break-word}
+  .clip .meta{display:flex;gap:8px;margin-top:4px;font-family:var(--mono);font-size:10.5px;color:var(--mut2)}
+  .clip .bar{height:4px;border-radius:3px;margin-top:6px;background:var(--line);overflow:hidden}
+  .clip .bar i{display:block;height:100%;background:var(--good)}
+  .clip .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.02em;padding:1px 6px;border-radius:999px;background:rgba(235,166,60,.14);color:var(--gold);border:1px solid rgba(235,166,60,.3)}
+  .tag.comp{background:rgba(210,80,42,.14);color:#e7855f;border-color:rgba(210,80,42,.3)}
+  /* coverage summary */
+  .cov{margin:0 0 4px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel2)}
+  .cov .hd{font-family:var(--mono);font-size:11px;color:var(--mut);display:flex;justify-content:space-between;margin-bottom:7px}
+  .cov .hd b{color:var(--ink)}
+  .cov .grid{display:flex;flex-wrap:wrap;gap:3px}
+  .cov .d{width:9px;height:9px;border-radius:2px;background:var(--line)}
+  .cov .d.on{background:var(--good)}
+  .cov .d.p2{background:var(--mut2)}
+  .cov .d.on.p2{background:var(--mid)}
+  /* stage */
+  .stage{display:flex;flex-direction:column;min-height:0;height:100%}
+  .videowrap{position:relative;flex:1;display:flex;align-items:center;justify-content:center;background:#000;min-height:0;overflow:hidden}
+  .vid-inner{position:relative;line-height:0}
+  video{display:block;max-width:100%;max-height:62vh}
+  canvas.ov{position:absolute;left:0;top:0;pointer-events:none}
+  .empty{color:var(--mut2);font-family:var(--mono)}
+  .controls{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+  .controls .t{font-family:var(--mono);font-size:12px;color:var(--mut);min-width:140px}
+  .toggle{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--mut)}
+  /* timeline */
+  .timeline{position:relative;height:54px;border-top:1px solid var(--line);background:var(--panel2);cursor:pointer}
+  .timeline canvas{display:block;width:100%;height:100%}
+  .playhead{position:absolute;top:0;width:2px;height:100%;background:var(--gold);pointer-events:none}
+  /* right panel: annotations */
+  .field{margin:0 14px 10px}
+  .field label{display:block;font-size:11px;color:var(--mut);margin-bottom:4px;font-family:var(--mono)}
+  .field select,.field input,.field textarea{width:100%}
+  input,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:6px 8px;font:inherit}
+  textarea{resize:vertical;min-height:42px}
+  .marks{display:flex;gap:8px;margin:0 14px 8px}
+  .marks .m{flex:1;text-align:center;font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px}
+  .marks .m b{display:block;color:var(--gold);font-size:13px}
+  .ann{margin:6px 14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+  .ann .row1{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .ann .mv{font-weight:700}
+  .ann .rg{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .ann .nt{font-size:12px;color:var(--mut);margin-top:3px}
+  .ann .x{background:none;border:none;color:var(--mut2);cursor:pointer;padding:2px 6px}
+  .ann .x:hover{color:var(--clay)}
+  .src{margin:8px 14px 16px;font-size:11px;color:var(--mut2);font-family:var(--mono);line-height:1.5}
+  .src a{color:var(--mut)}
+  kbd{font-family:var(--mono);font-size:10px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot"></span><b>RODA · POSE REVIEW</b>
+  <small id="hint">space play · ←/→ step frame · [ set in · ] set out · g good · b bad</small>
+  <span class="sp"></span>
+  <button id="export">Export JSON</button>
+</header>
+
+<div class="main">
+  <div class="col" id="cliplist"><div class="cov" id="cov"></div><h3>Clips</h3></div>
+
+  <div class="stage">
+    <div class="videowrap">
+      <div class="vid-inner" id="vidInner">
+        <video id="video" playsinline></video>
+        <canvas class="ov" id="ov"></canvas>
+      </div>
+      <div class="empty" id="empty">Select a clip — run <code>extract_moves.py</code> first.</div>
+    </div>
+    <div class="controls">
+      <button id="play">▶</button>
+      <button id="back" title="prev frame">⟨</button>
+      <button id="fwd" title="next frame">⟩</button>
+      <button id="prevLow" title="prev low-confidence frame">⟨!</button>
+      <button id="nextLow" title="next low-confidence frame">!⟩</button>
+      <span class="t" id="time">0.00 / 0.00 · f0</span>
+      <label class="toggle">speed
+        <select id="speed"><option>0.25</option><option>0.5</option><option selected>1</option></select>
+      </label>
+      <label class="toggle"><input type="checkbox" id="showSkel" checked> skeleton</label>
+      <label class="toggle">conf ≥ <input type="range" id="confT" min="0" max="0.9" step="0.05" value="0.3" style="width:90px"> <span id="confV">0.30</span></label>
+    </div>
+    <div class="timeline" id="timeline"><canvas id="tl"></canvas><div class="playhead" id="ph"></div></div>
+  </div>
+
+  <div class="col right">
+    <h3>Annotate move</h3>
+    <div class="marks">
+      <div class="m">in<b id="inV">—</b></div>
+      <div class="m">out<b id="outV">—</b></div>
+    </div>
+    <div class="field"><label>move</label><select id="moveSel"></select></div>
+    <div class="field"><label>quality</label>
+      <select id="qual"><option value="good">good — usable</option><option value="ok">ok — needs cleanup</option><option value="bad">bad — drop</option></select>
+    </div>
+    <div class="field"><label>note</label><textarea id="note" placeholder="occlusion, wrong person tracked, ..."></textarea></div>
+    <div class="field"><button class="gold" id="addAnn" style="width:100%">Add range  (in → out)</button></div>
+    <h3>Ranges <span id="annCount" style="color:var(--mut2)"></span></h3>
+    <div id="annList"></div>
+    <h3>Source</h3>
+    <div class="src" id="src"></div>
+  </div>
+</div>
+
+<script>
+const MOVES = {
+  'Golpes':['Bênção','Ponteira','Martelo','Meia-lua de frente','Meia-lua de compasso','Queixada','Armada','Chapa','Pisão','Gancho','Martelo do chão','Escorpião','Rabo de arraia','Parafuso','Voadora'],
+  'Esquivas':['Esquiva baixa','Esquiva lateral','Esquiva de frente','Esquiva diagonal','Cocorinha','Negativa','Resistência','Rolê','Esquiva de costas'],
+  'Floreios':['Aú','Aú sem mão','Aú batido','Bananeira','Queda de rins','Macaco','S-dobrado','Relógio','Pião de cabeça','Mariposa','Folha seca','Helicóptero','Ponte','Bandeira'],
+  'Quedas':['Rasteira','Rasteira de costas','Banda','Banda de costas','Vingativa','Tesoura de frente','Tesoura de costas','Boca de calça','Boca de calça de costas','Arrastão','Cruz','Açoite','Cabeçada','Balão de lado'],
+  'Outro':['ginga','desconhecido']
+};
+// COCO-17 skeleton edges (indices match extract_moves.py COCO order)
+const EDGES = [[5,7],[7,9],[6,8],[8,10],[11,13],[13,15],[12,14],[14,16],
+               [5,6],[11,12],[5,11],[6,12],[0,5],[0,6]];
+
+const $ = s => document.querySelector(s);
+const video = $('#video'), ov = $('#ov'), octx = ov.getContext('2d');
+const tl = $('#tl'), tctx = tl.getContext('2d');
+const STORE = 'roda.review.v1';
+let clips = [], cur = null, doc = null, anns = load();
+let inMark = null, outMark = null;
+
+function load(){ try{ return JSON.parse(localStorage.getItem(STORE)) || {}; }catch(e){ return {}; } }
+function save(){ try{ localStorage.setItem(STORE, JSON.stringify(anns)); }catch(e){} }
+
+// ---- move dropdown ----
+const moveSel = $('#moveSel');
+for(const [cat, list] of Object.entries(MOVES)){
+  const og = document.createElement('optgroup'); og.label = cat;
+  list.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; og.appendChild(o); });
+  moveSel.appendChild(og);
+}
+
+// ---- sources.json: single source of truth for slug -> name / priority ----
+let SLUG = {}, ALLSLUGS = [];
+function slugPT(s){ return (SLUG[s] && SLUG[s].pt) || s; }
+function loadSources(){
+  return fetch('../mocap/sources.json').then(r => r.json()).then(d => {
+    d.moves.forEach(m => { SLUG[m.slug] = m; ALLSLUGS.push(m.slug); });
+  }).catch(() => {});
+}
+function renderCoverage(list){
+  if(!ALLSLUGS.length){ $('#cov').style.display = 'none'; return; }
+  const covered = new Set();
+  list.forEach(c => ((c.source && c.source.moves) || []).forEach(s => covered.add(s)));
+  const nAll = ALLSLUGS.filter(s => covered.has(s)).length;
+  const grid = ALLSLUGS.map(s =>
+    `<div class="d ${covered.has(s) ? 'on' : ''} ${SLUG[s].priority === 2 ? 'p2' : ''}" title="${slugPT(s)}${covered.has(s) ? ' ✓' : ''}"></div>`).join('');
+  $('#cov').innerHTML = `<div class="hd"><span>Move coverage</span><b>${nAll}/${ALLSLUGS.length}</b></div><div class="grid">${grid}</div>`;
+}
+
+// ---- load index ----
+function loadIndex(){
+  return fetch('../mocap/out/index.json').then(r => r.json()).then(list => {
+    clips = list;
+    const box = $('#cliplist');
+    renderCoverage(list);
+    list.forEach((c, i) => {
+      const pct = c.n ? Math.round(100 * c.detected / c.n) : 0;
+      const mv = (c.source && c.source.moves) || [];
+      const isComp = (c.source && c.source.kind) === 'compilation' || mv.length > 1;
+      const shown = mv.slice(0, isComp ? 4 : 2).map(s => `<span class="tag${isComp ? ' comp' : ''}">${slugPT(s)}</span>`).join('');
+      const more = mv.length > 4 ? `<span class="tag">+${mv.length - 4}</span>` : '';
+      const el = document.createElement('div');
+      el.className = 'clip'; el.dataset.i = i;
+      el.innerHTML = `<div class="nm">${(c.source && c.source.title || c.file).replace(/^File:/, '')}</div>
+        <div class="meta"><span>${c.dur}s</span><span>${pct}% det</span><span>conf ${c.meanconf}</span></div>
+        <div class="bar"><i style="width:${pct}%;background:${pct>80?'var(--good)':pct>50?'var(--mid)':'var(--bad)'}"></i></div>
+        ${mv.length ? `<div class="tags">${shown}${more}</div>` : ''}`;
+      el.onclick = () => selectClip(i);
+      box.appendChild(el);
+    });
+    if(list.length) selectClip(0);
+  }).catch(() => { $('#empty').textContent = 'No out/index.json — run extract_moves.py first.'; });
+}
+loadSources().then(loadIndex);
+
+function selectClip(i){
+  cur = clips[i]; doc = null;
+  document.querySelectorAll('.clip').forEach(e => e.classList.toggle('active', +e.dataset.i === i));
+  $('#empty').style.display = 'none';
+  video.src = '../mocap/clips/' + cur.file;
+  video.playbackRate = parseFloat($('#speed').value);
+  inMark = outMark = null; $('#inV').textContent = $('#outV').textContent = '—';
+  const s = cur.source || {};
+  const mv = s.moves || [];
+  if(mv.length === 1){ const pt = slugPT(mv[0]); if([...moveSel.options].some(o => o.value === pt)) moveSel.value = pt; }
+  const exp = mv.length ? `<div style="margin-bottom:6px;color:var(--gold)">🎯 expected: ${mv.map(slugPT).join(', ')}</div>` : '';
+  const link = s.page ? ` · <a href="${s.page}" target="_blank">${/youtu/.test(s.page) ? 'watch' : 'source'}</a>` : '';
+  $('#src').innerHTML = `${exp}${s.title || cur.file}<br>${s.author ? 'by ' + s.author + '<br>' : ''}${s.license || ''}${link}${s.query ? `<br><span style="color:var(--mut2)">q: ${s.query}</span>` : ''}`;
+  fetch('../mocap/out/' + cur.pose).then(r => r.json()).then(d => { doc = d; drawTimeline(); renderAnns(); });
+}
+
+// ---- overlay drawing ----
+function frameAt(t){
+  if(!doc) return null;
+  const i = Math.max(0, Math.min(doc.frames.length - 1, Math.round(t * doc.fps)));
+  return doc.frames[i];
+}
+function confColor(c){ return c >= 0.6 ? 'var(--good)' : c >= 0.35 ? 'var(--mid)' : 'var(--bad)'; }
+function resolveColor(name){ // canvas needs real colors, not var()
+  const map = {'var(--good)':'#7fc36b','var(--mid)':'#e2c044','var(--bad)':'#d2502a'};
+  return map[name] || name;
+}
+function sizeOverlay(){
+  const w = video.clientWidth, h = video.clientHeight;
+  ov.width = w; ov.height = h; ov.style.width = w + 'px'; ov.style.height = h + 'px';
+}
+function drawOverlay(){
+  octx.clearRect(0, 0, ov.width, ov.height);
+  if(!doc || !$('#showSkel').checked){ requestAnimationFrame(drawOverlay); return; }
+  const f = frameAt(video.currentTime);
+  if(f && f.k){
+    const W = ov.width, H = ov.height, T = parseFloat($('#confT').value);
+    octx.lineWidth = Math.max(2, W / 320);
+    for(const [a, b] of EDGES){
+      const pa = f.k[a], pb = f.k[b];
+      if(pa[2] < T || pb[2] < T) continue;
+      octx.strokeStyle = resolveColor(confColor(Math.min(pa[2], pb[2])));
+      octx.beginPath(); octx.moveTo(pa[0]*W, pa[1]*H); octx.lineTo(pb[0]*W, pb[1]*H); octx.stroke();
+    }
+    for(const p of f.k){
+      if(p[2] < T) continue;
+      octx.fillStyle = resolveColor(confColor(p[2]));
+      octx.beginPath(); octx.arc(p[0]*W, p[1]*H, Math.max(2.5, W/200), 0, 7); octx.fill();
+    }
+  }
+  // playhead + time
+  if(doc){
+    const ph = $('#ph'); ph.style.left = (100 * video.currentTime / (doc.dur || video.duration || 1)) + '%';
+    $('#time').textContent = `${video.currentTime.toFixed(2)} / ${(doc.dur||0).toFixed(2)} · f${Math.round(video.currentTime*doc.fps)}` + (f ? ` · conf ${f.c.toFixed(2)}` : ' · —');
+  }
+  requestAnimationFrame(drawOverlay);
+}
+video.addEventListener('loadedmetadata', sizeOverlay);
+window.addEventListener('resize', sizeOverlay);
+requestAnimationFrame(drawOverlay);
+
+// ---- timeline / confidence sparkline ----
+function drawTimeline(){
+  if(!doc) return;
+  const W = tl.clientWidth, H = tl.clientHeight; tl.width = W; tl.height = H;
+  tctx.clearRect(0, 0, W, H);
+  // confidence area
+  tctx.beginPath(); tctx.moveTo(0, H);
+  doc.frames.forEach((f, i) => { const x = W * i / (doc.frames.length - 1); tctx.lineTo(x, H - (f.c) * (H - 6)); });
+  tctx.lineTo(W, H); tctx.closePath();
+  tctx.fillStyle = 'rgba(235,166,60,.18)'; tctx.fill();
+  // low-confidence ticks
+  doc.frames.forEach((f, i) => {
+    if(!f.k || f.c < 0.35){ const x = W * i / (doc.frames.length - 1); tctx.fillStyle = f.k ? '#e2c044' : '#d2502a'; tctx.fillRect(x, 0, 1.5, H); }
+  });
+  // saved ranges
+  (anns[cur.file] || []).forEach(a => {
+    const x0 = W * a.t0 / doc.dur, x1 = W * a.t1 / doc.dur;
+    tctx.fillStyle = a.qual === 'good' ? 'rgba(127,195,107,.35)' : a.qual === 'ok' ? 'rgba(226,192,68,.30)' : 'rgba(210,80,42,.30)';
+    tctx.fillRect(x0, H - 8, x1 - x0, 8);
+  });
+}
+$('#timeline').addEventListener('click', e => {
+  if(!doc) return;
+  const r = tl.getBoundingClientRect();
+  video.currentTime = ((e.clientX - r.left) / r.width) * (doc.dur || video.duration);
+});
+
+// ---- controls ----
+function step(d){ if(doc){ video.pause(); video.currentTime = Math.max(0, Math.min(doc.dur, video.currentTime + d / doc.fps)); } }
+function gotoLow(dir){
+  if(!doc) return; const cf = Math.round(video.currentTime * doc.fps);
+  for(let i = cf + dir; i >= 0 && i < doc.frames.length; i += dir){
+    const f = doc.frames[i]; if(!f.k || f.c < 0.35){ video.currentTime = f.t; video.pause(); return; }
+  }
+}
+$('#play').onclick = () => video.paused ? video.play() : video.pause();
+video.addEventListener('play', () => $('#play').textContent = '❚❚');
+video.addEventListener('pause', () => $('#play').textContent = '▶');
+$('#back').onclick = () => step(-1);
+$('#fwd').onclick = () => step(1);
+$('#prevLow').onclick = () => gotoLow(-1);
+$('#nextLow').onclick = () => gotoLow(1);
+$('#speed').onchange = () => video.playbackRate = parseFloat($('#speed').value);
+$('#confT').oninput = () => $('#confV').textContent = parseFloat($('#confT').value).toFixed(2);
+
+// ---- annotations ----
+function fmt(t){ return t == null ? '—' : t.toFixed(2) + 's'; }
+function setIn(){ inMark = video.currentTime; $('#inV').textContent = fmt(inMark); }
+function setOut(){ outMark = video.currentTime; $('#outV').textContent = fmt(outMark); }
+$('#addAnn').onclick = () => {
+  if(!cur || inMark == null || outMark == null){ alert('Set in and out marks first ([ and ]).'); return; }
+  const t0 = Math.min(inMark, outMark), t1 = Math.max(inMark, outMark);
+  (anns[cur.file] ||= []).push({ move: moveSel.value, qual: $('#qual').value, note: $('#note').value.trim(), t0: +t0.toFixed(2), t1: +t1.toFixed(2) });
+  anns[cur.file].sort((a, b) => a.t0 - b.t0);
+  $('#note').value = ''; save(); renderAnns(); drawTimeline();
+};
+function renderAnns(){
+  const box = $('#annList'); box.innerHTML = '';
+  const list = (cur && anns[cur.file]) || [];
+  $('#annCount').textContent = list.length ? `· ${list.length}` : '';
+  list.forEach((a, i) => {
+    const el = document.createElement('div'); el.className = 'ann';
+    el.innerHTML = `<div class="row1"><span class="mv">${a.move}</span>
+      <span><span class="rg">${a.t0}–${a.t1}s · ${a.qual}</span> <button class="x" title="delete">✕</button></span></div>
+      ${a.note ? `<div class="nt">${a.note}</div>` : ''}`;
+    el.querySelector('.mv').onclick = () => { video.currentTime = a.t0; video.play(); };
+    el.querySelector('.x').onclick = () => { list.splice(i, 1); save(); renderAnns(); drawTimeline(); };
+    box.appendChild(el);
+  });
+}
+$('#export').onclick = () => {
+  const blob = new Blob([JSON.stringify(anns, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'roda-review-annotations.json'; a.click();
+};
+
+// ---- keyboard ----
+addEventListener('keydown', e => {
+  if(/input|textarea|select/i.test(e.target.tagName)) return;
+  const k = e.key;
+  if(k === ' '){ e.preventDefault(); $('#play').click(); }
+  else if(k === 'ArrowLeft'){ e.preventDefault(); step(e.shiftKey ? -5 : -1); }
+  else if(k === 'ArrowRight'){ e.preventDefault(); step(e.shiftKey ? 5 : 1); }
+  else if(k === '['){ setIn(); }
+  else if(k === ']'){ setOut(); }
+  else if(k === 'g'){ $('#qual').value = 'good'; }
+  else if(k === 'b'){ $('#qual').value = 'bad'; }
+});
+</script>
+</body>
+</html>
