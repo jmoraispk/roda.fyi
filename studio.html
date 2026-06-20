@@ -3,89 +3,131 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Roda · Studio — corrigir os movimentos</title>
-<meta name="description" content="Ferramenta para corrigir as figuras de cada movimento de capoeira e descrever como devem ser.">
+<title>Roda · Studio</title>
+<meta name="description" content="Ferramenta para corrigir as figuras de cada movimento de capoeira.">
 <link rel="icon" href="favicon.svg">
 <style>
   :root{
-    --bg:#0e0b09; --panel:#16110d; --panel2:#1d1711; --line:#2a2017;
-    --ink:#ece3d2; --mut:#9c8e79; --mut2:#6e6354; --gold:#eba63c; --clay:#d2502a;
-    --good:#7fc36b; --mid:#e2c044; --bad:#d2502a;
+    --bg:#0e0b09;--panel:#16110d;--panel2:#1d1711;--line:#2a2017;
+    --ink:#ece3d2;--mut:#9c8e79;--mut2:#6e6354;--gold:#eba63c;--clay:#d2502a;
+    --good:#7fc36b;--mid:#e2c044;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
   body{background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
   a{color:var(--gold)}
-  header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+  header{display:flex;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap;flex-shrink:0}
   header .brand{font-weight:800;letter-spacing:.06em}
   header .brand .o{color:var(--gold)}
-  header .tag{color:var(--mut);font-size:12px;max-width:42ch}
+  header .tag{color:var(--mut);font-size:12px;max-width:38ch}
   header .sp{flex:1}
-  button,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
+  button,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
   button:hover,select:hover{border-color:var(--gold)}
   button.gold{background:var(--gold);color:#1a130a;border-color:var(--gold);font-weight:700}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-  .seg button{border:none;border-radius:0;background:transparent;padding:6px 12px;color:var(--mut)}
+  .seg button{border:none;border-radius:0;background:transparent;padding:5px 11px;color:var(--mut)}
   .seg button.on{background:var(--gold);color:#1a130a;font-weight:700}
   .prog{font-family:var(--mono);font-size:12px;color:var(--mut)}
   .prog b{color:var(--ink)}
-  .main{flex:1;display:grid;grid-template-columns:280px 1fr 320px;min-height:0}
+
+  /* layout */
+  .main{flex:1;display:grid;grid-template-columns:260px 1fr 300px;min-height:0;overflow:hidden}
   .col{min-height:0;overflow:auto}
   .col.left{border-right:1px solid var(--line)}
   .col.right{border-left:1px solid var(--line);padding-bottom:30px}
-  .grp{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--mut2);margin:16px 14px 6px;font-family:var(--mono)}
-  .row{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+
+  /* left list */
+  .grp{font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--mut2);
+    padding:9px 14px 7px;font-family:var(--mono);cursor:pointer;user-select:none;
+    display:flex;align-items:center;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:var(--bg);z-index:1}
+  .grp .arr{margin-left:auto;font-size:10px;transition:transform .15s;line-height:1}
+  .grp.collapsed .arr{transform:rotate(-90deg)}
+  .row{display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid var(--line);cursor:pointer}
   .row:hover{background:var(--panel)}
   .row.active{background:var(--panel2);box-shadow:inset 3px 0 0 var(--gold)}
-  .row svg{flex:none;width:30px;height:40px}
+  .row svg{flex:none;width:28px;height:37px}
   .row .nm{font-size:13px}
   .row .gl{font-size:11px;color:var(--mut2)}
-  .row .st{margin-left:auto;width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
-  .row .st.good{background:var(--good)} .row .st.work{background:var(--mid)} .row .st.done{background:var(--gold)}
-  /* stage */
-  .stage{display:flex;flex-direction:column;min-height:0;align-items:center;justify-content:center;position:relative;padding:14px}
-  .canvaswrap{position:relative;background:radial-gradient(circle at 50% 38%,#1a140e,#0e0b09 70%);border:1px solid var(--line);border-radius:18px;flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0}
-  svg.edit{height:min(70vh,560px);width:auto;touch-action:none;display:block}
+  .row .st{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--line);flex:none}
+  .row .st.good{background:var(--good)}.row .st.work{background:var(--mid)}.row .st.done{background:var(--gold)}
+
+  /* center stage */
+  .stage{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .canvases{flex:1;display:flex;min-height:0;overflow:hidden}
+  .canvaswrap{flex:1;background:radial-gradient(circle at 50% 38%,#1a140e,#0e0b09 70%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;position:relative;overflow:hidden}
+  .canvaswrap.split{border-right:1px solid var(--line)}
+  .canvas-label{font-size:9px;color:var(--mut2);font-family:var(--mono);letter-spacing:.1em;
+    text-transform:uppercase;position:absolute;top:8px;left:10px;opacity:0;transition:opacity .2s;pointer-events:none}
+  .canvases.comparing .canvas-label{opacity:1}
+  .orig-wrap{flex:0 0 0;overflow:hidden;transition:flex-basis .18s ease;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 38%,#110d08,#0e0b09 70%)}
+  .orig-wrap.show{flex-basis:44%}
+  .orig-label{font-size:9px;color:var(--mut2);font-family:var(--mono);letter-spacing:.1em;
+    text-transform:uppercase;padding-bottom:4px;flex-shrink:0}
+  svg.edit{max-height:min(56vh,500px);width:auto;max-width:100%;touch-action:none;display:block}
+  svg.orig-anim{max-height:min(50vh,440px);width:auto;max-width:100%;display:block;opacity:.65}
   .edit .grid line{stroke:#241b12;stroke-width:.5}
-  .edit .ghost{opacity:.26}
+  .edit .ghost{opacity:.25}
   .edit .handle{fill:#0e0b09;stroke:var(--gold);stroke-width:1.4;cursor:grab}
   .edit .handle:hover{fill:var(--gold)}
-  .edit .handle.lbl{}
   .edit .handle.drag{cursor:grabbing;fill:var(--clay);stroke:var(--clay)}
-  .stagebar{display:flex;align-items:center;gap:10px;padding:12px 4px 2px;flex-wrap:wrap;justify-content:center}
+
+  /* frame strip */
+  .frame-strip{display:flex;gap:5px;padding:7px 12px;overflow-x:auto;
+    background:var(--panel);border-top:1px solid var(--line);flex-shrink:0;align-items:flex-start;
+    scrollbar-width:thin;scrollbar-color:var(--line) transparent;min-height:0}
+  .frame-strip::-webkit-scrollbar{height:3px}
+  .frame-strip::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+  .frame-strip:empty{display:none}
+  .frame-thumb{cursor:pointer;border:2px solid transparent;border-radius:7px;padding:2px;
+    flex:none;opacity:.5;transition:opacity .12s,border-color .12s;position:relative}
+  .frame-thumb:hover{opacity:.8;border-color:var(--mut2)}
+  .frame-thumb.sel{border-color:var(--gold);opacity:1}
+  .frame-thumb.edited::after{content:'';position:absolute;top:3px;right:3px;
+    width:5px;height:5px;border-radius:50%;background:var(--clay)}
+  .frame-lbl{font-size:9px;color:var(--mut2);font-family:var(--mono);text-align:center;margin-top:1px}
+
+  /* stagebar */
+  .stagebar{display:flex;align-items:center;gap:8px;padding:7px 12px;
+    border-top:1px solid var(--line);flex-shrink:0;background:var(--panel);flex-wrap:wrap}
   .stagebar .hint{color:var(--mut2);font-size:11px;font-family:var(--mono)}
+
   /* right panel */
   .pad{padding:14px 16px}
-  .mv-name{font-size:20px;font-weight:800}
+  .mv-name{font-size:19px;font-weight:800}
   .mv-gloss{color:var(--mut);font-size:13px}
   .mv-desc{color:var(--mut);font-size:13px;margin-top:8px;border-left:2px solid var(--line);padding-left:10px}
-  .fld{margin-top:14px}
+  .fld{margin-top:13px}
   .fld label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--mut2);margin-bottom:5px;font-family:var(--mono)}
   .fld select,.fld textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:8px 10px;font:inherit}
-  textarea{resize:vertical;min-height:84px}
+  textarea{resize:vertical;min-height:78px}
   .statusrow{display:flex;gap:6px;flex-wrap:wrap}
-  .statusrow button{flex:1 1 auto;padding:7px 8px;font-size:12px}
+  .statusrow button{flex:1 1 auto;padding:6px 8px;font-size:12px}
   .statusrow button.on[data-s=good]{background:var(--good);color:#10210b;border-color:var(--good);font-weight:700}
   .statusrow button.on[data-s=work]{background:var(--mid);color:#241f06;border-color:var(--mid);font-weight:700}
   .statusrow button.on[data-s=done]{background:var(--gold);color:#1a130a;border-color:var(--gold);font-weight:700}
-  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-  .acts button{flex:1 1 auto;font-size:12.5px}
+  .acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
+  .acts button{flex:1 1 auto;font-size:12px}
   .note-edited{color:var(--clay);font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px}
   .pcode{margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--mut2);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px;white-space:pre-wrap;word-break:break-all;display:none}
-  @media (max-width:980px){ .main{grid-template-columns:1fr} .col.left,.col.right{max-height:34vh} svg.edit{height:46vh} }
+
+  @media(max-width:980px){.main{grid-template-columns:1fr}.col.left,.col.right{max-height:32vh}svg.edit{max-height:44vh}}
 </style>
 </head>
 <body>
 <header>
   <span class="brand">RODA <span class="o">·</span> STUDIO</span>
-  <span class="tag" data-i18n="tag">Arraste as articulações para corrigir cada figura e descreva como o movimento deve ser.</span>
+  <span class="tag" data-i18n="tag">Arraste as articulações para corrigir cada figura.</span>
   <span class="sp"></span>
-  <a href="tools/pose-editor/" style="font-size:12px;text-decoration:none" data-i18n="gingaLink">Editar a ginga →</a>
+  <a href="tools/pose-editor/" style="font-size:12px;text-decoration:none" data-i18n="gingaLink">Editar ginga →</a>
   <span class="prog" id="prog"></span>
   <div class="seg" id="lang"><button data-l="pt" class="on">PT</button><button data-l="en">EN</button></div>
   <button id="importBtn" data-i18n="import">Importar</button>
-  <button class="gold" id="exportBtn" data-i18n="export">Exportar correções</button>
+  <button class="gold" id="exportBtn" data-i18n="export">Exportar</button>
   <input type="file" id="file" accept="application/json" hidden>
 </header>
 
@@ -93,18 +135,29 @@
   <div class="col left" id="list"></div>
 
   <div class="stage">
-    <div class="canvaswrap">
-      <svg class="edit" id="svg" viewBox="0 0 120 160" aria-label="figure editor">
-        <g class="grid" id="grid"></g>
-        <g class="ghost" id="ghost"></g>
-        <g id="fig"></g>
-        <g id="handles"></g>
-      </svg>
+    <div class="canvases" id="canvases">
+      <div class="canvaswrap" id="editWrap">
+        <span class="canvas-label" data-i18n="labelEdited">Editado</span>
+        <svg class="edit" id="svg" viewBox="0 0 120 160" aria-label="figure editor">
+          <g class="grid" id="grid"></g>
+          <g class="ghost" id="ghost"></g>
+          <g id="fig"></g>
+          <g id="handles"></g>
+        </svg>
+      </div>
+      <div class="orig-wrap" id="origWrap">
+        <span class="orig-label" data-i18n="labelOrig">Original</span>
+        <svg class="orig-anim" viewBox="0 0 120 160" aria-label="original animation">
+          <g id="origFig"></g>
+        </svg>
+      </div>
     </div>
+    <div class="frame-strip" id="frameStrip"></div>
     <div class="stagebar">
-      <button id="play" data-i18n="play">▶ Tocar movimento</button>
+      <button id="play" data-i18n="play">▶ Tocar</button>
+      <button id="resetFrame" data-i18n="resetFrame">↺ Frame</button>
       <label class="hint">head <input type="range" id="headR" min="6" max="14" step="0.5" style="vertical-align:middle"></label>
-      <span class="hint" data-i18n="ghostHint">tom claro = original</span>
+      <span class="hint" data-i18n="ghostHint">tom claro = original do frame</span>
     </div>
   </div>
 
@@ -113,18 +166,16 @@
       <div class="mv-name" id="mvName">—</div>
       <div class="mv-gloss" id="mvGloss"></div>
       <div class="mv-desc" id="mvDesc"></div>
-
       <div class="fld">
-        <label data-i18n="statusL">Estado desta figura</label>
+        <label data-i18n="statusL">Estado</label>
         <div class="statusrow" id="statusRow">
           <button data-s="good" data-i18n="stGood">Está boa</button>
           <button data-s="work" data-i18n="stWork">Precisa ajuste</button>
           <button data-s="done" data-i18n="stDone">Corrigida</button>
         </div>
       </div>
-
       <div class="fld">
-        <label data-i18n="hiL">Membro em destaque (a ação)</label>
+        <label data-i18n="hiL">Membro em destaque</label>
         <select id="hiSel">
           <option value="" data-i18n="hiNone">nenhum</option>
           <option value="legR">perna direita</option>
@@ -133,14 +184,12 @@
           <option value="armL">braço esquerdo</option>
         </select>
       </div>
-
       <div class="fld">
-        <label data-i18n="noteL">Como deve ser? (descreva o que está errado)</label>
-        <textarea id="note" data-i18n-ph="notePh" placeholder="ex.: a perna do golpe deve subir mais alto, ponta do pé esticada; o joelho de apoio mais flexionado…"></textarea>
+        <label data-i18n="noteL">Como deve ser?</label>
+        <textarea id="note" data-i18n-ph="notePh" placeholder="ex.: a perna do golpe deve subir mais alto…"></textarea>
       </div>
-
       <div class="acts">
-        <button id="reset" data-i18n="reset">↺ Original</button>
+        <button id="reset" data-i18n="reset">↺ Tudo</button>
         <button id="mirror" data-i18n="mirror">⇆ Espelhar</button>
         <button id="copyP" data-i18n="copyP">Copiar p:{}</button>
       </div>
@@ -150,62 +199,65 @@
   </div>
 </div>
 
-<!-- Single source of truth: regenerated from index.html by
-     tools/studio/build_moves.py  (uv run tools/studio/build_moves.py). -->
+<!-- single source of truth: regenerated by tools/studio/build_moves.py -->
+<script src="assets/ginga.keyframes.js"></script>
 <script src="assets/moves.data.js"></script>
 <script>
 /* ============================================================
-   FIGURE ENGINE — copied verbatim from index.html so the Studio
-   renders figures identically and edits map 1:1 onto DATA.p
+   FIGURE ENGINE — verbatim from index.html
    ============================================================ */
-const COL = { body:'#E6D4B2', head:'#E6D4B2', hi:'#EBA63C' };
-const DEFAULT = {
-  head:[60,22], shoulder:[58,40], hip:[60,84],
-  elbowL:[44,50], handL:[40,64], elbowR:[72,50], handR:[78,62],
-  kneeL:[50,114], footL:[46,150], kneeR:[72,114], footR:[76,150], headR:9
+const COL={body:'#E6D4B2',head:'#E6D4B2',hi:'#EBA63C'};
+const DEFAULT={
+  head:[60,22],shoulder:[58,40],hip:[60,84],
+  elbowL:[44,50],handL:[40,64],elbowR:[72,50],handR:[78,62],
+  kneeL:[50,114],footL:[46,150],kneeR:[72,114],footR:[76,150],headR:9
 };
-function fig(p, hi){
-  const j = Object.assign({}, DEFAULT, p);
-  const P = a => a[0].toFixed(1)+','+a[1].toFixed(1);
-  const seg = (pts,w,c)=>`<polyline points="${pts.map(P).join(' ')}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
-  const lib = {
-    torso:[j.shoulder,j.hip], armL:[j.shoulder,j.elbowL,j.handL], armR:[j.shoulder,j.elbowR,j.handR],
-    legL:[j.hip,j.kneeL,j.footL], legR:[j.hip,j.kneeR,j.footR],
-  };
+function fig(p,hi){
+  const j=Object.assign({},DEFAULT,p);
+  const P=a=>a[0].toFixed(1)+','+a[1].toFixed(1);
+  const seg=(pts,w,c)=>`<polyline points="${pts.map(P).join(' ')}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const lib={torso:[j.shoulder,j.hip],armL:[j.shoulder,j.elbowL,j.handL],armR:[j.shoulder,j.elbowR,j.handR],legL:[j.hip,j.kneeL,j.footL],legR:[j.hip,j.kneeR,j.footR]};
   let s='';
   s+=seg(lib.torso,11,COL.body);
-  for(const k of ['legL','legR','armL','armR']) s+=seg(lib[k], k.startsWith('leg')?9:8, COL.body);
+  for(const k of['legL','legR','armL','armR'])s+=seg(lib[k],k.startsWith('leg')?9:8,COL.body);
   s+=`<circle cx="${j.head[0].toFixed(1)}" cy="${j.head[1].toFixed(1)}" r="${j.headR}" fill="${COL.head}"/>`;
-  if(hi && lib[hi]) s+=seg(lib[hi], hi.startsWith('leg')?9:8, COL.hi);
+  if(hi&&lib[hi])s+=seg(lib[hi],hi.startsWith('leg')?9:8,COL.hi);
   return s;
 }
 const lerp=(a,b,t)=>a+(b-a)*t;
 const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 function lerpPose(a,b,t){
-  const o={}, ks=new Set([...Object.keys(a),...Object.keys(b)]);
-  ks.forEach(k=>{ const A=a[k]!==undefined?a[k]:b[k], B=b[k]!==undefined?b[k]:a[k];
-    o[k]=(k==='headR')?lerp(A,B,t):[lerp(A[0],B[0],t),lerp(A[1],B[1],t)]; });
+  const o={},ks=new Set([...Object.keys(a),...Object.keys(b)]);
+  ks.forEach(k=>{const A=a[k]!==undefined?a[k]:b[k],B=b[k]!==undefined?b[k]:a[k];o[k]=(k==='headR')?lerp(A,B,t):[lerp(A[0],B[0],t),lerp(A[1],B[1],t)];});
   return o;
 }
 const clone=o=>JSON.parse(JSON.stringify(o));
 function mirror(p,ax){const a=ax||60,o={};for(const k in p){o[k]=(k==='headR')?p[k]:[2*a-p[k][0],p[k][1]];}return o;}
-const READY={ head:[54,26], shoulder:[55,42], hip:[60,86], elbowL:[44,52], handL:[40,62], elbowR:[64,46], handR:[58,34], kneeL:[50,116], footL:[44,150], kneeR:[72,116], footR:[78,150], headR:9 };
-const STAND={ head:[58,24], shoulder:[58,40], hip:[60,86], elbowL:[47,54], handL:[43,66], elbowR:[69,54], handR:[73,66], kneeL:[53,116], footL:[49,150], kneeR:[69,116], footR:[73,150], headR:9 };
-function chamberFwd(hi){const p=clone(READY); if(hi==='legL'){p.kneeL=[74,74];p.footL=[70,90];} else {p.kneeR=[74,74];p.footR=[70,90];} return p;}
-function windLow(hi){const p=clone(READY); p.head=[48,28]; p.shoulder=[50,44]; if(hi==='legL'){p.kneeL=[60,110];p.footL=[54,128];} else {p.kneeR=[60,110];p.footR=[54,128];} return p;}
+const READY={head:[54,26],shoulder:[55,42],hip:[60,86],elbowL:[44,52],handL:[40,62],elbowR:[64,46],handR:[58,34],kneeL:[50,116],footL:[44,150],kneeR:[72,116],footR:[78,150],headR:9};
+const STAND={head:[58,24],shoulder:[58,40],hip:[60,86],elbowL:[47,54],handL:[43,66],elbowR:[69,54],handR:[73,66],kneeL:[53,116],footL:[49,150],kneeR:[69,116],footR:[73,150],headR:9};
+function chamberFwd(hi){const p=clone(READY);if(hi==='legL'){p.kneeL=[74,74];p.footL=[70,90];}else{p.kneeR=[74,74];p.footR=[70,90];}return p;}
+function windLow(hi){const p=clone(READY);p.head=[48,28];p.shoulder=[50,44];if(hi==='legL'){p.kneeL=[60,110];p.footL=[54,128];}else{p.kneeR=[60,110];p.footR=[54,128];}return p;}
 const LINEAR=new Set(['Linear','Aerial','Ground']);
 function buildCycle(move,catId){
   const peak=Object.assign({},DEFAULT,move.p);
   if(catId==='golpes'){
     const gather=LINEAR.has(move.t)?chamberFwd(move.hi):windLow(move.hi);
-    return [ {pose:peak,dur:0},{pose:READY,dur:300},{pose:gather,dur:210},{pose:peak,dur:120},{pose:peak,dur:150} ];
+    return[{pose:peak,dur:0},{pose:READY,dur:300},{pose:gather,dur:210},{pose:peak,dur:120},{pose:peak,dur:150}];
   }
   if(move.n==='Aú'){
-    const entry={ head:[80,62],shoulder:[72,66],hip:[58,72], elbowL:[66,86],handL:[78,104], elbowR:[80,94],handR:[94,118], kneeL:[44,46],footL:[32,26], kneeR:[58,106],footR:[60,138], headR:9 };
+    const entry={head:[80,62],shoulder:[72,66],hip:[58,72],elbowL:[66,86],handL:[78,104],elbowR:[80,94],handR:[94,118],kneeL:[44,46],footL:[32,26],kneeR:[58,106],footR:[60,138],headR:9};
     const exit=mirror(entry);
-    return [ {pose:peak,dur:0},{pose:exit,dur:260},{pose:STAND,dur:200},{pose:entry,dur:200},{pose:peak,dur:260} ];
+    return[{pose:peak,dur:0},{pose:exit,dur:260},{pose:STAND,dur:200},{pose:entry,dur:200},{pose:peak,dur:260}];
   }
-  return [ {pose:peak,dur:0},{pose:STAND,dur:360},{pose:peak,dur:340},{pose:peak,dur:220} ];
+  return[{pose:peak,dur:0},{pose:STAND,dur:360},{pose:peak,dur:340},{pose:peak,dur:220}];
+}
+
+/* ginga joint mapping → figure engine */
+function gingaToFig(f){
+  const mid=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
+  return{head:f.head,headR:8,shoulder:mid(f.shoulderL,f.shoulderR),hip:mid(f.hipL,f.hipR),
+    elbowL:f.elbowL,handL:f.handL,elbowR:f.elbowR,handR:f.handR,
+    kneeL:f.kneeL,footL:f.footL,kneeR:f.kneeR,footR:f.footR};
 }
 
 /* ============================================================
@@ -217,247 +269,459 @@ const STORE='roda.studio.v1';
 const $=s=>document.querySelector(s);
 
 const STR={
-  pt:{tag:'Arraste as articulações para corrigir cada figura e descreva como o movimento deve ser.',
-    import:'Importar', export:'Exportar correções', play:'▶ Tocar movimento', stop:'■ Parar',
-    ghostHint:'tom claro = original', statusL:'Estado desta figura', stGood:'Está boa',
-    stWork:'Precisa ajuste', stDone:'Corrigida', hiL:'Membro em destaque (a ação)', hiNone:'nenhum',
-    noteL:'Como deve ser? (descreva o que está errado)',
-    notePh:'ex.: a perna do golpe deve subir mais alto, ponta do pé esticada; o joelho de apoio mais flexionado…',
-    reset:'↺ Original', mirror:'⇆ Espelhar', copyP:'Copiar p:{}', reviewed:'revisados',
-    edited:'figura editada', copied:'copiado ✓', exported:'correções exportadas ✓',
-    imported:'correções importadas ✓', gingaLink:'Editar a ginga →'},
-  en:{tag:'Drag the joints to fix each figure, and describe how the move should look.',
-    import:'Import', export:'Export corrections', play:'▶ Play move', stop:'■ Stop',
-    ghostHint:'faint = original', statusL:'Status of this figure', stGood:'Looks good',
-    stWork:'Needs work', stDone:'Corrected', hiL:'Highlighted limb (the action)', hiNone:'none',
-    noteL:'How should it look? (describe what is wrong)',
-    notePh:'e.g. the kicking leg should rise higher, toes pointed; the supporting knee more bent…',
-    reset:'↺ Original', mirror:'⇆ Mirror', copyP:'Copy p:{}', reviewed:'reviewed',
-    edited:'figure edited', copied:'copied ✓', exported:'corrections exported ✓',
-    imported:'corrections imported ✓', gingaLink:'Edit the ginga →'}
+  pt:{tag:'Arraste as articulações para corrigir cada figura e descreva como deve ser.',
+    import:'Importar',export:'Exportar',play:'▶ Tocar',stop:'■ Parar',
+    ghostHint:'tom claro = original do frame',statusL:'Estado',stGood:'Está boa',
+    stWork:'Precisa ajuste',stDone:'Corrigida',hiL:'Membro em destaque',hiNone:'nenhum',
+    noteL:'Como deve ser?',notePh:'ex.: a perna do golpe deve subir mais alto, ponta do pé esticada…',
+    reset:'↺ Tudo',mirror:'⇆ Espelhar',copyP:'Copiar p:{}',reviewed:'revisados',
+    edited:'frame editado',copied:'copiado ✓',exported:'exportado ✓',imported:'importado ✓',
+    gingaLink:'Editar ginga →',resetFrame:'↺ Frame',labelEdited:'Editado',labelOrig:'Original'},
+  en:{tag:'Drag the joints to fix each figure and describe how the move should look.',
+    import:'Import',export:'Export',play:'▶ Play',stop:'■ Stop',
+    ghostHint:'faint = original frame',statusL:'Status',stGood:'Looks good',
+    stWork:'Needs work',stDone:'Corrected',hiL:'Highlighted limb',hiNone:'none',
+    noteL:'How should it look?',notePh:'e.g. the kicking leg should rise higher, toes pointed…',
+    reset:'↺ Reset all',mirror:'⇆ Mirror',copyP:'Copy p:{}',reviewed:'reviewed',
+    edited:'frame edited',copied:'copied ✓',exported:'exported ✓',imported:'imported ✓',
+    gingaLink:'Edit ginga →',resetFrame:'↺ Frame',labelEdited:'Edited',labelOrig:'Original'}
 };
 const HI_PT={'':'nenhum',legR:'perna direita',legL:'perna esquerda',armR:'braço direito',armL:'braço esquerdo'};
 const HI_EN={'':'none',legR:'right leg',legL:'left leg',armR:'right arm',armL:'left arm'};
 
 let LANG=localStorage.getItem('roda.studio.lang')||'pt';
-let edits=loadEdits();           // { [moveName]: {p, hi, status, note} }
-let MOVES=[], byName={};
-let cur=null, playing=false, rafId=0, dragging=null;
+let edits=loadEdits();
+let MOVES=[],byName={};
+let cur=null,curFrame=0,playing=false,rafId=0,dragging=null;
+const baseCycles={};  // cached original cycles keyed by move name
 
-function loadEdits(){ try{return JSON.parse(localStorage.getItem(STORE))||{};}catch(e){return {};} }
-function saveEdits(){ try{localStorage.setItem(STORE,JSON.stringify(edits));}catch(e){} }
+function loadEdits(){try{return JSON.parse(localStorage.getItem(STORE))||{};}catch(e){return{};}}
+function saveEdits(){try{localStorage.setItem(STORE,JSON.stringify(edits));}catch(e){}}
 
-// flatten groups -> moves with catId/catTitle attached
 (window.RODA_MOVES||[]).forEach(g=>{
-  g.moves.forEach(m=>{ const mm={...m,catId:g.id,catTitle:g.title}; MOVES.push(mm); byName[m.n]=mm; });
+  g.moves.forEach(m=>{const mm={...m,catId:g.id,catTitle:g.title};MOVES.push(mm);byName[m.n]=mm;});
 });
 
-function ed(name){ return edits[name] || (edits[name]={}); }
-function basePose(m){ return Object.assign({},DEFAULT,m.p); }
-function workPose(m){ const e=edits[m.n]; return e&&e.p ? Object.assign({},DEFAULT,e.p) : basePose(m); }
-function workHi(m){ const e=edits[m.n]; return e&&e.hi!==undefined ? e.hi : (m.hi||''); }
+/* synthetic ginga entry */
+const GINGA_ENTRY={n:'Ginga',g:'o movimento base',d:'O balanceio fundamental da capoeira — todos os ataques e esquivas nascem dele.',catId:'__ginga',catTitle:'Ginga',type:'ginga'};
+byName['Ginga']=GINGA_ENTRY;
 
-/* ---------- left list ---------- */
+function ed(name){return edits[name]||(edits[name]={});}
+function basePose(m){return Object.assign({},DEFAULT,m.p);}
+function workPose(m){const e=edits[m.n];return e&&e.p?Object.assign({},DEFAULT,e.p):basePose(m);}
+function workHi(m){const e=edits[m.n];return e&&e.hi!==undefined?e.hi:(m.hi||'');}
+
+function getBaseCycle(m){
+  if(!baseCycles[m.n])baseCycles[m.n]=buildCycle({...m,p:basePose(m)},m.catId);
+  return baseCycles[m.n];
+}
+/* returns the pose for frame i — edited override or original cycle frame */
+function workFrame(name,i){
+  const e=edits[name];
+  if(e&&e.frames&&e.frames[i])return e.frames[i];
+  const m=byName[name];
+  if(!m||m.type==='ginga')return null;
+  return getBaseCycle(m)[i]?.pose||null;
+}
+function hasFrameEdit(name,i){const e=edits[name];return!!(e&&e.frames&&e.frames[i]);}
+
+/* ---- collapsible list ---- */
+const collapsed=new Set();
+
 function buildList(){
-  const box=$('#list'); box.innerHTML='';
+  const box=$('#list');box.innerHTML='';
+
+  /* ginga section */
+  const gh=document.createElement('div');gh.className='grp';gh.dataset.cat='__ginga';
+  gh.innerHTML='Ginga <span class="arr">▾</span>';
+  gh.onclick=()=>toggleCat('__ginga');
+  box.appendChild(gh);
+  const midFrame=GINGA?(gingaToFig(GINGA.frames[Math.floor(GINGA.frames.length/3)])):{};
+  const gr=document.createElement('div');gr.className='row';gr.dataset.name='Ginga';gr.dataset.cat='__ginga';
+  gr.innerHTML=`<svg viewBox="0 0 120 160">${fig(midFrame,null)}</svg><div><div class="nm">Ginga</div><div class="gl">${GINGA_ENTRY.g}</div></div><span class="st"></span>`;
+  gr.onclick=()=>select('Ginga');
+  box.appendChild(gr);
+
+  /* move categories */
   let lastCat=null;
-  MOVES.forEach((m,i)=>{
-    if(m.catId!==lastCat){ lastCat=m.catId; const h=document.createElement('div'); h.className='grp'; h.textContent=m.catTitle; box.appendChild(h); }
+  MOVES.forEach(m=>{
+    if(m.catId!==lastCat){
+      lastCat=m.catId;
+      const h=document.createElement('div');h.className='grp'+(collapsed.has(m.catId)?' collapsed':'');h.dataset.cat=m.catId;
+      h.innerHTML=`${m.catTitle} <span class="arr">▾</span>`;
+      h.onclick=()=>toggleCat(m.catId);
+      box.appendChild(h);
+    }
     const e=edits[m.n]||{};
-    const r=document.createElement('div'); r.className='row'; r.dataset.name=m.n;
-    r.innerHTML=`<svg viewBox="0 0 120 160">${fig(workPose(m),workHi(m))}</svg>
-      <div><div class="nm">${m.n}</div><div class="gl">${m.g}</div></div>
-      <span class="st ${e.status||''}"></span>`;
+    const r=document.createElement('div');r.className='row';r.dataset.name=m.n;r.dataset.cat=m.catId;
+    if(collapsed.has(m.catId))r.style.display='none';
+    r.innerHTML=`<svg viewBox="0 0 120 160">${fig(workPose(m),workHi(m))}</svg><div><div class="nm">${m.n}</div><div class="gl">${m.g}</div></div><span class="st ${e.status||''}"></span>`;
     r.onclick=()=>select(m.n);
     box.appendChild(r);
   });
 }
+
+function toggleCat(catId){
+  const grpEl=$(`.grp[data-cat="${catId}"]`);
+  const rows=document.querySelectorAll(`.row[data-cat="${catId}"]`);
+  if(collapsed.has(catId)){
+    collapsed.delete(catId);grpEl&&grpEl.classList.remove('collapsed');
+    rows.forEach(r=>r.style.display='');
+  }else{
+    collapsed.add(catId);grpEl&&grpEl.classList.add('collapsed');
+    rows.forEach(r=>r.style.display='none');
+  }
+}
+
 function refreshRow(name){
-  const r=$(`.row[data-name="${cssEsc(name)}"]`); if(!r) return;
-  const m=byName[name], e=edits[name]||{};
+  const r=$(`.row[data-name="${cssEsc(name)}"]`);if(!r)return;
+  const m=byName[name];if(!m||m.type==='ginga')return;
+  const e=edits[name]||{};
   r.querySelector('svg').innerHTML=fig(workPose(m),workHi(m));
   r.querySelector('.st').className='st '+(e.status||'');
 }
 const cssEsc=s=>s.replace(/"/g,'\\"');
 
-/* ---------- grid ---------- */
+/* ---- grid ---- */
 function drawGrid(){
-  const g=$('#grid'); let s='';
-  for(let x=0;x<=120;x+=20) s+=`<line x1="${x}" y1="0" x2="${x}" y2="160"/>`;
-  for(let y=0;y<=160;y+=20) s+=`<line x1="0" y1="${y}" x2="120" y2="${y}"/>`;
+  const g=$('#grid');let s='';
+  for(let x=0;x<=120;x+=20)s+=`<line x1="${x}" y1="0" x2="${x}" y2="160"/>`;
+  for(let y=0;y<=160;y+=20)s+=`<line x1="0" y1="${y}" x2="120" y2="${y}"/>`;
   g.innerHTML=s;
 }
 
-/* ---------- render center ---------- */
+/* ---- frame strip ---- */
+function buildFrameStrip(m){
+  const strip=$('#frameStrip');
+  if(!m){strip.innerHTML='';return;}
+
+  if(m.type==='ginga'){
+    const frames=GINGA.frames;
+    const step=Math.max(1,Math.ceil(frames.length/20));
+    let html='';
+    for(let i=0;i<frames.length;i+=step){
+      html+=`<div class="frame-thumb" data-ginga="${i}">
+        <svg viewBox="0 0 120 160" width="34" height="45">${fig(gingaToFig(frames[i]),null)}</svg>
+        <div class="frame-lbl">${i}</div></div>`;
+    }
+    strip.innerHTML=html;
+    strip.querySelectorAll('.frame-thumb').forEach(el=>{
+      el.addEventListener('click',()=>{
+        stop();
+        const idx=+el.dataset.ginga;
+        strip.querySelectorAll('.frame-thumb').forEach(t=>t.classList.remove('sel'));
+        el.classList.add('sel');
+        $('#ghost').innerHTML='';
+        $('#fig').innerHTML=fig(gingaToFig(GINGA.frames[idx]),null);
+      });
+    });
+    return;
+  }
+
+  const cycle=getBaseCycle(m);
+  const hi=workHi(m);
+  const labels=['peak',...cycle.slice(1).map((_,i)=>`f${i+1}`)];
+  strip.innerHTML=cycle.map((f,i)=>{
+    const pose=workFrame(m.n,i)||f.pose;
+    const edited=hasFrameEdit(m.n,i);
+    return`<div class="frame-thumb ${i===curFrame?'sel':''} ${edited?'edited':''}" data-frame="${i}">
+      <svg viewBox="0 0 120 160" width="42" height="56">${fig(pose,i===curFrame?hi:null)}</svg>
+      <div class="frame-lbl">${labels[i]}</div></div>`;
+  }).join('');
+  strip.querySelectorAll('.frame-thumb').forEach(el=>{
+    el.addEventListener('click',()=>selectFrame(+el.dataset.frame));
+  });
+}
+
+function selectFrame(i){
+  curFrame=i;buildFrameStrip(cur);render();
+  // sync headR slider to this frame's pose
+  const pose=workFrame(cur.n,i)||getBaseCycle(cur)[i].pose;
+  $('#headR').value=pose?.headR||workPose(cur).headR||9;
+}
+
+/* ---- render center ---- */
 function render(){
-  if(!cur) return;
-  const m=cur, wp=workPose(m), hi=workHi(m);
-  $('#ghost').innerHTML=fig(basePose(m),null);
-  $('#fig').innerHTML=fig(wp,hi);
-  const H=$('#handles'); H.innerHTML='';
-  if(playing) return;
+  if(!cur||cur.type==='ginga')return;
+  const cycle=getBaseCycle(cur);
+  const fi=Math.min(curFrame,cycle.length-1);
+  const origPose=cycle[fi].pose;
+  const editPose=workFrame(cur.n,fi)||origPose;
+  const hi=workHi(cur);
+  $('#ghost').innerHTML=fig(origPose,null);
+  $('#fig').innerHTML=fig(editPose,hi);
+  const H=$('#handles');H.innerHTML='';
+  if(playing)return;
   JOINTS.forEach(j=>{
+    const pos=editPose[j]||DEFAULT[j];
     const c=document.createElementNS(SVGNS,'circle');
-    c.setAttribute('cx',wp[j][0]); c.setAttribute('cy',wp[j][1]); c.setAttribute('r',3.6);
-    c.setAttribute('class','handle'+(dragging===j?' drag':'')); c.dataset.j=j;
+    c.setAttribute('cx',pos[0]);c.setAttribute('cy',pos[1]);c.setAttribute('r',3.6);
+    c.setAttribute('class','handle'+(dragging===j?' drag':''));c.dataset.j=j;
     H.appendChild(c);
   });
 }
 
-/* ---------- select a move ---------- */
+/* ---- select ---- */
 function select(name){
   stop();
-  cur=byName[name];
+  cur=byName[name];curFrame=0;
   document.querySelectorAll('.row').forEach(r=>r.classList.toggle('active',r.dataset.name===name));
-  const t=STR[LANG];
   $('#mvName').textContent=name;
-  $('#mvGloss').textContent=cur.g;
+  $('#mvGloss').textContent=cur.g||'';
   $('#mvDesc').textContent=cur.d||'';
+  $('#pcode').style.display='none';
+  buildFrameStrip(cur);
+
+  if(cur.type==='ginga'){
+    $('#hiSel').value='';$('#note').value='';$('#headR').value=9;
+    clearStatus();
+    playGinga();updateEdited();return;
+  }
+
   $('#hiSel').value=workHi(cur);
   $('#note').value=(edits[name]&&edits[name].note)||'';
-  $('#headR').value=workPose(cur).headR||9;
+  const fp=workFrame(name,0)||workPose(cur);
+  $('#headR').value=fp.headR||9;
   syncStatusButtons();
-  $('#pcode').style.display='none';
-  render(); updateEdited();
+  render();updateEdited();
 }
+
 function syncStatusButtons(){
   const st=(edits[cur.n]||{}).status||'';
   document.querySelectorAll('#statusRow button').forEach(b=>b.classList.toggle('on',b.dataset.s===st));
 }
+function clearStatus(){document.querySelectorAll('#statusRow button').forEach(b=>b.classList.remove('on'));}
+
 function updateEdited(){
-  const e=edits[cur.n]||{};
-  $('#edited').textContent = e.p ? STR[LANG].edited : '';
+  const e=edits[cur?.n]||{};
+  const any=e.p||(e.frames&&Object.keys(e.frames).length);
+  $('#edited').textContent=any?STR[LANG].edited:'';
   renderProg();
 }
 function renderProg(){
-  const n=Object.values(edits).filter(e=>e&&(e.status||e.p||e.note)).length;
+  const n=Object.values(edits).filter(e=>e&&(e.status||e.p||e.note||(e.frames&&Object.keys(e.frames).length))).length;
   $('#prog').innerHTML=`<b>${n}</b>/${MOVES.length} ${STR[LANG].reviewed}`;
 }
 
-/* ---------- editing ---------- */
+/* ---- editing ---- */
 function svgPt(evt){
-  const svg=$('#svg'); const pt=svg.createSVGPoint();
-  pt.x=evt.clientX; pt.y=evt.clientY;
+  const svg=$('#svg');const pt=svg.createSVGPoint();
+  pt.x=evt.clientX;pt.y=evt.clientY;
   const m=pt.matrixTransform(svg.getScreenCTM().inverse());
-  return [Math.max(0,Math.min(120,m.x)), Math.max(0,Math.min(160,m.y))];
+  return[Math.max(0,Math.min(120,m.x)),Math.max(0,Math.min(160,m.y))];
 }
 function setJoint(j,xy){
+  if(!cur||cur.type==='ginga')return;
   const e=ed(cur.n);
-  if(!e.p) e.p=clone(workPose(cur));        // start from current peak (incl. DEFAULT fill)
-  e.p[j]=[Math.round(xy[0]*10)/10, Math.round(xy[1]*10)/10];
-  saveEdits(); render(); refreshRow(cur.n); updateEdited(); refreshPcode();
+  if(!e.frames)e.frames={};
+  const fi=curFrame;
+  if(!e.frames[fi])e.frames[fi]=clone(workFrame(cur.n,fi)||getBaseCycle(cur)[fi].pose);
+  e.frames[fi][j]=[Math.round(xy[0]*10)/10,Math.round(xy[1]*10)/10];
+  if(fi===0)e.p=clone(e.frames[0]); // keep e.p in sync for backward compat
+  saveEdits();render();refreshRow(cur.n);updateEdited();refreshPcode();
+  buildFrameStrip(cur);
 }
 $('#svg').addEventListener('pointerdown',e=>{
-  if(playing) return;
-  const t=e.target; if(!t.dataset || !t.dataset.j) return;
-  dragging=t.dataset.j; t.setPointerCapture(e.pointerId); t.classList.add('drag');
+  if(playing)return;
+  const t=e.target;if(!t.dataset||!t.dataset.j)return;
+  dragging=t.dataset.j;t.setPointerCapture(e.pointerId);t.classList.add('drag');
 });
-$('#svg').addEventListener('pointermove',e=>{ if(dragging){ setJoint(dragging,svgPt(e)); } });
-$('#svg').addEventListener('pointerup',e=>{ dragging=null; render(); });
-$('#svg').addEventListener('pointercancel',()=>{ dragging=null; render(); });
+$('#svg').addEventListener('pointermove',e=>{if(dragging)setJoint(dragging,svgPt(e));});
+$('#svg').addEventListener('pointerup',()=>{dragging=null;render();});
+$('#svg').addEventListener('pointercancel',()=>{dragging=null;render();});
 
-$('#headR').oninput=()=>{ if(!cur) return; const e=ed(cur.n); if(!e.p) e.p=clone(workPose(cur)); e.p.headR=parseFloat($('#headR').value); saveEdits(); render(); refreshRow(cur.n); updateEdited(); refreshPcode(); };
-
-$('#hiSel').onchange=()=>{ if(!cur) return; ed(cur.n).hi=$('#hiSel').value; saveEdits(); render(); refreshRow(cur.n); refreshPcode(); };
-$('#note').oninput=()=>{ if(!cur) return; ed(cur.n).note=$('#note').value; saveEdits(); renderProg(); };
+$('#headR').oninput=()=>{
+  if(!cur||cur.type==='ginga')return;
+  const e=ed(cur.n);if(!e.frames)e.frames={};
+  const fi=curFrame;
+  if(!e.frames[fi])e.frames[fi]=clone(workFrame(cur.n,fi)||getBaseCycle(cur)[fi].pose);
+  e.frames[fi].headR=parseFloat($('#headR').value);
+  if(fi===0)e.p=clone(e.frames[0]);
+  saveEdits();render();refreshRow(cur.n);updateEdited();refreshPcode();
+};
+$('#hiSel').onchange=()=>{
+  if(!cur)return;ed(cur.n).hi=$('#hiSel').value;saveEdits();render();refreshRow(cur.n);refreshPcode();buildFrameStrip(cur);
+};
+$('#note').oninput=()=>{if(!cur)return;ed(cur.n).note=$('#note').value;saveEdits();renderProg();};
 document.querySelectorAll('#statusRow button').forEach(b=>{
-  b.onclick=()=>{ const e=ed(cur.n); e.status=(e.status===b.dataset.s)?'':b.dataset.s; saveEdits(); syncStatusButtons(); refreshRow(cur.n); renderProg(); };
+  b.onclick=()=>{const e=ed(cur.n);e.status=(e.status===b.dataset.s)?'':b.dataset.s;saveEdits();syncStatusButtons();refreshRow(cur.n);renderProg();};
 });
-$('#reset').onclick=()=>{ if(!cur) return; const e=edits[cur.n]; if(e){ delete e.p; delete e.hi; } saveEdits(); $('#hiSel').value=cur.hi||''; $('#headR').value=(cur.p&&cur.p.headR)||9; render(); refreshRow(cur.n); updateEdited(); refreshPcode(); };
-$('#mirror').onclick=()=>{ if(!cur) return; const e=ed(cur.n); e.p=mirror(workPose(cur)); const h=workHi(cur); if(h) e.hi=h.replace(/L$/,'X').replace(/R$/,'L').replace(/X$/,'R'); saveEdits(); $('#hiSel').value=workHi(cur); render(); refreshRow(cur.n); updateEdited(); refreshPcode(); };
 
-/* ---------- p:{} code ---------- */
+$('#resetFrame').onclick=()=>{
+  if(!cur||cur.type==='ginga')return;
+  const e=edits[cur.n];
+  if(e&&e.frames&&e.frames[curFrame]){
+    delete e.frames[curFrame];
+    if(curFrame===0&&e.p)delete e.p;
+    saveEdits();
+  }
+  const fp=getBaseCycle(cur)[curFrame]?.pose;
+  if(fp)$('#headR').value=fp.headR||9;
+  buildFrameStrip(cur);render();updateEdited();refreshPcode();refreshRow(cur.n);
+};
+$('#reset').onclick=()=>{
+  if(!cur)return;
+  const e=edits[cur.n];if(e){delete e.p;delete e.hi;delete e.frames;}
+  saveEdits();$('#hiSel').value=cur.hi||'';$('#headR').value=(cur.p&&cur.p.headR)||9;
+  buildFrameStrip(cur);render();refreshRow(cur.n);updateEdited();refreshPcode();
+};
+$('#mirror').onclick=()=>{
+  if(!cur||cur.type==='ginga')return;
+  const e=ed(cur.n);const fi=curFrame;
+  const orig=workFrame(cur.n,fi)||getBaseCycle(cur)[fi].pose;
+  if(!e.frames)e.frames={};
+  e.frames[fi]=mirror(orig);
+  if(fi===0)e.p=clone(e.frames[0]);
+  const h=workHi(cur);if(h)e.hi=h.replace(/L$/,'X').replace(/R$/,'L').replace(/X$/,'R');
+  saveEdits();$('#hiSel').value=workHi(cur);buildFrameStrip(cur);render();refreshRow(cur.n);updateEdited();refreshPcode();
+};
+
+/* ---- p:{} code ---- */
 function poseToCode(m){
-  const wp=workPose(m), hi=workHi(m);
+  const wp=workFrame(m.n,0)||workPose(m),hi=workHi(m);
   const order=['head','shoulder','hip','kneeL','footL','elbowL','handL','elbowR','handR','kneeR','footR'];
   const parts=order.map(k=>`${k}:[${+wp[k][0].toFixed(1)},${+wp[k][1].toFixed(1)}]`);
-  if((wp.headR||9)!==9) parts.push(`headR:${+(+wp.headR).toFixed(1)}`);
-  let s=`p:{${parts.join(',')}}`; if(hi) s+=`,hi:'${hi}'`;
+  if((wp.headR||9)!==9)parts.push(`headR:${+(+wp.headR).toFixed(1)}`);
+  let s=`p:{${parts.join(',')}}`;if(hi)s+=`,hi:'${hi}'`;
   return s;
 }
-function refreshPcode(){ const pc=$('#pcode'); if(pc.style.display!=='none') pc.textContent=poseToCode(cur); }
-$('#copyP').onclick=()=>{ if(!cur) return; const code=poseToCode(cur); $('#pcode').style.display='block'; $('#pcode').textContent=code;
-  navigator.clipboard&&navigator.clipboard.writeText(code).then(()=>toast(STR[LANG].copied)).catch(()=>{}); };
+function refreshPcode(){const pc=$('#pcode');if(pc.style.display!=='none')pc.textContent=cur&&cur.type!=='ginga'?poseToCode(cur):'';}
+$('#copyP').onclick=()=>{
+  if(!cur||cur.type==='ginga')return;
+  const code=poseToCode(cur);$('#pcode').style.display='block';$('#pcode').textContent=code;
+  navigator.clipboard&&navigator.clipboard.writeText(code).then(()=>toast(STR[LANG].copied)).catch(()=>{});
+};
 
-/* ---------- play ---------- */
-function play(){
-  if(!cur) return; playing=true; $('#play').textContent=STR[LANG].stop; $('#handles').innerHTML='';
-  const m={...cur,p:workPose(cur),hi:workHi(cur)};
-  const frames=buildCycle(m,cur.catId);
-  const cycle=frames.reduce((s,f,i)=>s+(i?f.dur:0),0);
-  const t0=performance.now();
-  const loop=(ts)=>{
-    if(!playing) return;
-    let tt=((ts-t0)%cycle), acc=0, pose=frames[0].pose;
-    for(let i=0;i<frames.length-1;i++){ const d=frames[i+1].dur;
-      if(tt<acc+d||i===frames.length-2){ pose=lerpPose(frames[i].pose,frames[i+1].pose,easeInOut(Math.min(1,(tt-acc)/d))); break; } acc+=d; }
-    $('#fig').innerHTML=fig(pose,m.hi);
+/* ---- play ---- */
+function playGinga(){
+  playing=true;$('#play').textContent=STR[LANG].stop;$('#handles').innerHTML='';
+  const frames=GINGA.frames,ms=GINGA.frameMs,total=frames.length*ms,t0=performance.now();
+  const loop=ts=>{
+    if(!playing)return;
+    const idx=Math.floor(((ts-t0)%total)/ms)%frames.length;
+    $('#ghost').innerHTML='';$('#fig').innerHTML=fig(gingaToFig(frames[idx]),null);
     rafId=requestAnimationFrame(loop);
   };
   rafId=requestAnimationFrame(loop);
 }
-function stop(){ playing=false; if(rafId)cancelAnimationFrame(rafId); $('#play').textContent=STR[LANG].play; if(cur) render(); }
-$('#play').onclick=()=>{ playing?stop():play(); };
 
-/* ---------- export / import ---------- */
+function play(){
+  if(!cur)return;
+  if(cur.type==='ginga'){playGinga();return;}
+  playing=true;$('#play').textContent=STR[LANG].stop;$('#handles').innerHTML='';
+
+  const origCycle=getBaseCycle(cur);
+  const editedCycle=origCycle.map((f,i)=>({pose:workFrame(cur.n,i)||f.pose,dur:f.dur}));
+  const totalMs=editedCycle.reduce((s,f,i)=>s+(i?f.dur:0),0);
+  const hi=workHi(cur);
+
+  /* show original comparison if there are any frame edits */
+  const hasEdits=Object.values(edits[cur.n]?.frames||{}).length||edits[cur.n]?.p;
+  if(hasEdits){
+    $('#origWrap').classList.add('show');
+    $('#editWrap').classList.add('split');
+    $('#canvases').classList.add('comparing');
+  }
+
+  const t0=performance.now();
+  const loop=ts=>{
+    if(!playing)return;
+    let tt=(ts-t0)%totalMs,acc=0,ep=editedCycle[0].pose,op=origCycle[0].pose;
+    for(let i=0;i<editedCycle.length-1;i++){
+      const d=editedCycle[i+1].dur;
+      if(tt<acc+d||i===editedCycle.length-2){
+        const t=easeInOut(Math.min(1,(tt-acc)/d));
+        ep=lerpPose(editedCycle[i].pose,editedCycle[i+1].pose,t);
+        op=lerpPose(origCycle[i].pose,origCycle[i+1].pose,t);
+        break;
+      }
+      acc+=d;
+    }
+    $('#fig').innerHTML=fig(ep,hi);
+    $('#origFig').innerHTML=fig(op,hi);
+    rafId=requestAnimationFrame(loop);
+  };
+  rafId=requestAnimationFrame(loop);
+}
+
+function stop(){
+  playing=false;if(rafId){cancelAnimationFrame(rafId);rafId=0;}
+  $('#play').textContent=STR[LANG].play;
+  $('#origWrap').classList.remove('show');
+  $('#editWrap').classList.remove('split');
+  $('#canvases').classList.remove('comparing');
+  if(cur&&cur.type!=='ginga')render();
+}
+$('#play').onclick=()=>playing?stop():play();
+
+/* ---- export / import ---- */
 function buildExport(){
-  const out={_meta:{tool:'roda-studio',version:1,date:new Date().toISOString()},moves:{}};
-  for(const [name,e] of Object.entries(edits)){
-    if(!e||(!e.p&&!e.hi&&!e.status&&!e.note)) continue;
+  const out={_meta:{tool:'roda-studio',version:2,date:new Date().toISOString()},moves:{}};
+  for(const[name,e]of Object.entries(edits)){
+    if(!e||(!e.p&&!e.hi&&!e.status&&!e.note&&!(e.frames&&Object.keys(e.frames).length)))continue;
     const rec={};
-    if(e.status) rec.status=e.status;
-    if(e.note) rec.note=e.note;
-    if(e.p){ rec.p=e.p; rec.code=poseToCode(byName[name]); }
-    if(e.hi!==undefined) rec.hi=e.hi;
+    if(e.status)rec.status=e.status;if(e.note)rec.note=e.note;
+    if(e.p){rec.p=e.p;rec.code=poseToCode(byName[name]);}
+    if(e.hi!==undefined)rec.hi=e.hi;
+    if(e.frames&&Object.keys(e.frames).length)rec.frames=e.frames;
     out.moves[name]=rec;
   }
   return out;
 }
 $('#exportBtn').onclick=()=>{
   const blob=new Blob([JSON.stringify(buildExport(),null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='roda-corrections.json'; a.click(); toast(STR[LANG].exported);
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='roda-corrections.json';a.click();toast(STR[LANG].exported);
 };
 $('#importBtn').onclick=()=>$('#file').click();
 $('#file').onchange=e=>{
-  const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
-  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); const mv=d.moves||d;
-    for(const [name,rec] of Object.entries(mv)){ if(!byName[name]) continue;
-      const e=ed(name); if(rec.p)e.p=rec.p; if(rec.hi!==undefined)e.hi=rec.hi; if(rec.status)e.status=rec.status; if(rec.note)e.note=rec.note; }
-    saveEdits(); buildList(); if(cur)select(cur.n); toast(STR[LANG].imported);
-  }catch(err){ alert('JSON inválido / invalid JSON'); } };
-  rd.readAsText(f); e.target.value='';
+  const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{try{
+    const d=JSON.parse(rd.result);const mv=d.moves||d;
+    for(const[name,rec]of Object.entries(mv)){if(!byName[name])continue;
+      const e=ed(name);
+      if(rec.p)e.p=rec.p;if(rec.hi!==undefined)e.hi=rec.hi;if(rec.status)e.status=rec.status;
+      if(rec.note)e.note=rec.note;if(rec.frames)e.frames=rec.frames;}
+    saveEdits();buildList();if(cur)select(cur.n);toast(STR[LANG].imported);
+  }catch(err){alert('JSON inválido / invalid JSON');}};
+  rd.readAsText(f);e.target.value='';
 };
 
-/* ---------- toast ---------- */
+/* ---- toast ---- */
 let toT;
-function toast(msg){ let el=$('#toast'); if(!el){ el=document.createElement('div'); el.id='toast'; el.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--gold);color:#1a130a;font-weight:700;padding:9px 16px;border-radius:10px;z-index:9;box-shadow:0 8px 24px rgba(0,0,0,.4)'; document.body.appendChild(el);} el.textContent=msg; el.style.opacity='1'; clearTimeout(toT); toT=setTimeout(()=>el.style.opacity='0',1400); }
+function toast(msg){let el=$('#toast');if(!el){el=document.createElement('div');el.id='toast';el.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--gold);color:#1a130a;font-weight:700;padding:9px 16px;border-radius:10px;z-index:9;box-shadow:0 8px 24px rgba(0,0,0,.4)';document.body.appendChild(el);}el.textContent=msg;el.style.opacity='1';clearTimeout(toT);toT=setTimeout(()=>el.style.opacity='0',1400);}
 
-/* ---------- language ---------- */
+/* ---- language ---- */
 function applyLang(){
-  document.documentElement.lang=LANG; const t=STR[LANG];
-  document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(t[k]!==undefined) el.textContent=t[k]; });
-  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(t[k]!==undefined) el.placeholder=t[k]; });
+  document.documentElement.lang=LANG;const t=STR[LANG];
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(t[k]!==undefined)el.textContent=t[k];});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{const k=el.getAttribute('data-i18n-ph');if(t[k]!==undefined)el.placeholder=t[k];});
   const hiMap=LANG==='pt'?HI_PT:HI_EN;
   [...$('#hiSel').options].forEach(o=>o.textContent=hiMap[o.value]);
   $('#play').textContent=playing?t.stop:t.play;
   document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('on',b.dataset.l===LANG));
-  if(cur){ $('#mvDesc').textContent=cur.d||''; } renderProg();
+  if(cur)$('#mvDesc').textContent=cur.d||'';
+  renderProg();
 }
-document.querySelectorAll('#lang button').forEach(b=>b.onclick=()=>{ LANG=b.dataset.l; localStorage.setItem('roda.studio.lang',LANG); applyLang(); });
+document.querySelectorAll('#lang button').forEach(b=>b.onclick=()=>{LANG=b.dataset.l;localStorage.setItem('roda.studio.lang',LANG);applyLang();});
 
-/* ---------- keyboard ---------- */
+/* ---- keyboard ---- */
 addEventListener('keydown',e=>{
-  if(/input|textarea|select/i.test(e.target.tagName)) return;
-  const idx=cur?MOVES.indexOf(cur):-1;
-  if(e.key==='ArrowDown'){ e.preventDefault(); select(MOVES[Math.min(MOVES.length-1,idx+1)].n); }
-  else if(e.key==='ArrowUp'){ e.preventDefault(); select(MOVES[Math.max(0,idx-1)].n); }
-  else if(e.key===' '){ e.preventDefault(); $('#play').click(); }
+  if(/input|textarea|select/i.test(e.target.tagName))return;
+  const all=[GINGA_ENTRY,...MOVES];
+  const idx=cur?all.findIndex(m=>m.n===cur.n):-1;
+  if(e.key==='ArrowDown'){e.preventDefault();if(idx<all.length-1)select(all[idx+1].n);}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(idx>0)select(all[idx-1].n);}
+  else if(e.key===' '){e.preventDefault();$('#play').click();}
+  else if(e.key==='ArrowRight'&&cur&&cur.type!=='ginga'){
+    const n=getBaseCycle(cur).length;selectFrame((curFrame+1)%n);
+  }else if(e.key==='ArrowLeft'&&cur&&cur.type!=='ginga'){
+    const n=getBaseCycle(cur).length;selectFrame((curFrame+n-1)%n);
+  }
 });
 
-/* ---------- init ---------- */
-drawGrid(); buildList(); applyLang();
-if(MOVES.length) select(MOVES[0].n);
+/* ---- init ---- */
+drawGrid();buildList();applyLang();
+if(MOVES.length)select(MOVES[0].n);
 </script>
 </body>
 </html>
