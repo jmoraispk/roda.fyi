@@ -135,10 +135,11 @@ def _qa_report(slug, variant, frames, fps):
     d = ImageDraw.Draw(sheet)
     for ci, fi in enumerate(idxs):
         p = frames[fi]; ox = ci * W
+        # Data is y-up; PIL raster y is down, so flip y (H - ...) to draw head-up.
         for chain in geom.BONES3D:
-            pts = [(ox + p[k][0] * (W / 120.0), p[k][1] * (H / 160.0)) for k in chain]
+            pts = [(ox + p[k][0] * (W / 120.0), H - p[k][1] * (H / 160.0)) for k in chain]
             d.line(pts, fill=(235, 166, 60), width=3)
-        hx = ox + p["head"][0] * (W / 120.0); hy = p["head"][1] * (H / 160.0)
+        hx = ox + p["head"][0] * (W / 120.0); hy = H - p["head"][1] * (H / 160.0)
         d.ellipse([hx - 7, hy - 7, hx + 7, hy + 7], fill=(230, 212, 178))
     out = os.path.join(SHOTS, f"mocap_{slug}_{variant}.png")
     sheet.save(out)
