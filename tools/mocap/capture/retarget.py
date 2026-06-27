@@ -36,7 +36,13 @@ def mp_world_to_roda(world33):
     out = np.zeros((len(geom.JOINTS3D), 3))
     for j, mp_name in _MAP.items():
         p = w[MP[mp_name]].copy()
-        p[1] = -p[1]              # MediaPipe world y is down -> up
+        # MediaPipe world is right-handed x=right, y=down, +z=away from camera.
+        # Roda is right-handed x=right, y=up, +z=toward viewer (matches figure3d's
+        # depth sort/tint, classify_facing, and the hand-authored static p3d poses),
+        # so flip BOTH y and z. Flipping y alone would leave a left-handed frame
+        # whose depth (and front/back facing) renders inverted.
+        p[1] = -p[1]
+        p[2] = -p[2]
         out[JI[j]] = p
     return out
 
@@ -121,13 +127,13 @@ def normalize_sequence(frames, pad_x=14.0, top=18.0, bottom=150.0, headR=9):
 
 
 @register
-def test_mp_mapping_shape_and_yflip():
+def test_mp_mapping_shape_and_yzflip():
     w = np.zeros((33, 3))
     w[MP["nose"]] = [1, 2, 3]
     w[MP["left_ankle"]] = [0, 5, 0]
     roda = mp_world_to_roda(w)
     assert roda.shape == (13, 3)
-    assert list(roda[JI["head"]]) == [1, -2, 3]   # y flipped
+    assert list(roda[JI["head"]]) == [1, -2, -3]   # y down->up and z away->toward-viewer
     assert roda[JI["footL"]][1] == -5
 
 

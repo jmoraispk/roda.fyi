@@ -49,7 +49,7 @@ def decode_frames(path, sample_fps, max_w):
     cmd = ["ffmpeg", "-v", "error", "-i", path, "-vf",
            f"fps={sample_fps},scale={ow}:{oh}", "-f", "rawvideo",
            "-pix_fmt", "rgb24", "pipe:1"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     n = ow * oh * 3
     yield (ow, oh, dur)
     while True:
@@ -57,7 +57,11 @@ def decode_frames(path, sample_fps, max_w):
         if len(buf) < n:
             break
         yield np.frombuffer(buf, np.uint8).reshape(oh, ow, 3)
-    proc.stdout.close(); proc.wait()
+    proc.stdout.close()
+    proc.wait()
+    if proc.returncode:  # surface decode errors instead of silently truncating
+        err = proc.stderr.read().decode("utf-8", "replace") if proc.stderr else ""
+        raise RuntimeError(f"ffmpeg exited {proc.returncode} decoding {path}\n{err}")
 
 
 def ensure_model():
