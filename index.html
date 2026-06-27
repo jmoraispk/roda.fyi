@@ -867,6 +867,8 @@
 <!-- Motion-captured ginga keyframes (window.GINGA), generated offline by
      tools/mocap/extract_ginga.py from the Wikimedia "Ginga de dos" GIF. -->
 <script src="assets/ginga.keyframes.js"></script>
+<script src="assets/moves.extended.js"></script>
+<script src="assets/figure3d.js"></script>
 <script>
 /* ============================================================
    FIGURE ENGINE — athletic pictograms from a joint skeleton
@@ -1198,7 +1200,6 @@ cards.forEach((card,i)=>{
   card.addEventListener('mouseleave',leave);
   card.addEventListener('focus',enter);
   card.addEventListener('blur',leave);
-  card.addEventListener('click',()=>{ player.mode==='loop'?leave():enter(); });
   card._player=player;
 });
 
@@ -1752,7 +1753,7 @@ function showMove(slug) {
   curPage = 'movePage'; curWorld = 'moves';
   tabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.world==='moves')); });
   renderTitles();
-  history.replaceState(null, '', '#move/' + slug);
+  history.pushState(null, '', '#move/' + slug);
   window.scrollTo(0, 0);
 }
 
@@ -2301,7 +2302,5 @@ document.querySelectorAll('.lang .flag').forEach(b=>b.addEventListener('click',(
   else { showPage(HASH_PAGE[h] || 'lexicon', true); }
 })();
 </script>
-<script src="assets/moves.extended.js"></script>
-<script src="assets/figure3d.js"></script>
 </body>
 </html>
