@@ -185,7 +185,7 @@ function createFigure3D(canvas, source, opts) {
   if (anim) { play(); } else { render(); }
 
   return {
-    update: function(src) { setSource(src); startTs = 0; if (anim) { pause(); play(); } else render(); },
+    update: function(src) { pause(); setSource(src); startTs = 0; if (anim) { play(); } else render(); },
     setAnimation: function(a) { setSource(a); pause(); play(); },
     setVariant: function(name) {
       if (anim && opts.variants && opts.variants[name]) { setSource({ fps: anim.fps, frames: opts.variants[name], mirrorAxis: anim.mirrorAxis }); pause(); play(); }
