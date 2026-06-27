@@ -604,6 +604,10 @@
 #move3dCanvas{border-radius:16px;background:var(--card);border:1px solid var(--line);cursor:grab;touch-action:none}
 #move3dCanvas:active{cursor:grabbing}
 .move-3d-hint{font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;color:var(--muted-2);text-transform:uppercase}
+.move-3d-controls{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.move-3d-btn{font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;transition:.18s}
+.move-3d-btn:hover{color:var(--cream);border-color:var(--gold)}
+.move-3d-btn[aria-pressed=true]{color:var(--gold);border-color:var(--gold)}
 .move-sections{max-width:1100px;margin:40px auto;padding:0 40px 60px;display:flex;flex-direction:column;gap:32px}
 @media(max-width:680px){.move-sections{padding:0 20px 48px}}
 .move-sec-title{font-family:var(--display);font-weight:700;font-size:1.25rem;color:var(--cream);margin:0 0 16px}
@@ -855,6 +859,10 @@
     <div class="move-3d-wrap">
       <canvas id="move3dCanvas" width="320" height="380"></canvas>
       <div id="move-3d-hint" class="move-3d-hint">drag to rotate</div>
+      <div class="move-3d-controls">
+        <button class="move-3d-btn" id="moveSideBtn" type="button" aria-pressed="false" hidden>Mirror ⇄</button>
+        <button class="move-3d-btn" id="moveVariantBtn" type="button" hidden></button>
+      </div>
     </div>
   </div>
   <div class="move-sections">
@@ -918,6 +926,12 @@
 <script src="assets/ginga.keyframes.js"></script>
 <script src="assets/moves.extended.js"></script>
 <script src="assets/figure3d.js"></script>
+<!-- Captured 3D move animations (window.RODA_MOCAP), from tools/mocap/capture_moves.py. -->
+<script src="assets/moves3d/ginga.js"></script>
+<script src="assets/moves3d/bencao.js"></script>
+<script src="assets/moves3d/meia-lua-de-frente.js"></script>
+<script src="assets/moves3d/armada.js"></script>
+<script src="assets/moves3d/au.js"></script>
 <script>
 /* ============================================================
    FIGURE ENGINE — athletic pictograms from a joint skeleton
@@ -1778,20 +1792,57 @@ function renderMovePage(slug) {
     vidSec.hidden = false;
   } else { vidSec.hidden = true; }
 
-  // 3D viewer
+  // 3D viewer — prefer captured animation (window.RODA_MOCAP), fall back to static p3d.
   var canvas = document.getElementById('move3dCanvas');
   if (_figure3d) { _figure3d.destroy(); _figure3d = null; }
-  if (ext.p3d && typeof createFigure3D === 'function') {
+  var mocap = (typeof RODA_MOCAP !== 'undefined') ? RODA_MOCAP[slug] : null;
+  var sideBtn = document.getElementById('moveSideBtn');
+  var variantBtn = document.getElementById('moveVariantBtn');
+  if (mocap && mocap.variants && typeof createFigure3D === 'function') {
+    var firstVariant = mocap.variants['default'] ? 'default' : Object.keys(mocap.variants)[0];
+    _figure3d = createFigure3D(canvas,
+      { fps: mocap.fps, frames: mocap.variants[firstVariant], mirrorAxis: mocap.mirrorAxis },
+      { variants: mocap.variants });
+    if (sideBtn) {
+      sideBtn.hidden = false;
+      sideBtn.textContent = 'Mirror ⇄';
+      sideBtn.onclick = function () {
+        var s = _figure3d.getSide() === 'left' ? 'right' : 'left';
+        _figure3d.setSide(s);
+        sideBtn.setAttribute('aria-pressed', String(s === 'left'));
+      };
+    }
+    // aú-style start-position variants
+    var vnames = Object.keys(mocap.variants).filter(function (n) { return n !== 'default'; });
+    if (variantBtn && vnames.length > 1) {
+      variantBtn.hidden = false;
+      var vi = 0;
+      variantBtn.textContent = vnames[vi];
+      variantBtn.onclick = function () {
+        vi = (vi + 1) % vnames.length;
+        _figure3d.setVariant(vnames[vi]);
+        variantBtn.textContent = vnames[vi];
+      };
+    } else if (variantBtn) { variantBtn.hidden = true; }
+  } else if (ext.p3d && typeof createFigure3D === 'function') {
     _figure3d = createFigure3D(canvas, ext.p3d);
+    if (sideBtn) {
+      sideBtn.hidden = false; sideBtn.textContent = 'Mirror ⇄';
+      sideBtn.onclick = function () {
+        var s = _figure3d.getSide() === 'left' ? 'right' : 'left';
+        _figure3d.setSide(s);
+        sideBtn.setAttribute('aria-pressed', String(s === 'left'));
+      };
+    }
+    if (variantBtn) variantBtn.hidden = true;
   } else {
+    if (sideBtn) sideBtn.hidden = true;
+    if (variantBtn) variantBtn.hidden = true;
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#251C13';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = '12px Space Mono, monospace';
-    ctx.fillStyle = '#5c4a35';
-    ctx.textAlign = 'center';
-    ctx.fillText('3D pose coming soon', canvas.width/2, canvas.height/2);
+    ctx.fillStyle = '#251C13'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '12px Space Mono, monospace'; ctx.fillStyle = '#5c4a35'; ctx.textAlign = 'center';
+    ctx.fillText('3D pose coming soon', canvas.width / 2, canvas.height / 2);
   }
 
   // Compare button
