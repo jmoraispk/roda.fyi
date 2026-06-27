@@ -57,7 +57,8 @@ def test_fuse_recovers_truth_front_plus_left():
     err = np.linalg.norm(fused - truth, axis=2).mean()
     # Either single view alone has ~depth-noise error (~2-3 units); fusion must beat both.
     front_only = np.linalg.norm(front_cam - truth, axis=2).mean()
-    assert err < 0.6 * front_only, (err, front_only)
+    left_only = np.linalg.norm(to_common_frame(left_cam, "left") - truth, axis=2).mean()
+    assert err < 0.6 * min(front_only, left_only), (err, front_only, left_only)
 
 
 @register
