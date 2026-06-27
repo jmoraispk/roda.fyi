@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roda · Segment Confirm</title>
+<style>
+  :root{--bg:#0e0b09;--panel:#16110d;--panel2:#1d1711;--line:#2a2017;--ink:#ece3d2;
+    --mut:#9c8e79;--gold:#eba63c;--good:#7fc36b;--mid:#e2c044;--bad:#d2502a;
+    --mono:ui-monospace,Consolas,monospace}
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif;display:flex;flex-direction:column;height:100vh}
+  header{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header b{letter-spacing:.04em} .sp{flex:1}
+  button,select,input{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 10px}
+  button{cursor:pointer} button.gold{background:var(--gold);color:#1a130a;font-weight:700;border-color:var(--gold)}
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;background:#000;min-height:0}
+  video{max-width:100%;max-height:64vh}
+  .timeline{position:relative;height:64px;background:var(--panel2);border-top:1px solid var(--line);cursor:pointer}
+  .blk{position:absolute;top:8px;height:48px;border-radius:5px;opacity:.8;border:1px solid #0006}
+  .blk.sel{outline:2px solid var(--gold)} .playhead{position:absolute;top:0;width:2px;height:100%;background:#fff}
+  .ctl{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+  .ctl label{color:var(--mut);font-family:var(--mono);font-size:12px}
+  small{color:var(--mut);font-family:var(--mono)}
+</style></head><body>
+<header><b>RODA · SEGMENT CONFIRM</b>
+  <small>space play · ←/→ step · [ in · ] out · n new · Del remove</small><span class="sp"></span>
+  <input type="file" id="vid" accept="video/mp4">
+  <input type="file" id="seg" accept="application/json">
+  <button class="gold" id="export">Export JSON</button>
+</header>
+<div class="stage"><video id="v" controls></video></div>
+<div class="timeline" id="tl"><div class="playhead" id="ph"></div></div>
+<div class="ctl">
+  <label>move <select id="move"></select></label>
+  <label>facing <select id="facing"><option>front</option><option>left</option><option>back</option><option>right</option></select></label>
+  <label>rep <select id="rep"><option>0</option><option>1</option><option>2</option></select></label>
+  <label>start <select id="stance"><option>ginga</option><option>paralela</option><option>stand</option></select></label>
+  <label>quality <select id="quality"><option>good</option><option>ok</option><option>bad</option></select></label>
+  <span class="sp"></span><small id="info"></small>
+</div>
+<script>
+const SLUGS=["ginga","bencao","meia-lua-de-frente","armada","au"];
+const COL={good:"#7fc36b",ok:"#e2c044",bad:"#d2502a"};
+let fps=30, segs=[], sel=-1;
+const v=document.getElementById('v'), tl=document.getElementById('tl'), ph=document.getElementById('ph');
+document.getElementById('move').innerHTML=SLUGS.map(s=>`<option>${s}</option>`).join('');
+document.getElementById('vid').onchange=e=>{const f=e.target.files[0]; if(f) v.src=URL.createObjectURL(f);};
+document.getElementById('seg').onchange=e=>{const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{const j=JSON.parse(r.result); fps=j.fps||30; segs=j.segments||[]; draw();}; r.readAsText(f);};
+function draw(){
+  [...tl.querySelectorAll('.blk')].forEach(b=>b.remove());
+  const D=v.duration||(segs.length?Math.max(...segs.map(s=>s.end))/fps:1);
+  segs.forEach((s,i)=>{const b=document.createElement('div'); b.className='blk'+(i===sel?' sel':'');
+    b.style.left=(100*s.start/fps/D)+'%'; b.style.width=Math.max(0.6,100*(s.end-s.start)/fps/D)+'%';
+    b.style.background=COL[s.quality]||'#888'; b.title=`${s.move} ${s.facing} r${s.rep}`;
+    b.onclick=ev=>{ev.stopPropagation(); sel=i; v.currentTime=s.start/fps; sync(); draw();}; tl.appendChild(b);});
+}
+function sync(){ if(sel<0)return; const s=segs[sel];
+  move.value=s.move; facing.value=s.facing; rep.value=s.rep; stance.value=s.startStance||'stand'; quality.value=s.quality||'good';
+  info.textContent=`#${sel}  ${s.start}-${s.end}f`; }
+['move','facing','rep','stance','quality'].forEach(id=>{const el=document.getElementById(id);
+  el.onchange=()=>{ if(sel<0)return; const s=segs[sel];
+    s.move=move.value; s.facing=facing.value; s.rep=+rep.value; s.startStance=stance.value; s.quality=quality.value; draw();};});
+tl.onclick=e=>{const D=v.duration||1; v.currentTime=(e.offsetX/tl.clientWidth)*D;};
+function tick(){ const D=v.duration||1; ph.style.left=(100*v.currentTime/D)+'%'; requestAnimationFrame(tick);} tick();
+addEventListener('keydown',e=>{ const F=Math.round(v.currentTime*fps);
+  if(e.key===' '){e.preventDefault(); v.paused?v.play():v.pause();}
+  else if(e.key==='ArrowRight') v.currentTime+=1/fps;
+  else if(e.key==='ArrowLeft') v.currentTime-=1/fps;
+  else if(e.key==='[' && sel>=0){segs[sel].start=F; draw();}
+  else if(e.key===']' && sel>=0){segs[sel].end=F; draw();}
+  else if(e.key==='n'){segs.push({i:segs.length,start:F,end:F+30,move:'ginga',facing:'front',rep:0,startStance:'ginga',quality:'good'}); sel=segs.length-1; sync(); draw();}
+  else if(e.key==='Delete' && sel>=0){segs.splice(sel,1); sel=-1; draw();}
+});
+document.getElementById('export').onclick=()=>{
+  segs.forEach((s,i)=>s.i=i);
+  const blob=new Blob([JSON.stringify({file:'first_5_moves.mp4',fps,segments:segs},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='segments.json'; a.click();
+};
+</script></body></html>
