@@ -71,13 +71,14 @@ def ensure_model():
     return MODEL_PATH
 
 
-def make_landmarker(model_path):
+def make_landmarker(model_path, mode="video"):
     import mediapipe as mp
     from mediapipe.tasks import python as mp_python
     from mediapipe.tasks.python import vision
     base = mp_python.BaseOptions(model_asset_path=model_path)
+    rm = vision.RunningMode.IMAGE if mode == "image" else vision.RunningMode.VIDEO
     opts = vision.PoseLandmarkerOptions(
-        base_options=base, running_mode=vision.RunningMode.VIDEO,
+        base_options=base, running_mode=rm,
         num_poses=1, min_pose_detection_confidence=0.5,
         min_tracking_confidence=0.5)
     return vision.PoseLandmarker.create_from_options(opts), mp
@@ -88,10 +89,12 @@ def main():
     ap.add_argument("video")
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--max-w", type=int, default=960)
+    ap.add_argument("--mode", choices=["video", "image"], default="video",
+                    help="image = per-frame detection (no temporal tracker -> no lag on fast motion)")
     args = ap.parse_args()
 
     model_path = ensure_model()
-    landmarker, mp = make_landmarker(model_path)
+    landmarker, mp = make_landmarker(model_path, args.mode)
 
     gen = decode_frames(args.video, args.fps, args.max_w)
     ow, oh, dur = next(gen)
@@ -102,7 +105,8 @@ def main():
     for i, frame in enumerate(gen):
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.ascontiguousarray(frame))
         ts_ms = int(i * 1000 / args.fps)
-        res = landmarker.detect_for_video(mp_image, ts_ms)
+        res = (landmarker.detect(mp_image) if args.mode == "image"
+               else landmarker.detect_for_video(mp_image, ts_ms))
         if not res.pose_landmarks:
             frames_out.append({"t": round(i / args.fps, 3), "c": 0.0, "img": None, "world": None})
             continue
@@ -120,7 +124,8 @@ def main():
            "fps": args.fps, "w": ow, "h": oh, "n": len(frames_out),
            "detected": found, "mp_names": MP_NAMES, "frames": frames_out}
     os.makedirs(OUT, exist_ok=True)
-    path = os.path.join(OUT, f"{name}.track.json")
+    suffix = ".image" if args.mode == "image" else ""
+    path = os.path.join(OUT, f"{name}{suffix}.track.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, separators=(",", ":"))
     print(f"  pose found in {found}/{len(frames_out)} frames -> {path}")

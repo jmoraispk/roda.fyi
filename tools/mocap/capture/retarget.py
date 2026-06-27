@@ -95,32 +95,34 @@ def _rigidify(a):
     return out
 
 
-def normalize_sequence(frames, pad_x=14.0, top=18.0, bottom=150.0, headR=9):
-    """frames: [n,13,3] (y-up) -> list of pose dicts fit into the 120x160 (+z) viewBox.
+def normalize_sequence(frames, target_torso=40.0, floor_y=20.0, headR=9):
+    """frames: [n,13,3] (y-up, may include root translation) -> list of pose dicts.
 
-    Data is kept y-up to match figure3d.js (which projects screenY = H/2 - y).
-    `maxy` (the head, in y-up data) maps to `bottom`=150 and `miny` (the feet)
-    maps to `top`=18, so the rendered figure stands upright.
+    Unlike a fit-to-box normalize, we scale by a STABLE body measure (median
+    shoulder->hip length) so the figure keeps a constant size even as it travels,
+    then PRESERVE the root translation (the body really does move left/right/up).
+    The pelvis path is centered on x=60 (so the mirror axis stays valid) and the
+    lowest point of the clip is pinned to `floor_y` (ground contact). Kept y-up to
+    match figure3d.js (screenY = H/2 - y). Coords may exceed the 120x160 box for
+    traveling moves; figure3d auto-fits/zooms to show the whole path.
     """
-    P = np.asarray(frames, float)
-    hipmid = (P[:, JI["hipL"]] + P[:, JI["hipR"]]) / 2.0
-    cx = float(np.median(hipmid[:, 0]))
-    P = P.copy(); P[..., 0] -= cx                 # center x on the pelvis path
-    P[..., 2] -= float(np.median(P[..., 2]))      # center z
+    P = np.asarray(frames, float).copy()
+    sho = (P[:, JI["shoulderL"]] + P[:, JI["shoulderR"]]) / 2.0
+    hip = (P[:, JI["hipL"]] + P[:, JI["hipR"]]) / 2.0
+    torso = float(np.median(np.linalg.norm(sho - hip, axis=1)))
+    P *= target_torso / max(torso, 1e-3)          # constant body size
 
-    xs, ys = P[..., 0], P[..., 1]
-    half_w = max(np.max(np.abs(xs)), 1e-3)
-    miny, maxy = float(np.min(ys)), float(np.max(ys))
-    scale = min((120 - 2 * pad_x) / (2 * half_w), (bottom - top) / max(maxy - miny, 1e-3))
+    hipmid = (P[:, JI["hipL"]] + P[:, JI["hipR"]]) / 2.0
+    P[..., 0] -= float(np.median(hipmid[:, 0])) - 60.0   # center the sway path on x=60
+    P[..., 2] -= float(np.median(P[..., 2]))             # center depth
+    P[..., 1] += floor_y - float(np.min(P[..., 1]))      # lowest point -> floor line
 
     out = []
     for i in range(P.shape[0]):
         pose = {}
         for j, name in enumerate(geom.JOINTS3D):
             x, y, z = P[i, j]
-            pose[name] = [round(60.0 + x * scale, 2),
-                          round(bottom - (maxy - y) * scale, 2),
-                          round(z * scale, 2)]
+            pose[name] = [round(x, 2), round(y, 2), round(z, 2)]
         pose["headR"] = headR
         out.append(pose)
     return out
@@ -148,15 +150,33 @@ def test_rigidify_constant_bone_length():
 
 
 @register
-def test_normalize_into_viewbox():
+def test_normalize_stable_scale_and_floor():
     rs = np.random.RandomState(6)
     frames = rs.rand(10, 13, 3) * 2 - 1
-    poses = normalize_sequence(frames)
-    xs = [p[j][0] for p in poses for j in geom.JOINTS3D]
-    ys = [p[j][1] for p in poses for j in geom.JOINTS3D]
-    assert min(xs) >= 0 and max(xs) <= 120
-    assert min(ys) >= 0 and max(ys) <= 160
+    poses = normalize_sequence(frames, target_torso=40.0, floor_y=20.0)
+    P = np.array([[poses[i][j] for j in geom.JOINTS3D] for i in range(len(poses))])
+    JIl = {j: k for k, j in enumerate(geom.JOINTS3D)}
+    sho = (P[:, JIl["shoulderL"]] + P[:, JIl["shoulderR"]]) / 2
+    hip = (P[:, JIl["hipL"]] + P[:, JIl["hipR"]]) / 2
+    torso = np.median(np.linalg.norm(sho - hip, axis=1))
+    assert abs(torso - 40.0) < 0.1             # scaled to a constant body size (2dp rounding)
+    assert abs(float(np.min(P[..., 1])) - 20.0) < 0.05   # lowest point pinned to floor
     assert "headR" in poses[0]
+
+
+@register
+def test_normalize_preserves_translation():
+    # a figure that slides +x over time must still be moving after normalize
+    fr = np.zeros((6, 13, 3))
+    base = np.linspace(-1, 1, 6)
+    for i in range(6):
+        fr[i, :, 0] = base[i]                  # whole body translates in x
+        fr[i, JI["head"], 1] = 1.0
+        fr[i, JI["footL"], 1] = -1.0; fr[i, JI["footR"], 1] = -1.0
+        fr[i, JI["shoulderL"], 1] = 0.5; fr[i, JI["shoulderR"], 1] = 0.5
+    poses = normalize_sequence(fr)
+    px = [(poses[i]["hipL"][0] + poses[i]["hipR"][0]) / 2 for i in range(6)]
+    assert max(px) - min(px) > 1.0             # translation survived
 
 
 @register

@@ -14,7 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, os.path.join(HERE, "capture"))   # import the pure modules as siblings
 
-import geom, segment, align, fuse, retarget          # noqa: E402
+import geom, segment, fuse, retarget                 # noqa: E402
 import io_formats as io                               # noqa: E402
 
 OUT = os.path.join(HERE, "out")
@@ -65,19 +65,75 @@ def propose(track, manifest):
     print(f"  wrote proposal -> {SEG_PATH}  (confirm in tools/segment/)")
 
 
-def _rep_track(track_world, s, e, n):
-    seg = track_world[s:e]
-    clean = retarget.fill_smooth_rigidify(seg)
-    return align.resample_to_progress(clean, n)
+_JI = {j: i for i, j in enumerate(geom.JOINTS3D)}
+_MP_LHIP, _MP_RHIP, _MP_LSHO, _MP_RSHO = 23, 24, 11, 12
+
+
+def _root_translation(img_span, w, h, torso_metric):
+    """MediaPipe world landmarks are hip-centered every frame, so the skeleton has
+    NO translation. Recover where the body actually moves from the image (screen)
+    pelvis path, scaled to metric by the body's torso length. Front view => we can
+    trust screen x (left/right) and screen y (up/down); depth (forward/back) needs a
+    side view, so leave z=0 here."""
+    from scipy.signal import savgol_filter
+    a = np.asarray(img_span, float)
+    n = len(a)
+    pel = (a[:, _MP_LHIP, :2] + a[:, _MP_RHIP, :2]) / 2.0 * np.array([w, h])
+    sho = (a[:, _MP_LSHO, :2] + a[:, _MP_RSHO, :2]) / 2.0 * np.array([w, h])
+    for col in (pel[:, 0], pel[:, 1], sho[:, 0], sho[:, 1]):  # interp undetected frames
+        m = ~np.isnan(col)
+        if m.sum() and m.sum() < n:
+            col[~m] = np.interp(np.arange(n)[~m], np.arange(n)[m], col[m])
+    torso_px = np.median(np.linalg.norm(sho - pel, axis=1))
+    mpp = torso_metric / max(float(torso_px), 1e-6)           # meters per pixel
+    root = np.zeros((n, 3))
+    root[:, 0] = (pel[:, 0] - pel[0, 0]) * mpp                # screen +x -> world +x (right)
+    root[:, 1] = -(pel[:, 1] - pel[0, 1]) * mpp               # screen y is down -> world +y up
+    if n >= 5:
+        win = min(7, n if n % 2 else n - 1)
+        root[:, 0] = savgol_filter(root[:, 0], win, 2)
+        root[:, 1] = savgol_filter(root[:, 1], win, 2)
+    return root
+
+
+def _foot_motion(clean):
+    """Total foot travel over a (cleaned) clip, normalised by torso length.
+    A robust proxy for 'is this a full, real rep' — legs carry the move and are
+    steadier than arms/hands under MediaPipe depth noise."""
+    sho = (clean[:, _JI["shoulderL"]] + clean[:, _JI["shoulderR"]]) / 2
+    hip = (clean[:, _JI["hipL"]] + clean[:, _JI["hipR"]]) / 2
+    bl = float(np.nanmedian(np.linalg.norm(sho - hip, axis=1))) or 1.0
+    fl = np.linalg.norm(np.diff(clean[:, _JI["footL"]], axis=0), axis=1).sum()
+    fr = np.linalg.norm(np.diff(clean[:, _JI["footR"]], axis=0), axis=1).sum()
+    return float((fl + fr) / bl)
+
+
+def _pick_best_rep(W, img, segs, min_frames=40):
+    """Choose ONE clean rep for a move. We deliberately do NOT fuse the four
+    orientations or average reps: that recombination was rotating mislabeled
+    facings by the wrong yaw (mirroring) and averaging real reps with static
+    junk spans (cancelling motion). Instead: re-derive facing geometrically
+    (the stored positional label is unreliable), prefer the user-marked 'good'
+    reps, prefer a front view, and take the rep with the most leg travel."""
+    pool = [s for s in segs if s.get("quality") == "good"] or \
+           [s for s in segs if s.get("quality") != "bad"]
+    scored = []
+    for s in pool:
+        clean = retarget.fill_smooth_rigidify(W[s["start"]:s["end"]])
+        facing = segment.classify_facing(clean, img[s["start"]:s["end"]])
+        scored.append({"seg": s, "clean": clean, "facing": facing,
+                       "motion": _foot_motion(clean), "dur": s["end"] - s["start"]})
+    cands = [t for t in scored if t["dur"] >= min_frames] or scored
+    fronts = [t for t in cands if t["facing"] == "front"]
+    return max(fronts or cands, key=lambda t: t["motion"])
 
 
 def build(track, manifest, do_qa):
-    W, _img, _det = load_track_world(track)
+    W, img, _det = load_track_world(track)
     seg_doc = io.load_json(SEG_PATH)
-    samples = manifest["samples"]
     out_fps = manifest["out_fps"]
 
-    # group segments by (slug, variant-by-startStance)
+    # group segments by (slug, variant-by-startStance); pool all orientations.
     groups = {}
     variant_of = {}
     for o in manifest["order"]:
@@ -86,28 +142,36 @@ def build(track, manifest, do_qa):
         if s.get("quality") == "bad":
             continue
         variant = variant_of.get((s["move"], s.get("startStance")), "default")
-        key = (s["move"], variant)
-        groups.setdefault(key, {}).setdefault(s["facing"], []).append(s)
+        groups.setdefault((s["move"], variant), []).append(s)
 
+    w, h = track.get("w", 1), track.get("h", 1)
     by_slug = {}
-    for (slug, variant), by_facing in groups.items():
-        per_facing = {}
-        for facing, segs in by_facing.items():
-            reps = [_rep_track(W, s["start"], s["end"], samples) for s in segs]
-            mean, std = align.average_reps(reps, samples)
-            per_facing[facing] = mean
-            print(f"    {slug}/{variant} {facing}: {len(reps)} reps, mean spread {std.mean():.2f}")
-        fused = fuse.fuse_facings(per_facing) if len(per_facing) >= 2 else next(iter(per_facing.values()))
-        fused = retarget.fill_smooth_rigidify(fused)  # rep-avg + fusion break rigidity; re-lock bones & de-jitter
-        frames = retarget.normalize_sequence(fused)
+    for (slug, variant), segs in groups.items():
+        best = _pick_best_rep(W, img, segs)
+        s = best["seg"]
+        clean = best["clean"]
+        # rotate the chosen rep into a front-facing common frame, then normalise.
+        common = fuse.to_common_frame(clean, best["facing"])
+        # recover root translation from the image and rotate it the same way.
+        sho = (clean[:, _JI["shoulderL"]] + clean[:, _JI["shoulderR"]]) / 2
+        hip = (clean[:, _JI["hipL"]] + clean[:, _JI["hipR"]]) / 2
+        torso_m = float(np.median(np.linalg.norm(sho - hip, axis=1)))
+        root = _root_translation(img[s["start"]:s["end"]], w, h, torso_m)
+        common = common + geom.rotate_y(root, -geom.FACING_YAW[best["facing"]])[:, None, :]
+        frames = retarget.normalize_sequence(common)
         by_slug.setdefault(slug, {})[variant] = frames
+        travel = float(np.linalg.norm(root[-1] - root[0]) / max(torso_m, 1e-6))
+        print(f"    {slug}/{variant}: rep i={s['i']} f={s['start']}-{s['end']} "
+              f"({best['dur']}f) facing={best['facing']} footTravel={best['motion']:.1f} "
+              f"rootTravel={travel:.2f}bl")
         if do_qa:
             _qa_report(slug, variant, frames, out_fps)
 
     os.makedirs(MOVES3D, exist_ok=True)
     for slug, variants in by_slug.items():
-        if slug == "au" and "fromGinga" in variants:
-            variants = dict(variants); variants["default"] = variants["fromGinga"]
+        variants = dict(variants)
+        if "default" not in variants:   # web always loads a 'default'; prefer fromGinga for au
+            variants["default"] = variants.get("fromGinga") or next(iter(variants.values()))
         obj = {"source": f"{track['file']} (own capture, fused)",
                "fps": out_fps, "frameMs": round(1000.0 / out_fps, 2),
                "viewBox": [120, 160], "joints": geom.JOINTS3D,
@@ -155,7 +219,15 @@ def main():
     ap.add_argument("--track", default=None)
     args = ap.parse_args()
     manifest = io.load_json(MANIFEST)
-    track_path = args.track or os.path.join(OUT, os.path.splitext(manifest["file"])[0] + ".track.json")
+    stem = os.path.splitext(manifest["file"])[0]
+    if args.track:
+        track_path = args.track
+    else:
+        # prefer the lag-free IMAGE-mode track (per-frame detection, no temporal
+        # smoothing) when it exists; fall back to the VIDEO-mode track otherwise.
+        image_track = os.path.join(OUT, stem + ".image.track.json")
+        track_path = image_track if os.path.exists(image_track) else os.path.join(OUT, stem + ".track.json")
+    print(f"track: {track_path}")
     track = io.load_json(track_path)
     if args.propose:
         propose(track, manifest)
