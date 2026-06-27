@@ -1896,6 +1896,7 @@ function renderComparePanel(panel, slug, viewerRef) {
 }
 
 function showComparePage(slug1, slug2) {
+  if (_figure3d) { _figure3d.destroy(); _figure3d = null; }  // stop move-page animation RAF when leaving
   slug1 = resolveSlug(slug1 || '');
   slug2 = resolveSlug(slug2 || '');
   ALL_PAGE_ELS.forEach(function(sel){ var el=document.querySelector(sel); if(el) el.hidden=true; });
@@ -2000,6 +2001,7 @@ function buildMap(){
 }
 
 function showPage(page, fromHash){
+  if (_figure3d) { _figure3d.destroy(); _figure3d = null; }  // stop move-page animation RAF when leaving
   if(!PAGES[page]) page='lexicon';
   curPage=page; curWorld=PAGES[page].world;
   ALL_PAGE_ELS.forEach(sel=>{ const el=document.querySelector(sel); if(el) el.hidden=true; });
