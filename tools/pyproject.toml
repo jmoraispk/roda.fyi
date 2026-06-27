@@ -9,6 +9,8 @@ dependencies = [
     "torch",
     "torchvision",
     "yt-dlp>=2025.1",
+    "scipy",
+    "mediapipe>=0.10.14",
 ]
 
 # GPU build of PyTorch for a CUDA 13 driver.

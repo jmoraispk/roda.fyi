@@ -74,3 +74,11 @@ tmp_roda/
 # QA screenshots + python caches.
 tools/shots/
 __pycache__/
+
+# Own capture footage (heavy; never commit) + large per-frame tracks.
+videos/*.mp4
+videos/*.mov
+videos/*.MOV
+tools/mocap/out/*.track.json
+# Transient frame extracts from exploration.
+_explore/

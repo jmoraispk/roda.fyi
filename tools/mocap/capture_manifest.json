@@ -1,0 +1,16 @@
+{
+  "file": "first_5_moves.mp4",
+  "reps": 3,
+  "facings": ["front", "left", "back", "right"],
+  "out_fps": 24,
+  "samples": 48,
+  "_note": "order = the sequence of (move, startStance) groups as performed. Each group is reps×facings executions. Edit after the first segment proposal if the auto-labels are wrong.",
+  "order": [
+    { "move": "ginga",               "slug": "ginga",               "startStance": "ginga" },
+    { "move": "bencao",              "slug": "bencao",              "startStance": "ginga" },
+    { "move": "meia-lua-de-frente",  "slug": "meia-lua-de-frente",  "startStance": "ginga" },
+    { "move": "armada",             "slug": "armada",             "startStance": "ginga" },
+    { "move": "au",                 "slug": "au",                 "startStance": "ginga",    "variant": "fromGinga" },
+    { "move": "au",                 "slug": "au",                 "startStance": "paralela", "variant": "fromParalela" }
+  ]
+}
