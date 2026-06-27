@@ -1701,6 +1701,10 @@ function renderMovePage(slug) {
       return '<button class="move-var-chip" type="button">' + v + '</button>';
     }).join('');
     varSec.hidden = false;
+    varList.addEventListener('click', function(e) {
+      var chip = e.target.closest('.move-var-chip');
+      if (chip) showMove(slugify(chip.textContent.trim()));
+    });
   } else { varSec.hidden = true; }
 
   // Targets
@@ -1746,6 +1750,7 @@ function renderMovePage(slug) {
 }
 
 function showMove(slug) {
+  slug = resolveSlug(slug);
   ALL_PAGE_ELS.forEach(function(sel){ var el=document.querySelector(sel); if(el) el.hidden=true; });
   var view = document.getElementById('moveView');
   view.hidden = false;
@@ -1886,6 +1891,24 @@ function fold(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300
 
 function slugify(s){
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
+// Build alias \u2192 canonical slug map for URL resolution
+var ALIAS_MAP = {};
+DATA.forEach(function(cat) {
+  cat.moves.forEach(function(m) {
+    var canonical = slugify(m.n);
+    var ext = MOVES_EXT[canonical];
+    if (ext && ext.aliases) {
+      ext.aliases.forEach(function(a) {
+        ALIAS_MAP[slugify(a)] = canonical;
+      });
+    }
+  });
+});
+
+function resolveSlug(slug) {
+  return ALIAS_MAP[slug] || slug;
 }
 
 function typesFor(catId){
