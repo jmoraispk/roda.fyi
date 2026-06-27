@@ -90,7 +90,12 @@ def _rigidify(a):
 
 
 def normalize_sequence(frames, pad_x=14.0, top=18.0, bottom=150.0, headR=9):
-    """frames: [n,13,3] -> list of pose dicts fit into the 120x160 (+z) viewBox."""
+    """frames: [n,13,3] (y-up) -> list of pose dicts fit into the 120x160 (+z) viewBox.
+
+    Data is kept y-up to match figure3d.js (which projects screenY = H/2 - y).
+    `maxy` (the head, in y-up data) maps to `bottom`=150 and `miny` (the feet)
+    maps to `top`=18, so the rendered figure stands upright.
+    """
     P = np.asarray(frames, float)
     hipmid = (P[:, JI["hipL"]] + P[:, JI["hipR"]]) / 2.0
     cx = float(np.median(hipmid[:, 0]))
@@ -146,3 +151,15 @@ def test_normalize_into_viewbox():
     assert min(xs) >= 0 and max(xs) <= 120
     assert min(ys) >= 0 and max(ys) <= 160
     assert "headR" in poses[0]
+
+
+@register
+def test_normalize_keeps_head_above_feet():
+    # y-up input: head clearly above the feet. figure3d.js projects screenY = H/2 - y,
+    # so the emitted head y MUST be larger than the foot y (renders upright).
+    fr = np.zeros((4, 13, 3))
+    fr[:, JI["head"], 1] = 10.0
+    fr[:, JI["footL"], 1] = -10.0
+    fr[:, JI["footR"], 1] = -10.0
+    poses = normalize_sequence(fr)
+    assert poses[0]["head"][1] > poses[0]["footL"][1]
