@@ -589,6 +589,38 @@
     html{scroll-behavior:auto}
     .card{opacity:1;transform:none;transition:none}
   }
+
+/* ===== MOVE DETAIL PAGE ===== */
+.back-btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;padding:7px 16px;cursor:pointer;transition:.18s;margin:24px 0 0 24px;display:inline-flex;align-items:center;gap:6px}
+.back-btn:hover{color:var(--cream);border-color:var(--muted)}
+.move-hero{display:grid;grid-template-columns:1fr auto;gap:40px;align-items:start;padding:32px 40px 0;max-width:1100px;margin:0 auto}
+@media(max-width:680px){.move-hero{grid-template-columns:1fr;padding:24px 20px 0}}
+.move-kicker{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.move-title{font-family:var(--display);font-weight:800;font-size:clamp(2rem,6vw,3.5rem);letter-spacing:-.02em;color:var(--cream);line-height:1;margin:0 0 8px}
+.move-aliases{font-family:var(--mono);font-size:.75rem;color:var(--gold);letter-spacing:.04em;margin-bottom:16px}
+.move-meta{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-bottom:20px;display:flex;gap:14px;flex-wrap:wrap}
+.move-long-desc{font-family:var(--body);font-size:1.05rem;line-height:1.65;color:var(--muted);max-width:54ch;margin:0}
+.move-3d-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+#move3dCanvas{border-radius:16px;background:var(--card);border:1px solid var(--line);cursor:grab;touch-action:none}
+#move3dCanvas:active{cursor:grabbing}
+.move-3d-hint{font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;color:var(--muted-2);text-transform:uppercase}
+.move-sections{max-width:1100px;margin:40px auto;padding:0 40px 60px;display:flex;flex-direction:column;gap:32px}
+@media(max-width:680px){.move-sections{padding:0 20px 48px}}
+.move-sec-title{font-family:var(--display);font-weight:700;font-size:1.25rem;color:var(--cream);margin:0 0 16px}
+.move-section{border-top:1px solid var(--line);padding-top:28px}
+.move-var-list{display:flex;flex-wrap:wrap;gap:10px}
+.move-var-chip{font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;color:var(--cream);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 16px;cursor:pointer;transition:.18s}
+.move-var-chip:hover{border-color:var(--gold);color:var(--gold)}
+.move-target-list{display:flex;flex-direction:column;gap:14px}
+.move-target{display:flex;gap:16px;align-items:flex-start}
+.move-target-area{font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--clay);min-width:80px;padding-top:2px}
+.move-target-desc{font-family:var(--body);font-size:.95rem;color:var(--muted);line-height:1.55}
+.move-video-list{display:flex;flex-direction:column;gap:10px}
+.move-video-link{font-family:var(--body);font-size:.95rem;color:var(--gold);text-decoration:none;padding:10px 16px;background:var(--card);border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:10px;transition:.18s}
+.move-video-link:hover{border-color:var(--gold);background:var(--card-2)}
+.move-compare-cta{border-top:1px solid var(--line);padding-top:28px}
+.compare-btn{font-family:var(--mono);font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid var(--line);border-radius:999px;padding:10px 22px;cursor:pointer;transition:.18s}
+.compare-btn:hover{color:var(--cream);border-color:var(--muted)}
 </style>
 </head>
 <body>
@@ -787,6 +819,42 @@
   <div class="presence" id="grpPresence"></div>
   <p class="presence-note" id="grpPresNote"></p>
 </section>
+
+<div id="moveView" hidden>
+  <div class="move-back">
+    <button class="back-btn" id="moveBackBtn" type="button">← Library</button>
+  </div>
+  <div class="move-hero">
+    <div class="move-hero-text">
+      <div class="move-kicker" id="moveKicker"></div>
+      <h1 class="move-title" id="moveTitle"></h1>
+      <div class="move-aliases" id="moveAliases"></div>
+      <div class="move-meta" id="moveMeta"></div>
+      <p class="move-long-desc" id="moveLongDesc"></p>
+    </div>
+    <div class="move-3d-wrap">
+      <canvas id="move3dCanvas" width="320" height="380"></canvas>
+      <div class="move-3d-hint">drag to rotate</div>
+    </div>
+  </div>
+  <div class="move-sections">
+    <section class="move-section" id="moveVariations" hidden>
+      <h2 class="move-sec-title">Variations</h2>
+      <div class="move-var-list" id="moveVarList"></div>
+    </section>
+    <section class="move-section" id="moveTargets" hidden>
+      <h2 class="move-sec-title">Targets</h2>
+      <div class="move-target-list" id="moveTargetList"></div>
+    </section>
+    <section class="move-section" id="moveVideos" hidden>
+      <h2 class="move-sec-title">Learn More</h2>
+      <div class="move-video-list" id="moveVideoList"></div>
+    </section>
+    <section class="move-section move-compare-cta">
+      <button class="compare-btn" id="moveCompareBtn" type="button">Compare with another move →</button>
+    </section>
+  </div>
+</div>
 
 <footer>
   <div class="foot-inner">
@@ -1221,6 +1289,7 @@ const PAGES = {
   histMestres:  { world:'history', els:['#historyView'], hash:'#history/mestres',  topic:'mestres' },
   histGlossary: { world:'history', els:['#historyView'], hash:'#history/glossary', topic:'glossary' },
   groups:       { world:'history', els:['#groupsView'],  hash:'#history/groups' },
+  movePage:     { world:'moves',   els:['#moveView'],    hash:'#move' },
 };
 const WORLD_DEFAULT = { moves:'lexicon', music:'music', history:'histTimeline' };
 const WORLD_TITLES = {
@@ -1230,6 +1299,7 @@ const WORLD_TITLES = {
 };
 const HASH_PAGE = {}; Object.entries(PAGES).forEach(([k,v])=>{ if(!(v.hash in HASH_PAGE)) HASH_PAGE[v.hash]=k; });
 HASH_PAGE['#moves']='lexicon';
+HASH_PAGE['#move']='movePage';
 const ALL_PAGE_ELS = [...new Set(Object.values(PAGES).flatMap(p=>p.els))];
 
 let curWorld='moves', curPage='lexicon';
