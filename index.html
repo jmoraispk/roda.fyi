@@ -917,7 +917,9 @@
   <div class="foot-inner">
     <p data-i18n="footerNote"><span class="axe">Axé.</span> Names and forms shift between lineages — Angola, Regional and Contemporânea each phrase the same idea differently — so treat this as one reading of a living oral tradition, not a rulebook. Figures are original stylized illustrations of each shape.</p>
     <p class="note" data-i18n="footerLex">Lexicon of moves<br>kicks · dodges · flourishes · takedowns</p>
-    <p class="note"><a href="studio.html" style="color:inherit" data-i18n="footerStudio">Improve the figures →</a></p>
+    <p class="note"><a href="studio.html" style="color:inherit" data-i18n="footerStudio">Improve the figures →</a>
+      &nbsp;·&nbsp;
+      <a href="tools/segment/index.html" style="color:inherit" data-i18n="footerSegment">Segment tool →</a></p>
   </div>
 </footer>
 
@@ -1737,6 +1739,12 @@ function renderGroups(){
    ============================================================ */
 var _figure3d = null;
 
+// Captured moves that aren't (yet) cards in the lexicon catalog still get a page.
+var SYNTH_MOVES = {
+  ginga: { n:'Ginga', g:'the sway', t:'Fundamental', tc:'gold', cat:'The Foundation',
+    d:'The constant swaying step — capoeira’s home base, from which every move departs and returns.' }
+};
+
 function renderMovePage(slug) {
   var found = null, foundCat = null;
   DATA.forEach(function(cat) {
@@ -1744,7 +1752,12 @@ function renderMovePage(slug) {
       if (slugify(m.n) === slug) { found = m; foundCat = cat; }
     });
   });
-  if (!found) { showPage('lexicon'); return; }
+  if (!found) {
+    var hasMocap = (typeof RODA_MOCAP !== 'undefined') && RODA_MOCAP[slug];
+    var syn = SYNTH_MOVES[slug];
+    if (hasMocap && syn) { found = syn; foundCat = { title: syn.cat }; }
+    else { showPage('lexicon'); return; }
+  }
 
   var ext = (typeof MOVES_EXT !== 'undefined' && MOVES_EXT[slug]) ||
     { longDesc:'', aliases:[], variations:[], targets:[], videos:[], p3d:null };
@@ -2340,6 +2353,7 @@ const STR = {
     footerNote: `<span class="axe">Axé.</span> Names and forms shift between lineages — Angola, Regional and Contemporânea each phrase the same idea differently — so treat this as one reading of a living oral tradition, not a rulebook. Figures are original stylized illustrations of each shape.`,
     footerLex: `Lexicon of moves<br>kicks · dodges · flourishes · takedowns`,
     footerStudio: `Improve the figures →`,
+    footerSegment: `Segment tool →`,
   },
   pt: {
     tabMoves: 'Movimento', tabMusic: 'Música', tabHistory: 'História', tabGroups: 'Grupos',
@@ -2376,6 +2390,7 @@ const STR = {
     footerNote: `<span class="axe">Axé.</span> Nomes e formas mudam entre as linhagens — Angola, Regional e Contemporânea expressam a mesma ideia de jeitos diferentes — então trate isto como uma leitura de uma tradição oral viva, não um manual. As figuras são ilustrações estilizadas originais de cada forma.`,
     footerLex: `Léxico de movimentos<br>golpes · esquivas · floreios · quedas`,
     footerStudio: `Ajude a melhorar as figuras →`,
+    footerSegment: `Ferramenta de segmentos →`,
   }
 };
 

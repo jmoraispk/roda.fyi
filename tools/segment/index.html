@@ -12,8 +12,10 @@
   header b{letter-spacing:.04em} .sp{flex:1}
   button,select,input{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 10px}
   button{cursor:pointer} button.gold{background:var(--gold);color:#1a130a;font-weight:700;border-color:var(--gold)}
-  .stage{flex:1;display:flex;align-items:center;justify-content:center;background:#000;min-height:0}
-  video{max-width:100%;max-height:64vh}
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;background:#000;min-height:0;position:relative}
+  .vidwrap{position:relative;display:inline-flex;max-width:100%;max-height:64vh}
+  video{max-width:100%;max-height:64vh;display:block}
+  #ov{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
   .timeline{position:relative;height:64px;background:var(--panel2);border-top:1px solid var(--line);cursor:pointer}
   .blk{position:absolute;top:8px;height:48px;border-radius:5px;opacity:.8;border:1px solid #0006}
   .blk.sel{outline:2px solid var(--gold)} .playhead{position:absolute;top:0;width:2px;height:100%;background:#fff}
@@ -22,12 +24,16 @@
   small{color:var(--mut);font-family:var(--mono)}
 </style></head><body>
 <header><b>RODA · SEGMENT CONFIRM</b>
-  <small>space play · ←/→ step · [ in · ] out · n new · Del remove</small><span class="sp"></span>
-  <input type="file" id="vid" accept="video/mp4">
-  <input type="file" id="seg" accept="application/json">
+  <small>space play · ←/→ step · [ in · ] out · n new · Del remove · <span style="color:var(--gold)">right</span>/<span style="color:#5ea0ff">left</span></small><span class="sp"></span>
+  <label><small>video</small> <input type="file" id="vid" accept="video/mp4"></label>
+  <label><small>segments</small> <input type="file" id="seg" accept="application/json"></label>
+  <label><small>track</small> <input type="file" id="trk" accept="application/json" title="pick out/first_5_moves.image.track.json — lag-free per-frame overlay"></label>
+  <button id="defaults" title="auto-load video + image track + capture/segments.json from the server">↻ defaults</button>
+  <button id="restore" title="restore your last unsaved draft from this browser">restore draft</button>
+  <button id="clear">Clear all</button>
   <button class="gold" id="export">Export JSON</button>
 </header>
-<div class="stage"><video id="v" controls></video></div>
+<div class="stage"><div class="vidwrap"><video id="v" controls></video><canvas id="ov"></canvas></div></div>
 <div class="timeline" id="tl"><div class="playhead" id="ph"></div></div>
 <div class="ctl">
   <label>move <select id="move"></select></label>
@@ -35,7 +41,7 @@
   <label>rep <select id="rep"><option>0</option><option>1</option><option>2</option></select></label>
   <label>start <select id="stance"><option>ginga</option><option>paralela</option><option>stand</option></select></label>
   <label>quality <select id="quality"><option>good</option><option>ok</option><option>bad</option></select></label>
-  <span class="sp"></span><small id="info"></small>
+  <span class="sp"></span><small id="status" style="color:var(--gold)"></small> &nbsp; <small id="cov"></small> &nbsp; <small id="info"></small>
 </div>
 <script>
 const SLUGS=["ginga","bencao","meia-lua-de-frente","armada","au"];
@@ -46,7 +52,76 @@ document.getElementById('move').innerHTML=SLUGS.map(s=>`<option>${s}</option>`).
 document.getElementById('vid').onchange=e=>{const f=e.target.files[0]; if(f) v.src=URL.createObjectURL(f);};
 document.getElementById('seg').onchange=e=>{const f=e.target.files[0]; if(!f)return;
   const r=new FileReader(); r.onload=()=>{const j=JSON.parse(r.result); fps=j.fps||30; segs=j.segments||[]; draw();}; r.readAsText(f);};
+// pose track.json -> 2D skeleton overlay (so you can confirm move/facing/quality visually)
+let TRK=null;
+const ov=document.getElementById('ov'), octx=ov.getContext('2d');
+const RIGHT={12:1,14:1,16:1,24:1,26:1,28:1,32:1};
+const BONES=[[11,12,'m'],[23,24,'m'],[11,23,'m'],[12,24,'m'],[0,11,'m'],[0,12,'m'],
+  [11,13,'l'],[13,15,'l'],[12,14,'r'],[14,16,'r'],
+  [23,25,'l'],[25,27,'l'],[27,31,'l'],[24,26,'r'],[26,28,'r'],[28,32,'r']];
+const COLB={l:'#5ea0ff',r:'#eba63c',m:'#cbb89a'};
+document.getElementById('trk').onchange=e=>{const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{const j=JSON.parse(r.result); TRK=j.frames||null; if(j.fps)fps=j.fps;}; r.readAsText(f);};
+// --- auto-load known files from the server so you don't have to browse each time.
+//     served from the repo root, so these are absolute server paths.
+const DEFAULTS={
+  video:'/videos/first_5_moves.mp4',
+  track:'/tools/mocap/out/first_5_moves.image.track.json',
+  segments:'/tools/mocap/capture/segments.json',
+};
+const DRAFT_KEY='roda_seg_draft_first5';
+const statusEl=document.getElementById('status');
+function setStatus(t){ statusEl.textContent=t; }
+function saveDraft(){ try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({fps,segments:segs,ts:Date.now()})); }catch(e){} }
+async function fetchJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error(u+' '+r.status); return r.json(); }
+async function loadDefaults(){
+  v.src=DEFAULTS.video;
+  try{ const t=await fetchJSON(DEFAULTS.track); TRK=t.frames||null; if(t.fps)fps=t.fps; }
+  catch(e){ console.warn('track:',e.message); }
+  try{ const s=await fetchJSON(DEFAULTS.segments); fps=s.fps||fps; segs=s.segments||[]; setStatus('loaded segments.json'); }
+  catch(e){ console.warn('segments:',e.message); segs=[]; setStatus('no segments.json yet — starting empty'); }
+  sel=-1; draw();
+}
+function restoreDraft(){
+  let d=null; try{ d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); }catch(e){}
+  if(!d||!d.segments){ setStatus('no draft saved in this browser'); return; }
+  fps=d.fps||fps; segs=d.segments; sel=-1; draw();
+  setStatus(`restored draft · ${segs.length} segs · ${new Date(d.ts).toLocaleTimeString()}`);
+}
+document.getElementById('defaults').onclick=loadDefaults;
+document.getElementById('restore').onclick=restoreDraft;
+v.addEventListener('loadedmetadata',draw);   // reposition timeline blocks once duration is known
+if(location.protocol.startsWith('http')) loadDefaults();   // file:// can't fetch, so only auto-load when served
+function drawOverlay(){
+  const cw=v.clientWidth, ch=v.clientHeight;
+  if(ov.width!==cw)ov.width=cw; if(ov.height!==ch)ov.height=ch;
+  octx.clearRect(0,0,cw,ch);
+  if(!TRK||!v.videoWidth)return;
+  const fr=TRK[Math.round(v.currentTime*fps)]; if(!fr||!fr.img)return;
+  const vw=v.videoWidth, vh=v.videoHeight, sc=Math.min(cw/vw,ch/vh);
+  const dw=vw*sc, dh=vh*sc, ox=(cw-dw)/2, oy=(ch-dh)/2;
+  const P=fr.img.map(p=>[ox+p[0]*dw, oy+p[1]*dh]);
+  octx.lineWidth=3; octx.lineCap='round';
+  BONES.forEach(([a,b,s])=>{ if(!P[a]||!P[b])return; octx.strokeStyle=COLB[s];
+    octx.beginPath(); octx.moveTo(P[a][0],P[a][1]); octx.lineTo(P[b][0],P[b][1]); octx.stroke(); });
+  for(let i=0;i<P.length;i++){ if(i>0&&i<11)continue;
+    octx.fillStyle=(i in RIGHT)?'#eba63c':(i===0?'#fff':'#5ea0ff');
+    octx.beginPath(); octx.arc(P[i][0],P[i][1],i===0?5:3,0,7); octx.fill(); }
+}
+function updateCov(){
+  // label one GOOD rep per direction per move; letters go green as each facing is covered.
+  const NEEDM=['ginga','bencao','meia-lua-de-frente','armada','au'];
+  const FAC=['front','left','back','right'];
+  const have={};
+  segs.filter(s=>s.quality==='good').forEach(s=>{(have[s.move]=have[s.move]||new Set()).add(s.facing);});
+  cov.innerHTML=NEEDM.map(m=>{
+    const set=have[m]||new Set();
+    const tag=FAC.map(f=>`<span style="color:${set.has(f)?'var(--good)':'var(--mut)'}">${f[0].toUpperCase()}</span>`).join('');
+    return (m==='meia-lua-de-frente'?'meia':m)+'['+tag+']';
+  }).join('&nbsp; ');
+}
 function draw(){
+  updateCov();
   [...tl.querySelectorAll('.blk')].forEach(b=>b.remove());
   const D=v.duration||(segs.length?Math.max(...segs.map(s=>s.end))/fps:1);
   segs.forEach((s,i)=>{const b=document.createElement('div'); b.className='blk'+(i===sel?' sel':'');
@@ -59,18 +134,19 @@ function sync(){ if(sel<0)return; const s=segs[sel];
   info.textContent=`#${sel}  ${s.start}-${s.end}f`; }
 ['move','facing','rep','stance','quality'].forEach(id=>{const el=document.getElementById(id);
   el.onchange=()=>{ if(sel<0)return; const s=segs[sel];
-    s.move=move.value; s.facing=facing.value; s.rep=+rep.value; s.startStance=stance.value; s.quality=quality.value; draw();};});
+    s.move=move.value; s.facing=facing.value; s.rep=+rep.value; s.startStance=stance.value; s.quality=quality.value; draw(); saveDraft();};});
 tl.onclick=e=>{const D=v.duration||1; v.currentTime=(e.offsetX/tl.clientWidth)*D;};
-function tick(){ const D=v.duration||1; ph.style.left=(100*v.currentTime/D)+'%'; requestAnimationFrame(tick);} tick();
+function tick(){ const D=v.duration||1; ph.style.left=(100*v.currentTime/D)+'%'; drawOverlay(); requestAnimationFrame(tick);} tick();
 addEventListener('keydown',e=>{ const F=Math.round(v.currentTime*fps);
   if(e.key===' '){e.preventDefault(); v.paused?v.play():v.pause();}
   else if(e.key==='ArrowRight') v.currentTime+=1/fps;
   else if(e.key==='ArrowLeft') v.currentTime-=1/fps;
-  else if(e.key==='[' && sel>=0){segs[sel].start=F; draw();}
-  else if(e.key===']' && sel>=0){segs[sel].end=F; draw();}
-  else if(e.key==='n'){segs.push({i:segs.length,start:F,end:F+30,move:'ginga',facing:'front',rep:0,startStance:'ginga',quality:'good'}); sel=segs.length-1; sync(); draw();}
-  else if(e.key==='Delete' && sel>=0){segs.splice(sel,1); sel=-1; draw();}
+  else if(e.key==='[' && sel>=0){segs[sel].start=F; draw(); saveDraft();}
+  else if(e.key===']' && sel>=0){segs[sel].end=F; draw(); saveDraft();}
+  else if(e.key==='n'){segs.push({i:segs.length,start:F,end:F+30,move:'ginga',facing:'front',rep:0,startStance:'ginga',quality:'good'}); sel=segs.length-1; sync(); draw(); saveDraft();}
+  else if(e.key==='Delete' && sel>=0){segs.splice(sel,1); sel=-1; draw(); saveDraft();}
 });
+document.getElementById('clear').onclick=()=>{ if(confirm('Clear all segments? (start a fresh labeling pass)')){ segs=[]; sel=-1; draw(); saveDraft(); } };
 document.getElementById('export').onclick=()=>{
   segs.forEach((s,i)=>s.i=i);
   const blob=new Blob([JSON.stringify({file:'first_5_moves.mp4',fps,segments:segs},null,2)],{type:'application/json'});
