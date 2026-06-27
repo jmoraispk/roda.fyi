@@ -1694,6 +1694,10 @@ let mi = { q:'', cat:'all', type:null };
 
 function fold(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 
+function slugify(s){
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
 function typesFor(catId){
   const cat=DATA.find(c=>c.id===catId); if(!cat) return [];
   const seen=[]; cat.moves.forEach(m=>{ if(m.t && !seen.includes(m.t)) seen.push(m.t); });
@@ -2101,5 +2105,7 @@ document.querySelectorAll('.lang .flag').forEach(b=>b.addEventListener('click',(
 /* now that i18n is live, route to the page named by the URL hash */
 showPage(HASH_PAGE[location.hash||'']||'lexicon', true);
 </script>
+<script src="assets/moves.extended.js"></script>
+<script src="assets/figure3d.js"></script>
 </body>
 </html>
