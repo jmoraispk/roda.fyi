@@ -27,7 +27,7 @@
       "start": 346,
       "end": 397,
       "move": "ginga",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -37,7 +37,7 @@
       "start": 401,
       "end": 492,
       "move": "ginga",
-      "facing": "left",
+      "facing": "right",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -47,7 +47,7 @@
       "start": 498,
       "end": 541,
       "move": "ginga",
-      "facing": "left",
+      "facing": "right",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -57,7 +57,7 @@
       "start": 544,
       "end": 587,
       "move": "ginga",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -67,7 +67,7 @@
       "start": 1127,
       "end": 1154,
       "move": "ginga",
-      "facing": "right",
+      "facing": "left",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -107,7 +107,7 @@
       "start": 1612,
       "end": 1638,
       "move": "ginga",
-      "facing": "left",
+      "facing": "right",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -117,7 +117,7 @@
       "start": 1659,
       "end": 1717,
       "move": "ginga",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -127,7 +127,7 @@
       "start": 1720,
       "end": 1786,
       "move": "bencao",
-      "facing": "left",
+      "facing": "right",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -137,7 +137,7 @@
       "start": 1799,
       "end": 1859,
       "move": "bencao",
-      "facing": "left",
+      "facing": "right",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -167,7 +167,7 @@
       "start": 2331,
       "end": 2350,
       "move": "bencao",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -217,7 +217,7 @@
       "start": 3199,
       "end": 3231,
       "move": "bencao",
-      "facing": "left",
+      "facing": "right",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -227,7 +227,7 @@
       "start": 3356,
       "end": 3449,
       "move": "bencao",
-      "facing": "left",
+      "facing": "right",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -237,7 +237,7 @@
       "start": 3471,
       "end": 3564,
       "move": "bencao",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -267,7 +267,7 @@
       "start": 3988,
       "end": 4049,
       "move": "meia-lua-de-frente",
-      "facing": "right",
+      "facing": "left",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -277,7 +277,7 @@
       "start": 4064,
       "end": 4155,
       "move": "meia-lua-de-frente",
-      "facing": "right",
+      "facing": "left",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -287,7 +287,7 @@
       "start": 4173,
       "end": 4257,
       "move": "meia-lua-de-frente",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -327,7 +327,7 @@
       "start": 5326,
       "end": 5357,
       "move": "meia-lua-de-frente",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -337,7 +337,7 @@
       "start": 5632,
       "end": 5683,
       "move": "meia-lua-de-frente",
-      "facing": "left",
+      "facing": "right",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -347,7 +347,7 @@
       "start": 5700,
       "end": 5763,
       "move": "meia-lua-de-frente",
-      "facing": "left",
+      "facing": "right",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -387,7 +387,7 @@
       "start": 6428,
       "end": 6447,
       "move": "armada",
-      "facing": "right",
+      "facing": "left",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -397,7 +397,7 @@
       "start": 6464,
       "end": 6531,
       "move": "armada",
-      "facing": "right",
+      "facing": "left",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -407,7 +407,7 @@
       "start": 6776,
       "end": 6844,
       "move": "armada",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -417,7 +417,7 @@
       "start": 6848,
       "end": 6879,
       "move": "armada",
-      "facing": "right",
+      "facing": "left",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -467,7 +467,7 @@
       "start": 7564,
       "end": 7656,
       "move": "armada",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -477,7 +477,7 @@
       "start": 7779,
       "end": 7802,
       "move": "armada",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -497,7 +497,7 @@
       "start": 7926,
       "end": 7947,
       "move": "au",
-      "facing": "left",
+      "facing": "right",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -507,7 +507,7 @@
       "start": 7987,
       "end": 8020,
       "move": "au",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -537,7 +537,7 @@
       "start": 9538,
       "end": 9565,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -557,7 +557,7 @@
       "start": 9685,
       "end": 9711,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -597,7 +597,7 @@
       "start": 10158,
       "end": 10233,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -607,7 +607,7 @@
       "start": 10348,
       "end": 10424,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 0,
       "startStance": "paralela",
       "quality": "good"
@@ -617,7 +617,7 @@
       "start": 10532,
       "end": 10608,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "paralela",
       "quality": "good"
@@ -637,7 +637,7 @@
       "start": 10723,
       "end": 10748,
       "move": "au",
-      "facing": "left",
+      "facing": "right",
       "rep": 0,
       "startStance": "paralela",
       "quality": "good"
@@ -647,7 +647,7 @@
       "start": 10759,
       "end": 10826,
       "move": "au",
-      "facing": "left",
+      "facing": "right",
       "rep": 1,
       "startStance": "paralela",
       "quality": "good"
@@ -657,7 +657,7 @@
       "start": 10916,
       "end": 10947,
       "move": "au",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "paralela",
       "quality": "good"
@@ -667,7 +667,7 @@
       "start": 11115,
       "end": 11150,
       "move": "au",
-      "facing": "left",
+      "facing": "right",
       "rep": 0,
       "startStance": "paralela",
       "quality": "good"
@@ -717,7 +717,7 @@
       "start": 12083,
       "end": 12105,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 2,
       "startStance": "paralela",
       "quality": "good"
@@ -727,7 +727,7 @@
       "start": 12301,
       "end": 12329,
       "move": "unknown",
-      "facing": "right",
+      "facing": "left",
       "rep": 0,
       "startStance": "stand",
       "quality": "good"
@@ -737,7 +737,7 @@
       "start": 12381,
       "end": 12411,
       "move": "unknown",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "paralela",
       "quality": "good"
@@ -757,7 +757,7 @@
       "start": 12500,
       "end": 12534,
       "move": "unknown",
-      "facing": "right",
+      "facing": "left",
       "rep": 0,
       "startStance": "stand",
       "quality": "good"
