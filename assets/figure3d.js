@@ -11,7 +11,22 @@ var SEGS3D = [
   ['hipR','kneeR','footR'],
 ];
 
-function createFigure3D(canvas, p3d) {
+function mirror3d(pose, axis) {
+  var a = (axis == null) ? 60 : axis;
+  var swap = { shoulderL:'shoulderR', shoulderR:'shoulderL', elbowL:'elbowR', elbowR:'elbowL',
+    handL:'handR', handR:'handL', hipL:'hipR', hipR:'hipL', kneeL:'kneeR', kneeR:'kneeL',
+    footL:'footR', footR:'footL' };
+  var out = {};
+  for (var k in pose) {
+    if (k === 'headR') { out[k] = pose[k]; continue; }
+    var dst = swap[k] || k, v = pose[k];
+    out[dst] = [2 * a - v[0], v[1], -v[2]];
+  }
+  return out;
+}
+
+function createFigure3D(canvas, source, opts) {
+  opts = opts || {};
   var ctx = canvas.getContext('2d');
   var W = canvas.width, H = canvas.height;
   var theta = 0.3, phi = 0.1;  // initial rotation (slight angle looks best)
@@ -100,14 +115,61 @@ function createFigure3D(canvas, p3d) {
     ctx.stroke();
   }
 
-  var currentPose = p3d;
+  // --- animation + side state ---
+  var anim = null;        // { fps, frames, mirrorAxis }
+  var staticPose = null;  // single pose dict
+  var side = 'right';     // 'right' = as captured; 'left' = mirrored
+  var raf = null, startTs = 0;
 
-  function render() { draw(currentPose); }
+  function setSource(src) {
+    if (src && src.frames && src.frames.length) {
+      anim = { fps: src.fps || 24, frames: src.frames, mirrorAxis: src.mirrorAxis || 60 };
+      staticPose = null;
+    } else {
+      staticPose = src || null;
+      anim = null;
+    }
+  }
+  setSource(source);
 
-  // Pointer events (mouse + touch)
+  function applySide(pose) {
+    if (!pose) return pose;
+    if (side === 'left') return mirror3d(pose, (anim && anim.mirrorAxis) || 60);
+    return pose;
+  }
+
+  function poseAtTime(ms) {
+    var f = anim.frames, n = f.length;
+    var dur = n * (1000 / anim.fps);
+    var t = ((ms % dur) + dur) % dur;
+    var fpos = t / (1000 / anim.fps);
+    var i = Math.floor(fpos), j = (i + 1) % n, u = fpos - i;
+    var a = f[i], b = f[j], o = {};
+    for (var k in a) {
+      if (k === 'headR') { o[k] = a[k]; continue; }
+      var A = a[k], B = b[k] || a[k];
+      o[k] = [A[0] + (B[0] - A[0]) * u, A[1] + (B[1] - A[1]) * u, A[2] + (B[2] - A[2]) * u];
+    }
+    return o;
+  }
+
+  function frame(ts) {
+    if (!startTs) startTs = ts;
+    draw(applySide(poseAtTime(ts - startTs)));
+    raf = requestAnimationFrame(frame);
+  }
+
+  function render() {
+    if (anim) { return; }           // animation drives its own frames
+    draw(applySide(staticPose));
+  }
+
+  function play() { if (anim && !raf) { startTs = 0; raf = requestAnimationFrame(frame); } }
+  function pause() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+  // Pointer events (mouse + touch) — unchanged orbit, but re-render statics on drag.
   canvas.addEventListener('pointerdown', function(e) {
-    drag = true; lastX = e.clientX; lastY = e.clientY;
-    canvas.setPointerCapture(e.pointerId);
+    drag = true; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', function(e) {
     if (!drag) return;
@@ -115,15 +177,22 @@ function createFigure3D(canvas, p3d) {
     theta += dx * 0.012; phi += dy * 0.010;
     phi = Math.max(-1.2, Math.min(1.2, phi));
     lastX = e.clientX; lastY = e.clientY;
-    render();
+    if (!anim) render();           // animated views redraw on their own RAF
   });
   canvas.addEventListener('pointerup',     function() { drag = false; });
   canvas.addEventListener('pointercancel', function() { drag = false; });
 
-  render();
+  if (anim) { play(); } else { render(); }
 
   return {
-    update: function(newPose) { currentPose = newPose; render(); },
-    destroy: function() {}
+    update: function(src) { setSource(src); startTs = 0; if (anim) { pause(); play(); } else render(); },
+    setAnimation: function(a) { setSource(a); pause(); play(); },
+    setVariant: function(name) {
+      if (anim && opts.variants && opts.variants[name]) { setSource({ fps: anim.fps, frames: opts.variants[name], mirrorAxis: anim.mirrorAxis }); pause(); play(); }
+    },
+    setSide: function(s) { side = (s === 'left') ? 'left' : 'right'; if (!anim) render(); },
+    getSide: function() { return side; },
+    play: play, pause: pause,
+    destroy: function() { pause(); }
   };
 }
