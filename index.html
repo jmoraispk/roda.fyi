@@ -1857,7 +1857,7 @@ function showComparePage(slug1, slug2) {
   var s2 = document.getElementById('compareSelect2');
   if (slug1) s1.value = slug1;
   if (slug2) s2.value = slug2;
-  history.replaceState(null, '', '#compare/' + (slug1||'') + (slug2 ? '/' + slug2 : ''));
+  history.pushState(null, '', '#compare/' + (slug1||'') + (slug2 ? '/' + slug2 : ''));
 
   if (slug1) renderComparePanel(document.getElementById('comparePanel1'), slug1, _compareViewers[0]);
   if (slug2) renderComparePanel(document.getElementById('comparePanel2'), slug2, _compareViewers[1]);
