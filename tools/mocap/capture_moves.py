@@ -98,6 +98,7 @@ def build(track, manifest, do_qa):
             per_facing[facing] = mean
             print(f"    {slug}/{variant} {facing}: {len(reps)} reps, mean spread {std.mean():.2f}")
         fused = fuse.fuse_facings(per_facing) if len(per_facing) >= 2 else next(iter(per_facing.values()))
+        fused = retarget.fill_smooth_rigidify(fused)  # rep-avg + fusion break rigidity; re-lock bones & de-jitter
         frames = retarget.normalize_sequence(fused)
         by_slug.setdefault(slug, {})[variant] = frames
         if do_qa:
