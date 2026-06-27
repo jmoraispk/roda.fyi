@@ -6,6 +6,7 @@
 import sys, os, traceback
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # import sibling modules
+sys.modules.setdefault("run_tests", sys.modules[__name__])  # sibling `from run_tests import register` hits THIS module
 
 _TESTS = []
 
