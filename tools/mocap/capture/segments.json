@@ -7,7 +7,7 @@
       "start": 145,
       "end": 185,
       "move": "ginga",
-      "facing": "back",
+      "facing": "front",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -17,7 +17,7 @@
       "start": 285,
       "end": 324,
       "move": "ginga",
-      "facing": "back",
+      "facing": "front",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -27,7 +27,7 @@
       "start": 346,
       "end": 397,
       "move": "ginga",
-      "facing": "right",
+      "facing": "front",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -37,7 +37,7 @@
       "start": 401,
       "end": 492,
       "move": "ginga",
-      "facing": "right",
+      "facing": "left",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -47,7 +47,7 @@
       "start": 498,
       "end": 541,
       "move": "ginga",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -57,7 +57,7 @@
       "start": 544,
       "end": 587,
       "move": "ginga",
-      "facing": "right",
+      "facing": "left",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -67,7 +67,7 @@
       "start": 1127,
       "end": 1154,
       "move": "ginga",
-      "facing": "left",
+      "facing": "back",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -97,7 +97,7 @@
       "start": 1329,
       "end": 1383,
       "move": "ginga",
-      "facing": "back",
+      "facing": "right",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -127,7 +127,7 @@
       "start": 1720,
       "end": 1786,
       "move": "bencao",
-      "facing": "right",
+      "facing": "front",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -137,7 +137,7 @@
       "start": 1799,
       "end": 1859,
       "move": "bencao",
-      "facing": "right",
+      "facing": "front",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -157,7 +157,7 @@
       "start": 2116,
       "end": 2171,
       "move": "bencao",
-      "facing": "front",
+      "facing": "left",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -177,7 +177,7 @@
       "start": 2726,
       "end": 2758,
       "move": "bencao",
-      "facing": "back",
+      "facing": "left",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -267,7 +267,7 @@
       "start": 3988,
       "end": 4049,
       "move": "meia-lua-de-frente",
-      "facing": "left",
+      "facing": "front",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -297,7 +297,7 @@
       "start": 4732,
       "end": 4772,
       "move": "meia-lua-de-frente",
-      "facing": "back",
+      "facing": "left",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -327,7 +327,7 @@
       "start": 5326,
       "end": 5357,
       "move": "meia-lua-de-frente",
-      "facing": "right",
+      "facing": "back",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -357,7 +357,7 @@
       "start": 6041,
       "end": 6120,
       "move": "meia-lua-de-frente",
-      "facing": "front",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -387,7 +387,7 @@
       "start": 6428,
       "end": 6447,
       "move": "armada",
-      "facing": "left",
+      "facing": "front",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -437,7 +437,7 @@
       "start": 7142,
       "end": 7218,
       "move": "armada",
-      "facing": "front",
+      "facing": "back",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -457,7 +457,7 @@
       "start": 7493,
       "end": 7524,
       "move": "armada",
-      "facing": "back",
+      "facing": "right",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -467,7 +467,7 @@
       "start": 7564,
       "end": 7656,
       "move": "armada",
-      "facing": "left",
+      "facing": "right",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -487,7 +487,7 @@
       "start": 7822,
       "end": 7902,
       "move": "au",
-      "facing": "back",
+      "facing": "front",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -497,7 +497,7 @@
       "start": 7926,
       "end": 7947,
       "move": "au",
-      "facing": "right",
+      "facing": "front",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -507,7 +507,7 @@
       "start": 7987,
       "end": 8020,
       "move": "au",
-      "facing": "right",
+      "facing": "front",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -517,7 +517,7 @@
       "start": 8452,
       "end": 8483,
       "move": "au",
-      "facing": "front",
+      "facing": "left",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -527,7 +527,7 @@
       "start": 8493,
       "end": 8582,
       "move": "au",
-      "facing": "front",
+      "facing": "left",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -547,7 +547,7 @@
       "start": 9585,
       "end": 9678,
       "move": "au",
-      "facing": "front",
+      "facing": "back",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -557,7 +557,7 @@
       "start": 9685,
       "end": 9711,
       "move": "au",
-      "facing": "left",
+      "facing": "back",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -577,7 +577,7 @@
       "start": 10071,
       "end": 10096,
       "move": "au",
-      "facing": "back",
+      "facing": "right",
       "rep": 0,
       "startStance": "ginga",
       "quality": "good"
@@ -587,7 +587,7 @@
       "start": 10123,
       "end": 10149,
       "move": "au",
-      "facing": "back",
+      "facing": "right",
       "rep": 1,
       "startStance": "ginga",
       "quality": "good"
@@ -597,7 +597,7 @@
       "start": 10158,
       "end": 10233,
       "move": "au",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "ginga",
       "quality": "good"
@@ -607,7 +607,7 @@
       "start": 10348,
       "end": 10424,
       "move": "au",
-      "facing": "left",
+      "facing": "front",
       "rep": 0,
       "startStance": "paralela",
       "quality": "good"
@@ -617,7 +617,7 @@
       "start": 10532,
       "end": 10608,
       "move": "au",
-      "facing": "left",
+      "facing": "front",
       "rep": 1,
       "startStance": "paralela",
       "quality": "good"
@@ -627,7 +627,7 @@
       "start": 10612,
       "end": 10635,
       "move": "au",
-      "facing": "back",
+      "facing": "front",
       "rep": 2,
       "startStance": "paralela",
       "quality": "good"
@@ -637,7 +637,7 @@
       "start": 10723,
       "end": 10748,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 0,
       "startStance": "paralela",
       "quality": "good"
@@ -647,7 +647,7 @@
       "start": 10759,
       "end": 10826,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 1,
       "startStance": "paralela",
       "quality": "good"
@@ -657,7 +657,7 @@
       "start": 10916,
       "end": 10947,
       "move": "au",
-      "facing": "right",
+      "facing": "left",
       "rep": 2,
       "startStance": "paralela",
       "quality": "good"
@@ -667,7 +667,7 @@
       "start": 11115,
       "end": 11150,
       "move": "au",
-      "facing": "right",
+      "facing": "back",
       "rep": 0,
       "startStance": "paralela",
       "quality": "good"
@@ -677,7 +677,7 @@
       "start": 11160,
       "end": 11238,
       "move": "au",
-      "facing": "front",
+      "facing": "back",
       "rep": 1,
       "startStance": "paralela",
       "quality": "good"
@@ -687,7 +687,7 @@
       "start": 11392,
       "end": 11466,
       "move": "au",
-      "facing": "front",
+      "facing": "back",
       "rep": 2,
       "startStance": "paralela",
       "quality": "good"
@@ -697,7 +697,7 @@
       "start": 11798,
       "end": 11870,
       "move": "au",
-      "facing": "front",
+      "facing": "right",
       "rep": 0,
       "startStance": "paralela",
       "quality": "good"
@@ -707,7 +707,7 @@
       "start": 11878,
       "end": 11900,
       "move": "au",
-      "facing": "front",
+      "facing": "right",
       "rep": 1,
       "startStance": "paralela",
       "quality": "good"
@@ -717,7 +717,7 @@
       "start": 12083,
       "end": 12105,
       "move": "au",
-      "facing": "left",
+      "facing": "right",
       "rep": 2,
       "startStance": "paralela",
       "quality": "good"
@@ -730,7 +730,7 @@
       "facing": "left",
       "rep": 0,
       "startStance": "stand",
-      "quality": "good"
+      "quality": "bad"
     },
     {
       "i": 73,
@@ -740,7 +740,7 @@
       "facing": "left",
       "rep": 1,
       "startStance": "paralela",
-      "quality": "good"
+      "quality": "bad"
     },
     {
       "i": 74,
@@ -750,7 +750,7 @@
       "facing": "front",
       "rep": 2,
       "startStance": "stand",
-      "quality": "good"
+      "quality": "bad"
     },
     {
       "i": 75,
@@ -760,7 +760,7 @@
       "facing": "left",
       "rep": 0,
       "startStance": "stand",
-      "quality": "good"
+      "quality": "bad"
     }
   ]
 }
