@@ -1139,8 +1139,9 @@ DATA.forEach(cat=>{
   cat.moves.forEach((m,i)=>{
     const tc = m.tc || (typeof cat.tag==='function'? cat.tag(m,i) : 'gold');
     flat.push({move:m,catId:cat.id});
+    const slug_=slugify(m.n);
     cards+=`
-    <article class="card" tabindex="0" aria-label="${m.n} — ${m.g}">
+    <article class="card" tabindex="0" aria-label="${m.n} — ${m.g}" data-slug="${slug_}" role="button" style="cursor:pointer">
       <span class="idx">${String(i+1).padStart(2,'0')}</span>
       <div class="figwrap"><div class="ring"></div>
         <svg viewBox="0 0 120 160" aria-hidden="true">${fig(m.p, m.hi)}</svg>
@@ -1199,6 +1200,17 @@ cards.forEach((card,i)=>{
   card.addEventListener('blur',leave);
   card.addEventListener('click',()=>{ player.mode==='loop'?leave():enter(); });
   card._player=player;
+});
+
+/* card click → move detail page */
+cards.forEach(function(card) {
+  card.addEventListener('click', function() {
+    var s = card.dataset.slug;
+    if (s) showMove(s);
+  });
+  card.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); var s = card.dataset.slug; if(s) showMove(s); }
+  });
 });
 
 /* reveal on scroll + a one-pass autoplay when a card first appears */
@@ -1654,6 +1666,106 @@ function renderGroups(){
   localizeMap();
 }
 
+/* ============================================================
+   MOVE DETAIL PAGE
+   ============================================================ */
+var _figure3d = null;
+
+function renderMovePage(slug) {
+  var found = null, foundCat = null;
+  DATA.forEach(function(cat) {
+    cat.moves.forEach(function(m) {
+      if (slugify(m.n) === slug) { found = m; foundCat = cat; }
+    });
+  });
+  if (!found) { showPage('lexicon'); return; }
+
+  var ext = (typeof MOVES_EXT !== 'undefined' && MOVES_EXT[slug]) ||
+    { longDesc:'', aliases:[], variations:[], targets:[], videos:[], p3d:null };
+
+  // Populate header
+  document.getElementById('moveKicker').textContent = foundCat.title + ' · ' + found.t;
+  document.getElementById('moveTitle').textContent = ext.aliases && ext.aliases.length ? found.n + ' / ' + ext.aliases[0] : found.n;
+  document.getElementById('moveAliases').textContent = ext.aliases && ext.aliases.length > 1 ? 'Also: ' + ext.aliases.slice(1).join(', ') : '';
+  document.getElementById('moveMeta').innerHTML =
+    '<span>' + found.g + '</span>' +
+    (found.tc ? '<span style="color:var(--' + found.tc + ')">' + found.t + '</span>' : '');
+  document.getElementById('moveLongDesc').textContent = ext.longDesc || found.d;
+
+  // Variations
+  var varSec = document.getElementById('moveVariations');
+  var varList = document.getElementById('moveVarList');
+  if (ext.variations && ext.variations.length) {
+    varList.innerHTML = ext.variations.map(function(v) {
+      return '<button class="move-var-chip" type="button">' + v + '</button>';
+    }).join('');
+    varSec.hidden = false;
+  } else { varSec.hidden = true; }
+
+  // Targets
+  var tgtSec = document.getElementById('moveTargets');
+  var tgtList = document.getElementById('moveTargetList');
+  if (ext.targets && ext.targets.length) {
+    tgtList.innerHTML = ext.targets.map(function(t) {
+      return '<div class="move-target"><span class="move-target-area">' + t.area + '</span><span class="move-target-desc">' + t.desc + '</span></div>';
+    }).join('');
+    tgtSec.hidden = false;
+  } else { tgtSec.hidden = true; }
+
+  // Videos
+  var vidSec = document.getElementById('moveVideos');
+  var vidList = document.getElementById('moveVideoList');
+  if (ext.videos && ext.videos.length) {
+    vidList.innerHTML = ext.videos.map(function(v) {
+      return '<a class="move-video-link" href="' + v.url + '" target="_blank" rel="noopener">&#9654; ' + v.title + (v.channel ? ' — ' + v.channel : '') + '</a>';
+    }).join('');
+    vidSec.hidden = false;
+  } else { vidSec.hidden = true; }
+
+  // 3D viewer
+  var canvas = document.getElementById('move3dCanvas');
+  if (_figure3d) { _figure3d.destroy(); _figure3d = null; }
+  if (ext.p3d && typeof createFigure3D === 'function') {
+    _figure3d = createFigure3D(canvas, ext.p3d);
+  } else {
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#251C13';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '12px Space Mono, monospace';
+    ctx.fillStyle = '#5c4a35';
+    ctx.textAlign = 'center';
+    ctx.fillText('3D pose coming soon', canvas.width/2, canvas.height/2);
+  }
+
+  // Compare button
+  document.getElementById('moveCompareBtn').onclick = function() {
+    location.hash = '#compare/' + slug;
+  };
+}
+
+function showMove(slug) {
+  ALL_PAGE_ELS.forEach(function(sel){ var el=document.querySelector(sel); if(el) el.hidden=true; });
+  var view = document.getElementById('moveView');
+  view.hidden = false;
+  renderMovePage(slug);
+  curPage = 'movePage'; curWorld = 'moves';
+  tabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.world==='moves')); });
+  renderTitles();
+  history.replaceState(null, '', '#move/' + slug);
+  window.scrollTo(0, 0);
+}
+
+function showComparePage(slug1, slug2) {
+  // stub — implemented in Task 8
+  showPage('lexicon');
+}
+
+document.getElementById('moveBackBtn').addEventListener('click', function() {
+  if (_figure3d) { _figure3d.destroy(); _figure3d = null; }
+  showPage('lexicon');
+});
+
 /* ---- Interactive world map (self-contained SVG, lazy-loaded land asset) ---- */
 let mapState=null, mapLoading=false;
 function hidePop(){ const p=document.getElementById('mapPop'); if(p) p.remove(); }
@@ -1750,7 +1862,14 @@ function showPage(page, fromHash){
 
 tabs.forEach(t=>t.addEventListener('click',()=>showPage(WORLD_DEFAULT[t.dataset.world]||'lexicon')));
 if(navTitles) navTitles.addEventListener('click',e=>{ const b=e.target.closest('.navlink'); if(b) showPage(b.dataset.page); });
-addEventListener('hashchange',()=>showPage(HASH_PAGE[location.hash||'']||'lexicon', true));
+addEventListener('hashchange', function() {
+  var h = location.hash || '';
+  var moveMatch = h.match(/^#move\/(.+)$/);
+  var compareMatch = h.match(/^#compare\/(.+)$/);
+  if (moveMatch) { showMove(decodeURIComponent(moveMatch[1])); }
+  else if (compareMatch) { showComparePage(decodeURIComponent(compareMatch[1])); }
+  else { showPage(HASH_PAGE[h] || 'lexicon', true); }
+});
 setNavH(); addEventListener('resize', setNavH);
 
 /* ============================================================
@@ -2173,7 +2292,14 @@ document.querySelectorAll('.lang .flag').forEach(b=>b.addEventListener('click',(
 })();
 
 /* now that i18n is live, route to the page named by the URL hash */
-showPage(HASH_PAGE[location.hash||'']||'lexicon', true);
+(function(){
+  var h = location.hash || '';
+  var moveMatch = h.match(/^#move\/(.+)$/);
+  var compareMatch = h.match(/^#compare\/(.+)$/);
+  if (moveMatch) { showMove(decodeURIComponent(moveMatch[1])); }
+  else if (compareMatch) { showComparePage(decodeURIComponent(compareMatch[1])); }
+  else { showPage(HASH_PAGE[h] || 'lexicon', true); }
+})();
 </script>
 <script src="assets/moves.extended.js"></script>
 <script src="assets/figure3d.js"></script>
