@@ -52,6 +52,7 @@ tools/mocap/__pycache__/
 tools/mocap/frames/
 *.pt
 *.onnx
+*.task
 
 # Downloaded reference video (heavy; re-fetchable). Keep the provenance
 # manifest + the captured keyframes/QA, drop the raw video + overlays.
