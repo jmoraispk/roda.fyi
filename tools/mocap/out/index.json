@@ -1,5 +1,635 @@
 [
   {
+    "file": "Capoeira.webm",
+    "w": 720,
+    "h": 1280,
+    "fps": 8,
+    "dur": 15.6,
+    "n": 125,
+    "detected": 125,
+    "meanconf": 0.679,
+    "source": {
+      "title": "File:Capoeira.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Capoeira.webm",
+      "author": "Pipe310593",
+      "license": "CC BY-SA 4.0",
+      "moves": null,
+      "slug": null,
+      "query": null
+    },
+    "pose": "Capoeira.pose.json"
+  },
+  {
+    "file": "Capoeira_Parque_da_Redenção_Porto_Alegre_Brasil_2018-09-30_2.webm",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 15.56,
+    "n": 124,
+    "detected": 124,
+    "meanconf": 0.669,
+    "source": {
+      "title": "File:Capoeira (Parque da Redenção (Porto Alegre, Brasil)) 2018-09-30 2.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Capoeira_(Parque_da_Reden%C3%A7%C3%A3o_(Porto_Alegre,_Brasil))_2018-09-30_2.webm",
+      "author": "Eugenio Hansen, OFS",
+      "license": "CC BY-SA 4.0",
+      "moves": null,
+      "slug": null,
+      "query": null
+    },
+    "pose": "Capoeira_Parque_da_Redenção_Porto_Alegre_Brasil_2018-09-30_2.pose.json"
+  },
+  {
+    "file": "Capoeira_Parque_da_Redenção_Porto_Alegre_Brasil_2018-09-30_3.webm",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 17.59,
+    "n": 141,
+    "detected": 141,
+    "meanconf": 0.741,
+    "source": {
+      "title": "File:Capoeira (Parque da Redenção (Porto Alegre, Brasil)) 2018-09-30 3.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Capoeira_(Parque_da_Reden%C3%A7%C3%A3o_(Porto_Alegre,_Brasil))_2018-09-30_3.webm",
+      "author": "Eugenio Hansen, OFS",
+      "license": "CC BY-SA 4.0",
+      "moves": null,
+      "slug": null,
+      "query": null
+    },
+    "pose": "Capoeira_Parque_da_Redenção_Porto_Alegre_Brasil_2018-09-30_3.pose.json"
+  },
+  {
+    "file": "Capoeira_Parque_da_Redenção_Porto_Alegre_Brasil_2018-09-30_4.webm",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 22.32,
+    "n": 179,
+    "detected": 179,
+    "meanconf": 0.844,
+    "source": {
+      "title": "File:Capoeira (Parque da Redenção (Porto Alegre, Brasil)) 2018-09-30 4.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Capoeira_(Parque_da_Reden%C3%A7%C3%A3o_(Porto_Alegre,_Brasil))_2018-09-30_4.webm",
+      "author": "Eugenio Hansen, OFS",
+      "license": "CC BY-SA 4.0",
+      "moves": null,
+      "slug": null,
+      "query": null
+    },
+    "pose": "Capoeira_Parque_da_Redenção_Porto_Alegre_Brasil_2018-09-30_4.pose.json"
+  },
+  {
+    "file": "Capoeira_no_terreiro_de_jesus.webm",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 23.11,
+    "n": 185,
+    "detected": 185,
+    "meanconf": 0.79,
+    "source": {
+      "title": "File:Capoeira no terreiro de jesus.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Capoeira_no_terreiro_de_jesus.webm",
+      "author": "Lucas Teles",
+      "license": "CC BY-SA 3.0",
+      "moves": null,
+      "slug": null,
+      "query": null
+    },
+    "pose": "Capoeira_no_terreiro_de_jesus.pose.json"
+  },
+  {
+    "file": "Giro_de_cabeça-headspin-break_dance-capoeira.webm",
+    "w": 202,
+    "h": 360,
+    "fps": 8,
+    "dur": 15.0,
+    "n": 120,
+    "detected": 95,
+    "meanconf": 0.723,
+    "source": {
+      "title": "File:Giro de cabeça-headspin-break dance-capoeira.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Giro_de_cabe%C3%A7a-headspin-break_dance-capoeira.webm",
+      "author": "Clovis Moreira",
+      "license": "CC BY-SA 4.0",
+      "moves": null,
+      "slug": null,
+      "query": null
+    },
+    "pose": "Giro_de_cabeça-headspin-break_dance-capoeira.pose.json"
+  },
+  {
+    "file": "yt-armada.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 226.88,
+    "n": 1815,
+    "detected": 1764,
+    "meanconf": 0.803,
+    "source": {
+      "title": "How to Do the Armada | Capoeira",
+      "page": "https://www.youtube.com/watch?v=1iJ_pBo-Isc",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "armada"
+      ],
+      "slug": "armada",
+      "query": "capoeira armada spinning kick tutorial how to"
+    },
+    "pose": "yt-armada.pose.json"
+  },
+  {
+    "file": "yt-au.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 113.41,
+    "n": 907,
+    "detected": 903,
+    "meanconf": 0.837,
+    "source": {
+      "title": "[Capoeira Tutorial] How to do the Au - Cartwheel ? Mestra Jo - Grupo Capoeira Brasil",
+      "page": "https://www.youtube.com/watch?v=IgXb1C3vmHo",
+      "author": "Capoeira Nossa Nação - Mestra Jô",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "au"
+      ],
+      "slug": "au",
+      "query": "capoeira aú au cartwheel tutorial how to"
+    },
+    "pose": "yt-au.pose.json"
+  },
+  {
+    "file": "yt-bananeira.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 344.38,
+    "n": 2755,
+    "detected": 2649,
+    "meanconf": 0.829,
+    "source": {
+      "title": "Capoeira Handstand aka Bananeira Tutorial",
+      "page": "https://www.youtube.com/watch?v=1_-bNWYFfYo",
+      "author": "Capoeira Training Club",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "bananeira"
+      ],
+      "slug": "bananeira",
+      "query": "capoeira bananeira handstand tutorial how to"
+    },
+    "pose": "yt-bananeira.pose.json"
+  },
+  {
+    "file": "yt-banda.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 603.64,
+    "n": 4829,
+    "detected": 4457,
+    "meanconf": 0.815,
+    "source": {
+      "title": "Top Capoeira Movement Patterns Compilation 2018 (Beginners to Advanced)",
+      "page": "https://www.youtube.com/watch?v=O-l9W2vGaLY",
+      "author": "Official RAWTRICKS",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "banda"
+      ],
+      "slug": "banda",
+      "query": "capoeira banda takedown derrubada tutorial"
+    },
+    "pose": "yt-banda.pose.json"
+  },
+  {
+    "file": "yt-bencao.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 601.05,
+    "n": 4808,
+    "detected": 4422,
+    "meanconf": 0.62,
+    "source": {
+      "title": "Capoeira Kicks Lesson 3. How to do the Chapa de Costas and Bencao.",
+      "page": "https://www.youtube.com/watch?v=K2tgu8NvfWw",
+      "author": "Motherland's Realiest",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "bencao"
+      ],
+      "slug": "bencao",
+      "query": "capoeira benção bencao front kick tutorial how to"
+    },
+    "pose": "yt-bencao.pose.json"
+  },
+  {
+    "file": "yt-cabecada.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 213.32,
+    "n": 1707,
+    "detected": 1707,
+    "meanconf": 0.816,
+    "source": {
+      "title": "How to do a CAPOEIRA CABEÇADA | How to Headbutt",
+      "page": "https://www.youtube.com/watch?v=VFRnI2GxbME",
+      "author": "Edgar Bombril",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "cabecada"
+      ],
+      "slug": "cabecada",
+      "query": "capoeira cabeçada cabecada headbutt tutorial"
+    },
+    "pose": "yt-cabecada.pose.json"
+  },
+  {
+    "file": "yt-chapa.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 124.92,
+    "n": 999,
+    "detected": 763,
+    "meanconf": 0.672,
+    "source": {
+      "title": "SIDE TEEP (CHAPA) vs FRONT KICK (BENCO) TRADE",
+      "page": "https://www.youtube.com/watch?v=rsCxJnk47lE",
+      "author": "Capoeiratics",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "chapa"
+      ],
+      "slug": "chapa",
+      "query": "capoeira chapa side push kick tutorial"
+    },
+    "pose": "yt-chapa.pose.json"
+  },
+  {
+    "file": "yt-cocorinha.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 424.02,
+    "n": 3392,
+    "detected": 3330,
+    "meanconf": 0.92,
+    "source": {
+      "title": "Curso de Capoeira - Noções Básicas para Iniciante - Vídeo 7 - Aula 2 - Cocorinha",
+      "page": "https://www.youtube.com/watch?v=5HzerhEmI4Y",
+      "author": "Capoeira de Bolso -  Mestre Mula",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "cocorinha"
+      ],
+      "slug": "cocorinha",
+      "query": "capoeira cocorinha tutorial how to"
+    },
+    "pose": "yt-cocorinha.pose.json"
+  },
+  {
+    "file": "yt-comp-esquivas.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 327.17,
+    "n": 2617,
+    "detected": 2531,
+    "meanconf": 0.877,
+    "source": {
+      "title": "Esquivas Tutorial - Capoeira Dodges",
+      "page": "https://www.youtube.com/watch?v=JCXhHDeOdbI",
+      "author": "ABADA-Capoeira Sydney Official",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "esquiva-baixa",
+        "esquiva-lateral",
+        "esquiva-de-frente",
+        "esquiva-diagonal",
+        "cocorinha",
+        "negativa",
+        "resistencia",
+        "role",
+        "esquiva-de-costas"
+      ],
+      "slug": "comp-esquivas",
+      "query": "capoeira esquivas dodges tutorial all basic"
+    },
+    "pose": "yt-comp-esquivas.pose.json"
+  },
+  {
+    "file": "yt-comp-floreios.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 266.24,
+    "n": 2130,
+    "detected": 1836,
+    "meanconf": 0.805,
+    "source": {
+      "title": "Apprendre à faire le macaco / 7 variations du Macaco / Macaco e variaçao / how to do Macaco",
+      "page": "https://www.youtube.com/watch?v=ea7gKIVgXPQ",
+      "author": "Professor Gaviao Branco - Arte Capoeira",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "au",
+        "bananeira",
+        "ponte",
+        "queda-de-rins",
+        "macaco"
+      ],
+      "slug": "comp-floreios",
+      "query": "capoeira floreios acrobatics basics tutorial au macaco bananeira"
+    },
+    "pose": "yt-comp-floreios.pose.json"
+  },
+  {
+    "file": "yt-comp-kicks.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 756.69,
+    "n": 6053,
+    "detected": 5943,
+    "meanconf": 0.868,
+    "source": {
+      "title": "15 patadas PARA PRINCIPIANTES | Patadas básicas FÁCIL de aprender 😏",
+      "page": "https://www.youtube.com/watch?v=PlBgKJLubgE",
+      "author": "Xplaining capoeira",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "bencao",
+        "ponteira",
+        "martelo",
+        "meia-lua-de-frente",
+        "meia-lua-de-compasso",
+        "queixada",
+        "armada",
+        "chapa",
+        "pisao",
+        "gancho"
+      ],
+      "slug": "comp-kicks",
+      "query": "capoeira all basic kicks tutorial names golpes"
+    },
+    "pose": "yt-comp-kicks.pose.json"
+  },
+  {
+    "file": "yt-comp-takedowns.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 416.54,
+    "n": 3332,
+    "detected": 3272,
+    "meanconf": 0.935,
+    "source": {
+      "title": "Capoeira Takedown Tutorial: Rasteira em Pé",
+      "page": "https://www.youtube.com/watch?v=rZ48PPG8O0Q",
+      "author": "Grand Rapids Capoeira",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "rasteira",
+        "rasteira-de-costas",
+        "banda",
+        "vingativa",
+        "tesoura-de-frente",
+        "cabecada"
+      ],
+      "slug": "comp-takedowns",
+      "query": "capoeira rasteira takedowns derrubadas tutorial"
+    },
+    "pose": "yt-comp-takedowns.pose.json"
+  },
+  {
+    "file": "yt-escorpiao.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 256.07,
+    "n": 2048,
+    "detected": 1624,
+    "meanconf": 0.809,
+    "source": {
+      "title": "Tutorial Mestre Koioty #160 (Escorpião / escorpião na queda de rins /rabo de arria /escorpião em pé)",
+      "page": "https://www.youtube.com/watch?v=ieSembYinnw",
+      "author": "Mestre Koioty Capoeira Herança de Zumbi",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "escorpiao"
+      ],
+      "slug": "escorpiao",
+      "query": "capoeira escorpião escorpiao kick tutorial"
+    },
+    "pose": "yt-escorpiao.pose.json"
+  },
+  {
+    "file": "yt-esquiva-baixa.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 148.88,
+    "n": 1191,
+    "detected": 1141,
+    "meanconf": 0.799,
+    "source": {
+      "title": "How to Do the Esquiva | Capoeira",
+      "page": "https://www.youtube.com/watch?v=iuebJy4_JFQ",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "esquiva-baixa"
+      ],
+      "slug": "esquiva-baixa",
+      "query": "capoeira esquiva baixa tutorial how to"
+    },
+    "pose": "yt-esquiva-baixa.pose.json"
+  },
+  {
+    "file": "yt-esquiva-de-costas.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 148.88,
+    "n": 1191,
+    "detected": 1141,
+    "meanconf": 0.799,
+    "source": {
+      "title": "How to Do the Esquiva | Capoeira",
+      "page": "https://www.youtube.com/watch?v=iuebJy4_JFQ",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "esquiva-de-costas"
+      ],
+      "slug": "esquiva-de-costas",
+      "query": "capoeira esquiva de costas tutorial"
+    },
+    "pose": "yt-esquiva-de-costas.pose.json"
+  },
+  {
+    "file": "yt-esquiva-de-frente.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 80.36,
+    "n": 643,
+    "detected": 560,
+    "meanconf": 0.798,
+    "source": {
+      "title": "Axe Capoeira Toronto - Beginner Training #3 - Esquiva de Frente",
+      "page": "https://www.youtube.com/watch?v=aNCgoqCEN2c",
+      "author": "Capoeira Bamba Toronto",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "esquiva-de-frente"
+      ],
+      "slug": "esquiva-de-frente",
+      "query": "capoeira esquiva de frente tutorial"
+    },
+    "pose": "yt-esquiva-de-frente.pose.json"
+  },
+  {
+    "file": "yt-esquiva-diagonal.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 148.88,
+    "n": 1191,
+    "detected": 1141,
+    "meanconf": 0.799,
+    "source": {
+      "title": "How to Do the Esquiva | Capoeira",
+      "page": "https://www.youtube.com/watch?v=iuebJy4_JFQ",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "esquiva-diagonal"
+      ],
+      "slug": "esquiva-diagonal",
+      "query": "capoeira esquiva diagonal tutorial"
+    },
+    "pose": "yt-esquiva-diagonal.pose.json"
+  },
+  {
+    "file": "yt-esquiva-lateral.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 333.55,
+    "n": 2668,
+    "detected": 2585,
+    "meanconf": 0.923,
+    "source": {
+      "title": "Curso de Capoeira - Noções Básicas para Iniciante - Vídeo 8 - Aula 2 – Esquiva Lateral",
+      "page": "https://www.youtube.com/watch?v=m18L8MJJmPM",
+      "author": "Capoeira de Bolso -  Mestre Mula",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "esquiva-lateral"
+      ],
+      "slug": "esquiva-lateral",
+      "query": "capoeira esquiva lateral tutorial how to"
+    },
+    "pose": "yt-esquiva-lateral.pose.json"
+  },
+  {
+    "file": "yt-gancho.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 142.04,
+    "n": 1136,
+    "detected": 774,
+    "meanconf": 0.701,
+    "source": {
+      "title": "HOW TO DO GANCHO or HEEL KICK",
+      "page": "https://www.youtube.com/watch?v=Z4sNH3QpbXU",
+      "author": "Arnold Baldé - Vita",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "gancho"
+      ],
+      "slug": "gancho",
+      "query": "capoeira gancho hook kick tutorial"
+    },
+    "pose": "yt-gancho.pose.json"
+  },
+  {
+    "file": "yt-macaco.mp4",
+    "w": 720,
+    "h": 360,
+    "fps": 8,
+    "dur": 447.48,
+    "n": 3580,
+    "detected": 3377,
+    "meanconf": 0.611,
+    "source": {
+      "title": "How To Turn Your MACACO Into A BACK HANDSPRING - Tricking Tutorial",
+      "page": "https://www.youtube.com/watch?v=RZJWQvtLsoI",
+      "author": "Andre Tricks",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "macaco"
+      ],
+      "slug": "macaco",
+      "query": "capoeira macaco back handspring tutorial how to"
+    },
+    "pose": "yt-macaco.pose.json"
+  },
+  {
+    "file": "yt-martelo-do-chao.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 241.02,
+    "n": 1928,
+    "detected": 1891,
+    "meanconf": 0.897,
+    "source": {
+      "title": "Capoeira Kick Tutorial - Martelo Do Chao -  Brazilian Martial Arts",
+      "page": "https://www.youtube.com/watch?v=Eh5Kc0eD_kY",
+      "author": "LUMOEIRA - Capoeira Training",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "martelo-do-chao"
+      ],
+      "slug": "martelo-do-chao",
+      "query": "capoeira martelo do chão ground kick tutorial"
+    },
+    "pose": "yt-martelo-do-chao.pose.json"
+  },
+  {
+    "file": "yt-martelo.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 157.04,
+    "n": 1256,
+    "detected": 1231,
+    "meanconf": 0.908,
+    "source": {
+      "title": "Capoeira Kick Tutorial - THE MARTELO",
+      "page": "https://www.youtube.com/watch?v=yukTcfYq_S8",
+      "author": "LUMOEIRA - Capoeira Training",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "martelo"
+      ],
+      "slug": "martelo",
+      "query": "capoeira martelo roundhouse kick tutorial how to"
+    },
+    "pose": "yt-martelo.pose.json"
+  },
+  {
     "file": "yt-meia-lua-de-compasso.mp4",
     "w": 720,
     "h": 404,
@@ -20,5 +650,397 @@
       "query": "capoeira meia lua de compasso tutorial how to"
     },
     "pose": "yt-meia-lua-de-compasso.pose.json"
+  },
+  {
+    "file": "yt-meia-lua-de-frente.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 209.94,
+    "n": 1679,
+    "detected": 1628,
+    "meanconf": 0.824,
+    "source": {
+      "title": "How to Do the Meia-lua de Frente | Capoeira",
+      "page": "https://www.youtube.com/watch?v=UzG2bNa4CrE",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "meia-lua-de-frente"
+      ],
+      "slug": "meia-lua-de-frente",
+      "query": "capoeira meia lua de frente kick tutorial how to"
+    },
+    "pose": "yt-meia-lua-de-frente.pose.json"
+  },
+  {
+    "file": "yt-negativa.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 207.31,
+    "n": 1658,
+    "detected": 1608,
+    "meanconf": 0.832,
+    "source": {
+      "title": "How to Do the Negativa | Capoeira",
+      "page": "https://www.youtube.com/watch?v=iRb8inBYpf0",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "negativa"
+      ],
+      "slug": "negativa",
+      "query": "capoeira negativa tutorial how to"
+    },
+    "pose": "yt-negativa.pose.json"
+  },
+  {
+    "file": "yt-parafuso.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 125.95,
+    "n": 1007,
+    "detected": 969,
+    "meanconf": 0.926,
+    "source": {
+      "title": "How To Capoeira Jump Spinning Double Kick │ Parafuso",
+      "page": "https://www.youtube.com/watch?v=ZtlAjOHeQbw",
+      "author": "Ninja Tank Martial Arts",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "parafuso"
+      ],
+      "slug": "parafuso",
+      "query": "capoeira parafuso jumping kick tutorial"
+    },
+    "pose": "yt-parafuso.pose.json"
+  },
+  {
+    "file": "yt-pisao.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 117.68,
+    "n": 941,
+    "detected": 941,
+    "meanconf": 0.895,
+    "source": {
+      "title": "HELIO'S LESSON 8.2b (18Jul'12)_Pisao- Side Kick (Surprise Attack), Part II",
+      "page": "https://www.youtube.com/watch?v=fgWnyil4PdA",
+      "author": "SundarJiuJitsu",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "pisao"
+      ],
+      "slug": "pisao",
+      "query": "capoeira pisão pisao side kick tutorial"
+    },
+    "pose": "yt-pisao.pose.json"
+  },
+  {
+    "file": "yt-ponte.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 441.02,
+    "n": 3528,
+    "detected": 3528,
+    "meanconf": 0.801,
+    "source": {
+      "title": "Capoeira| beginners guidance to bridge   #ponte #capoeira #bridge",
+      "page": "https://www.youtube.com/watch?v=WFfCTPqGjRI",
+      "author": "Pitchula Capoeira",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "ponte"
+      ],
+      "slug": "ponte",
+      "query": "capoeira ponte bridge tutorial"
+    },
+    "pose": "yt-ponte.pose.json"
+  },
+  {
+    "file": "yt-ponteira.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 8,
+    "dur": 129.34,
+    "n": 1034,
+    "detected": 972,
+    "meanconf": 0.813,
+    "source": {
+      "title": "How to Do the Ginga | Capoeira",
+      "page": "https://www.youtube.com/watch?v=HbUxXJKitS4",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "ponteira"
+      ],
+      "slug": "ponteira",
+      "query": "capoeira ponteira bico front kick tutorial"
+    },
+    "pose": "yt-ponteira.pose.json"
+  },
+  {
+    "file": "yt-queda-de-rins.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 8,
+    "dur": 618.84,
+    "n": 4951,
+    "detected": 4741,
+    "meanconf": 0.847,
+    "source": {
+      "title": "Queda de Rins Tutorial Capoeira Calisthenics",
+      "page": "https://www.youtube.com/watch?v=XqTv9LcAIB0",
+      "author": "Official RAWTRICKS",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "queda-de-rins"
+      ],
+      "slug": "queda-de-rins",
+      "query": "capoeira queda de rins tutorial how to"
+    },
+    "pose": "yt-queda-de-rins.pose.json"
+  },
+  {
+    "file": "yt-queixada.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 12,
+    "dur": 160.04,
+    "n": 1920,
+    "detected": 1844,
+    "meanconf": 0.813,
+    "source": {
+      "title": "How to Do the Queixada | Capoeira",
+      "page": "https://www.youtube.com/watch?v=H3pQJc8d8H8",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "queixada"
+      ],
+      "slug": "queixada",
+      "query": "capoeira queixada kick tutorial how to"
+    },
+    "pose": "yt-queixada.pose.json"
+  },
+  {
+    "file": "yt-rabo-de-arraia.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 12,
+    "dur": 119.3,
+    "n": 1431,
+    "detected": 1355,
+    "meanconf": 0.799,
+    "source": {
+      "title": "How to Do the Rabo de Arraia | Capoeira",
+      "page": "https://www.youtube.com/watch?v=CBwr7ZxrwrY",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "rabo-de-arraia"
+      ],
+      "slug": "rabo-de-arraia",
+      "query": "capoeira rabo de arraia tutorial how to"
+    },
+    "pose": "yt-rabo-de-arraia.pose.json"
+  },
+  {
+    "file": "yt-rasteira-de-costas.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 12,
+    "dur": 210.86,
+    "n": 2530,
+    "detected": 2129,
+    "meanconf": 0.809,
+    "source": {
+      "title": "Aula 38 (class 38) Rasteira de frente Capoeira iniciantes (capoeira for beginners ENGLISH SUBTITLES)",
+      "page": "https://www.youtube.com/watch?v=QhOsKZXkZJk",
+      "author": "Mestre Koioty Capoeira Herança de Zumbi",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "rasteira-de-costas"
+      ],
+      "slug": "rasteira-de-costas",
+      "query": "capoeira rasteira de costas tutorial"
+    },
+    "pose": "yt-rasteira-de-costas.pose.json"
+  },
+  {
+    "file": "yt-rasteira.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 12,
+    "dur": 612.87,
+    "n": 7354,
+    "detected": 7051,
+    "meanconf": 0.827,
+    "source": {
+      "title": "CAPOEIRA KICKS AND SWEEPS(GOLPES E RASTEIRAS) LESSONS By MESTRE PAPA-LEGUAS",
+      "page": "https://www.youtube.com/watch?v=_52nFQbvUXo",
+      "author": "PL X",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "rasteira"
+      ],
+      "slug": "rasteira",
+      "query": "capoeira rasteira sweep tutorial how to"
+    },
+    "pose": "yt-rasteira.pose.json"
+  },
+  {
+    "file": "yt-resistencia.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 12,
+    "dur": 59.28,
+    "n": 711,
+    "detected": 646,
+    "meanconf": 0.9,
+    "source": {
+      "title": "Esquiva Resistencia | CAPOEIRA MOVEMENT LIBRARY",
+      "page": "https://www.youtube.com/watch?v=lytbshSSkus",
+      "author": "by MiNHOQUiNHO",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "resistencia"
+      ],
+      "slug": "resistencia",
+      "query": "capoeira resistência resistencia esquiva tutorial"
+    },
+    "pose": "yt-resistencia.pose.json"
+  },
+  {
+    "file": "yt-role.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 12,
+    "dur": 124.9,
+    "n": 1498,
+    "detected": 1421,
+    "meanconf": 0.85,
+    "source": {
+      "title": "How to Do the Role | Capoeira",
+      "page": "https://www.youtube.com/watch?v=YkjKw8FPA6Y",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "role"
+      ],
+      "slug": "role",
+      "query": "capoeira rolê role tutorial how to"
+    },
+    "pose": "yt-role.pose.json"
+  },
+  {
+    "file": "yt-sslyo3s3hiu.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 12,
+    "dur": 28.0,
+    "n": 336,
+    "detected": 336,
+    "meanconf": 0.872,
+    "source": {
+      "title": "Instrutor Carrapeta - Grupo Axé Capoeira - Bogota, Colômbia",
+      "page": "https://www.youtube.com/watch?v=ssLYO3s3HiU",
+      "author": "Professor  Carrapeta",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [],
+      "slug": "sslyo3s3hiu",
+      "query": ""
+    },
+    "pose": "yt-sslyo3s3hiu.pose.json"
+  },
+  {
+    "file": "yt-tesoura-de-frente.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 12,
+    "dur": 15.27,
+    "n": 183,
+    "detected": 139,
+    "meanconf": 0.814,
+    "source": {
+      "title": "Mestre #Bomba Lesson: How to do a #Tesoura... #capoeira #barrovermelho",
+      "page": "https://www.youtube.com/watch?v=oRxDY-27S7k",
+      "author": "Barro Vermelho Capoeira of DC",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "tesoura-de-frente"
+      ],
+      "slug": "tesoura-de-frente",
+      "query": "capoeira tesoura de frente takedown tutorial"
+    },
+    "pose": "yt-tesoura-de-frente.pose.json"
+  },
+  {
+    "file": "yt-vingativa.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 12,
+    "dur": 212.69,
+    "n": 2552,
+    "detected": 2475,
+    "meanconf": 0.8,
+    "source": {
+      "title": "How to Do the Vingativa | Capoeira",
+      "page": "https://www.youtube.com/watch?v=SGQE3YNBkzY",
+      "author": "Howcast",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "vingativa"
+      ],
+      "slug": "vingativa",
+      "query": "capoeira vingativa takedown tutorial"
+    },
+    "pose": "yt-vingativa.pose.json"
+  },
+  {
+    "file": "yt-voadora.mp4",
+    "w": 640,
+    "h": 360,
+    "fps": 12,
+    "dur": 88.38,
+    "n": 1060,
+    "detected": 881,
+    "meanconf": 0.882,
+    "source": {
+      "title": "Jump /Flying Side Kick/ \"Voadora\" - TUTORIAL",
+      "page": "https://www.youtube.com/watch?v=HJQ0hz_l4IE",
+      "author": "SUPER LENDÁRIO",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [
+        "voadora"
+      ],
+      "slug": "voadora",
+      "query": "capoeira voadora flying kick tutorial"
+    },
+    "pose": "yt-voadora.pose.json"
+  },
+  {
+    "file": "yt-y9rmrtw8mn4.mp4",
+    "w": 720,
+    "h": 404,
+    "fps": 12,
+    "dur": 113.44,
+    "n": 1361,
+    "detected": 867,
+    "meanconf": 0.79,
+    "source": {
+      "title": "Best capoeira solo from CM Barrãozinho (Marcus Aurelio), ABC 2015",
+      "page": "https://www.youtube.com/watch?v=y9RmrtW8mN4",
+      "author": "Axé Capoeira",
+      "license": "YouTube (fetched for algorithmic pose analysis only)",
+      "moves": [],
+      "slug": "y9rmrtw8mn4",
+      "query": ""
+    },
+    "pose": "yt-y9rmrtw8mn4.pose.json"
   }
 ]

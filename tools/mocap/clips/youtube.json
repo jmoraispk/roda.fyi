@@ -726,5 +726,40 @@
     "query": "capoeira esquiva lateral tutorial how to",
     "yt_id": "m18L8MJJmPM",
     "section": null
+  },
+  {
+    "title": "Instrutor Carrapeta - Grupo Axé Capoeira - Bogota, Colômbia",
+    "url": "https://www.youtube.com/watch?v=ssLYO3s3HiU",
+    "page": "https://www.youtube.com/watch?v=ssLYO3s3HiU",
+    "author": "Professor  Carrapeta",
+    "license": "YouTube (fetched for algorithmic pose analysis only)",
+    "duration_s": 60,
+    "size_mb": 3.8,
+    "file": "yt-sslyo3s3hiu.mp4",
+    "slug": "sslyo3s3hiu",
+    "kind": "move",
+    "moves": [],
+    "query": "",
+    "yt_id": "ssLYO3s3HiU",
+    "section": [
+      31.0,
+      59.0
+    ]
+  },
+  {
+    "title": "Best capoeira solo from CM Barrãozinho (Marcus Aurelio), ABC 2015",
+    "url": "https://www.youtube.com/watch?v=y9RmrtW8mN4",
+    "page": "https://www.youtube.com/watch?v=y9RmrtW8mN4",
+    "author": "Axé Capoeira",
+    "license": "YouTube (fetched for algorithmic pose analysis only)",
+    "duration_s": 113,
+    "size_mb": 6.7,
+    "file": "yt-y9rmrtw8mn4.mp4",
+    "slug": "y9rmrtw8mn4",
+    "kind": "move",
+    "moves": [],
+    "query": "",
+    "yt_id": "y9RmrtW8mN4",
+    "section": null
   }
 ]

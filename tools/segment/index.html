@@ -8,23 +8,26 @@
     --mono:ui-monospace,Consolas,monospace}
   *{box-sizing:border-box} html,body{margin:0;height:100%}
   body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif;display:flex;flex-direction:column;height:100vh}
-  header{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header{display:flex;gap:10px 12px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
   header b{letter-spacing:.04em} .sp{flex:1}
+  .src{display:flex;align-items:center;gap:5px} .src small{color:var(--mut)}
+  .path{width:208px;font-family:var(--mono);font-size:12px;padding:5px 8px}
+  .mini{padding:5px 8px}
   button,select,input{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 10px}
   button{cursor:pointer} button.gold{background:var(--gold);color:#1a130a;font-weight:700;border-color:var(--gold)}
   .stage{flex:1;display:flex;align-items:center;justify-content:center;background:#000;min-height:0;overflow:hidden;position:relative}
   .vidwrap{position:relative;display:inline-flex;max-width:100%;max-height:100%}
   video{max-width:100%;max-height:100%;display:block}
   #ov{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-  .timeline{position:relative;height:48px;background:var(--panel2);border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;user-select:none}
+  .timeline{position:relative;height:70px;background:var(--panel2);border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;user-select:none}
   .timeline::-webkit-scrollbar{height:8px} .timeline::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
   .track{position:relative;height:100%;min-width:100%;cursor:crosshair}
-  .blk{position:absolute;top:3px;height:34px;border-radius:5px;border:1px solid #0006;overflow:hidden;
+  .blk{position:absolute;top:3px;height:40px;border-radius:5px;border:1px solid #0006;overflow:hidden;
     font:11px/1.3 var(--mono);color:#1a130a;padding:4px 6px;cursor:pointer;white-space:nowrap}
   .blk.sel{outline:2px solid #fff;z-index:3} .blk.bad{opacity:.4}
   .blk .h{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:2} .blk .h.l{left:0} .blk .h.r{right:0}
   .blk .h:hover{background:#ffffff66}
-  #prev{position:absolute;top:3px;height:34px;border-radius:5px;background:#ffffff22;border:1px dashed var(--gold);pointer-events:none;display:none}
+  #prev{position:absolute;top:3px;height:40px;border-radius:5px;background:#ffffff22;border:1px dashed var(--gold);pointer-events:none;display:none}
   .playhead{position:absolute;top:0;width:2px;height:100%;background:#fff;pointer-events:none;z-index:4}
   .tlbar{display:flex;gap:8px;align-items:center;padding:6px 16px;border-top:1px solid var(--line);background:var(--panel)}
   .tlbar button{padding:3px 11px}
@@ -39,13 +42,22 @@
   .ctl .nb{padding:4px 9px}
   #selrow.off{opacity:.4}
 </style></head><body>
-<header><b>RODA · SEGMENT</b><span class="sp"></span>
-  <label title="raw footage (the .mp4 you recorded)"><small>video</small> <input type="file" id="vid" accept="video/mp4"></label>
-  <label title="capture/segments.json — the move INTERVALS you label here (start/end + move + camera + quality)"><small>segments</small> <input type="file" id="seg" accept="application/json"></label>
-  <label title="out/*.image.track.json — the per-frame POSE KEYPOINTS from the model, drawn as the skeleton overlay (read-only here)"><small>track</small> <input type="file" id="trk" accept="application/json"></label>
-  <button id="defaults" title="auto-load video + image track + capture/segments.json from the server">↻ defaults</button>
+<header><b>RODA · SEGMENT</b>
+  <span class="src" title="raw footage path/URL — type or pick a recent, then Load (📁 = browse a local file)">
+    <small>video</small><input class="path" id="vidPath" list="vidR" placeholder="/videos/first_5_moves.mp4"><datalist id="vidR"></datalist>
+    <input type="file" id="vid" accept="video/mp4" hidden><button class="mini" id="vidBrowse" title="browse a local file">📁</button></span>
+  <span class="src" title="segments JSON — the move INTERVALS you label here (start/end + move + camera + quality)">
+    <small>segments</small><input class="path" id="segPath" list="segR" placeholder="/tools/mocap/capture/segments.json"><datalist id="segR"></datalist>
+    <input type="file" id="seg" accept="application/json" hidden><button class="mini" id="segBrowse" title="browse a local file">📁</button></span>
+  <span class="src" title="track JSON — per-frame POSE KEYPOINTS drawn as the skeleton overlay (read-only here)">
+    <small>track</small><input class="path" id="trkPath" list="trkR" placeholder="/tools/mocap/out/*.track.json"><datalist id="trkR"></datalist>
+    <input type="file" id="trk" accept="application/json" hidden><button class="mini" id="trkBrowse" title="browse a local file">📁</button></span>
+  <span class="src" title="open a previously-annotated YouTube clip — re-downloads the exact source on first use, then shows its pose overlay">
+    <small>library</small><select id="lib" class="path"><option value="">— YouTube clips —</option></select></span>
+  <span class="sp"></span>
+  <button id="defaults" title="auto-load the default video + track + segments from the server">↻ defaults</button>
   <button id="restore" title="restore your last unsaved draft from this browser">restore draft</button>
-  <button id="clear">Clear all</button>
+  <button id="clear">Clear</button>
   <button class="gold" id="export">Export JSON</button>
 </header>
 <div class="stage"><div class="vidwrap"><video id="v" controls></video><canvas id="ov"></canvas></div></div>
@@ -54,6 +66,10 @@
   <button id="back1" title="back one frame (←)">◀ 1f</button>
   <button id="fwd1" title="forward one frame (→)">1f ▶</button>
   <code id="clock">0:00.00 · f0</code>
+  <span class="lab" style="min-width:auto;margin-left:14px" title="shift the skeleton overlay by N frames to compensate for a backend's pipeline latency">overlay&nbsp;offset</span>
+  <button id="offm" title="overlay −1 frame">&minus;</button>
+  <code id="offv" title="frames the overlay is shifted vs the video">0f</code>
+  <button id="offp" title="overlay +1 frame">+</button>
   <span class="lab" style="min-width:auto;margin-left:14px">zoom</span>
   <button id="zoomout" title="zoom out">&minus;</button>
   <small id="zoomlvl">1×</small>
@@ -120,11 +136,25 @@ document.getElementById('seg').onchange=e=>{const f=e.target.files[0]; if(!f)ret
   const r=new FileReader(); r.onload=()=>{const j=JSON.parse(r.result); fps=j.fps||30; segs=j.segments||[]; draw();}; r.readAsText(f);};
 // pose track.json -> 2D skeleton overlay (so you can confirm move/facing/quality visually)
 let TRK=null;
+// overlay frame offset: backends differ in pipeline latency, so the skeleton can sit a couple
+// frames ahead/behind the video. dial it here (persisted) until the overlay locks onto the body.
+let ovOffset=0; try{ ovOffset=parseInt(localStorage.getItem('roda_seg_ovoffset'))||0; }catch(e){}
+function setOffset(n){ ovOffset=Math.max(-15,Math.min(15,n)); try{localStorage.setItem('roda_seg_ovoffset',ovOffset);}catch(e){}
+  const el=document.getElementById('offv'); if(el) el.textContent=(ovOffset>0?'+':'')+ovOffset+'f'; }
+document.getElementById('offm').onclick=()=>setOffset(ovOffset-1);
+document.getElementById('offp').onclick=()=>setOffset(ovOffset+1);
+setOffset(ovOffset);
 const ov=document.getElementById('ov'), octx=ov.getContext('2d');
 const RIGHT={12:1,14:1,16:1,24:1,26:1,28:1,32:1};
 const BONES=[[11,12,'m'],[23,24,'m'],[11,23,'m'],[12,24,'m'],[0,11,'m'],[0,12,'m'],
   [11,13,'l'],[13,15,'l'],[12,14,'r'],[14,16,'r'],
   [23,25,'l'],[25,27,'l'],[27,31,'l'],[24,26,'r'],[26,28,'r'],[28,32,'r']];
+// COCO-17 layout used by the YouTube pose.json: nose,eyeL,eyeR,earL,earR,shoL,shoR,
+//   elbL,elbR,wriL,wriR,hipL,hipR,kneeL,kneeR,ankL,ankR
+const RIGHT17={2:1,4:1,6:1,8:1,10:1,12:1,14:1,16:1};
+const BONES17=[[5,6,'m'],[11,12,'m'],[5,11,'m'],[6,12,'m'],[0,5,'m'],[0,6,'m'],
+  [5,7,'l'],[7,9,'l'],[6,8,'r'],[8,10,'r'],
+  [11,13,'l'],[13,15,'l'],[12,14,'r'],[14,16,'r']];
 const COLB={l:'#5ea0ff',r:'#eba63c',m:'#cbb89a'};
 document.getElementById('trk').onchange=e=>{const f=e.target.files[0]; if(!f)return;
   const r=new FileReader(); r.onload=()=>{const j=JSON.parse(r.result); TRK=j.frames||null; if(j.fps)fps=j.fps;}; r.readAsText(f);};
@@ -132,22 +162,45 @@ document.getElementById('trk').onchange=e=>{const f=e.target.files[0]; if(!f)ret
 //     served from the repo root, so these are absolute server paths.
 const DEFAULTS={
   video:'/videos/first_5_moves.mp4',
-  track:'/tools/mocap/out/first_5_moves.image.track.json',
+  track:'/tools/mocap/out/first_5_moves.sapiens1b-2d+motionbert.track.json',
   segments:'/tools/mocap/capture/segments.json',
 };
-const DRAFT_KEY='roda_seg_draft_first5';
+// per-video draft key: each loaded clip keeps its own segment draft (first_5_moves keeps
+// its original key so your existing work isn't orphaned).
+function baseName(p){ return (p||'').split('/').pop().split('?')[0]; }
+function ctxKey(name){ return /first_5_moves/.test(name) ? 'roda_seg_draft_first5' : 'roda_seg_draft_'+name; }
+let DRAFT_KEY=ctxKey(DEFAULTS.video);
+function setVideoContext(name){ DRAFT_KEY=ctxKey(name); }
 const statusEl=document.getElementById('status');
 function setStatus(t){ statusEl.textContent=t; }
 function saveDraft(){ try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({fps,segments:segs,ts:Date.now()})); }catch(e){} }
 async function fetchJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error(u+' '+r.status); return r.json(); }
-async function loadDefaults(){
-  v.src=DEFAULTS.video;
-  try{ const t=await fetchJSON(DEFAULTS.track); TRK=t.frames||null; if(t.fps)fps=t.fps; }
-  catch(e){ console.warn('track:',e.message); }
-  try{ const s=await fetchJSON(DEFAULTS.segments); fps=s.fps||fps; segs=s.segments||[]; setStatus('loaded segments.json'); }
-  catch(e){ console.warn('segments:',e.message); segs=[]; setStatus('no segments.json yet — starting empty'); }
-  sel=-1; draw();
-}
+
+// --- recent paths: remember server paths you load so switching clips/tracks is one pick away ---
+const REC_KEY='roda_seg_recents';
+const SEED={ video:[DEFAULTS.video], segments:[DEFAULTS.segments],
+  track:['/tools/mocap/out/first_5_moves.sapiens1b-2d+motionbert.track.json','/tools/mocap/out/first_5_moves.image.track.json'] };
+let REC; try{ REC=JSON.parse(localStorage.getItem(REC_KEY)); }catch(e){} if(!REC) REC={video:[],segments:[],track:[]};
+['video','segments','track'].forEach(k=>{ REC[k]=REC[k]||[]; SEED[k].forEach(p=>{ if(!REC[k].includes(p)) REC[k].push(p); }); });
+const PATHIN={video:'vidPath',segments:'segPath',track:'trkPath'}, DLIST={video:'vidR',segments:'segR',track:'trkR'};
+const lastLoaded={};   // skip reloading a path that's already showing
+function refreshRecents(){ ['video','segments','track'].forEach(k=>{
+  document.getElementById(DLIST[k]).innerHTML=REC[k].map(p=>`<option value="${p}">`).join(''); }); }
+function addRecent(kind,p){ if(!p) return; REC[kind]=[p,...REC[kind].filter(x=>x!==p)].slice(0,10);
+  try{ localStorage.setItem(REC_KEY,JSON.stringify(REC)); }catch(e){} refreshRecents(); }
+function setPath(kind,p){ document.getElementById(PATHIN[kind]).value=p; lastLoaded[kind]=p; }
+refreshRecents();
+
+async function loadVideoPath(p){ if(!p)return; setVideoContext(baseName(p)); v.src=p; setPath('video',p); addRecent('video',p); setStatus('video → '+p); }
+async function loadTrackPath(p){ if(!p)return;
+  try{ const t=await fetchJSON(p); TRK=t.frames||null; if(t.fps)fps=t.fps; setPath('track',p); addRecent('track',p);
+       setStatus(`track → ${t.backend||'?'} · ${t.detected||'?'}/${t.n||'?'} frames`); draw(); }
+  catch(e){ setStatus('track failed: '+e.message); } }
+async function loadSegPath(p){ if(!p)return;
+  try{ const s=await fetchJSON(p); fps=s.fps||fps; segs=s.segments||[]; sel=-1; setPath('segments',p); addRecent('segments',p);
+       setStatus(`segments → ${segs.length} intervals`); draw(); }
+  catch(e){ setStatus('segments failed: '+e.message); } }
+async function loadDefaults(){ await loadVideoPath(DEFAULTS.video); await loadTrackPath(DEFAULTS.track); await loadSegPath(DEFAULTS.segments); }
 function restoreDraft(){
   let d=null; try{ d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); }catch(e){}
   if(!d||!d.segments){ setStatus('no draft saved in this browser'); return; }
@@ -156,22 +209,64 @@ function restoreDraft(){
 }
 document.getElementById('defaults').onclick=loadDefaults;
 document.getElementById('restore').onclick=restoreDraft;
+// 📁 = browse a local file (uses the hidden inputs). Pick a recent / type + Enter / blur loads that source.
+document.getElementById('vidBrowse').onclick=()=>document.getElementById('vid').click();
+document.getElementById('segBrowse').onclick=()=>document.getElementById('seg').click();
+document.getElementById('trkBrowse').onclick=()=>document.getElementById('trk').click();
+[['vidPath',loadVideoPath,'video'],['segPath',loadSegPath,'segments'],['trkPath',loadTrackPath,'track']].forEach(([id,fn,kind])=>{
+  const el=document.getElementById(id);
+  const go=()=>{ const v=el.value.trim(); if(v && lastLoaded[kind]!==v){ lastLoaded[kind]=v; fn(v); } };
+  el.addEventListener('change',go);   // fires on picking a recent or leaving the field
+  el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); go(); } }); });
 v.addEventListener('loadedmetadata',draw);   // reposition timeline blocks once duration is known
-if(location.protocol.startsWith('http')) loadDefaults();   // file:// can't fetch, so only auto-load when served
+// --- YouTube library: pick a previously-annotated clip; serve.py re-fetches the exact source on demand ---
+const libSel=document.getElementById('lib');
+function segsForContext(){ let d=null; try{ d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); }catch(e){}
+  segs=(d&&d.segments)?d.segments:[]; sel=-1; }
+async function loadLibrary(){
+  try{ const cat=await fetchJSON('/tools/mocap/clips/youtube.json');
+    cat.sort((a,b)=>(a.slug||'').localeCompare(b.slug||''));
+    libSel.innerHTML='<option value="">— YouTube clips —</option>'+
+      cat.map((c,i)=>`<option value="${i}">${c.slug}${c.kind==='compilation'?' (comp)':''} · ${Math.round(c.duration_s||0)}s</option>`).join('');
+    libSel._cat=cat; }
+  catch(e){ console.warn('library:',e.message); }
+}
+async function loadLibraryClip(c){
+  setStatus('fetching '+c.slug+'… (first time downloads + caches the clip — can take a while)');
+  let vpath;
+  const sec=Array.isArray(c.section)?`&sec=${c.section[0]}-${c.section[1]}`:'';   // trim re-downloads to the annotated range
+  try{ const r=await fetch(`/api/clip?name=${encodeURIComponent(c.file)}&yt=${encodeURIComponent(c.yt_id||c.page||c.url||'')}${sec}`);
+       const j=await r.json(); if(!j.ok) throw new Error(j.error||'download failed'); vpath=j.path; }
+  catch(e){ setStatus('clip fetch failed: '+e.message+'  (is tools/serve.py running?)'); return; }
+  await loadVideoPath(vpath);            // switches the per-clip draft context
+  segsForContext();
+  const pose='/tools/mocap/out/'+c.file.replace(/\.mp4$/,'.pose.json');
+  try{ const t=await fetchJSON(pose); TRK=t.frames||null; if(t.fps)fps=t.fps; setPath('track',pose);
+       setStatus(`${c.slug} · ${t.detected||'?'}/${t.n||'?'} kpts · overlay on (offset ${ovOffset}f)`); }
+  catch(e){ TRK=null; setStatus(c.slug+' loaded — no pose annotation found (video only)'); }
+  draw();
+}
+libSel.onchange=()=>{ const i=libSel.value; if(i==='')return; const c=libSel._cat&&libSel._cat[+i]; if(c) loadLibraryClip(c); };
+if(location.protocol.startsWith('http')){ loadDefaults(); loadLibrary(); }   // file:// can't fetch, so only when served
 function drawOverlay(){
   const cw=v.clientWidth, ch=v.clientHeight;
   if(ov.width!==cw)ov.width=cw; if(ov.height!==ch)ov.height=ch;
   octx.clearRect(0,0,cw,ch);
   if(!TRK||!v.videoWidth)return;
-  const fr=TRK[Math.round(v.currentTime*fps)]; if(!fr||!fr.img)return;
+  const fr=TRK[Math.round(v.currentTime*fps)+ovOffset]; if(!fr)return;
+  const pts=fr.img||fr.k; if(!pts)return;                      // .img = MediaPipe-33, .k = COCO-17 (YouTube)
+  const coco=!fr.img;
+  const bones=coco?BONES17:BONES, right=coco?RIGHT17:RIGHT, faceHi=coco?5:11;
+  const gate=coco?0.3:-1;                                      // gate flaky COCO joints; MediaPipe vis is unreliable inverted
   const vw=v.videoWidth, vh=v.videoHeight, sc=Math.min(cw/vw,ch/vh);
   const dw=vw*sc, dh=vh*sc, ox=(cw-dw)/2, oy=(ch-dh)/2;
-  const P=fr.img.map(p=>[ox+p[0]*dw, oy+p[1]*dh]);
+  const P=pts.map(p=>[ox+p[0]*dw, oy+p[1]*dh, p.length>2?p[2]:1]);
+  const ok=i=>P[i]&&P[i][2]>=gate;
   octx.lineWidth=3; octx.lineCap='round';
-  BONES.forEach(([a,b,s])=>{ if(!P[a]||!P[b])return; octx.strokeStyle=COLB[s];
+  bones.forEach(([a,b,s])=>{ if(!ok(a)||!ok(b))return; octx.strokeStyle=COLB[s];
     octx.beginPath(); octx.moveTo(P[a][0],P[a][1]); octx.lineTo(P[b][0],P[b][1]); octx.stroke(); });
-  for(let i=0;i<P.length;i++){ if(i>0&&i<11)continue;
-    octx.fillStyle=(i in RIGHT)?'#eba63c':(i===0?'#fff':'#5ea0ff');
+  for(let i=0;i<P.length;i++){ if(i>0&&i<faceHi)continue; if(!ok(i))continue;
+    octx.fillStyle=(i in right)?'#eba63c':(i===0?'#fff':'#5ea0ff');
     octx.beginPath(); octx.arc(P[i][0],P[i][1],i===0?5:3,0,7); octx.fill(); }
 }
 function updateCov(){
