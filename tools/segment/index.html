@@ -22,7 +22,7 @@
   .timeline{position:relative;height:70px;background:var(--panel2);border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;user-select:none}
   .timeline::-webkit-scrollbar{height:8px} .timeline::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
   .track{position:relative;height:100%;min-width:100%;cursor:crosshair}
-  .blk{position:absolute;top:3px;height:40px;border-radius:5px;border:1px solid #0006;overflow:hidden;
+  .blk{position:absolute;top:3px;height:40px;min-width:3px;border-radius:5px;border:1px solid #0006;overflow:hidden;
     font:11px/1.3 var(--mono);color:#1a130a;padding:4px 6px;cursor:pointer;white-space:nowrap}
   .blk.sel{outline:2px solid #fff;z-index:3} .blk.bad{opacity:.4}
   .blk .h{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:2} .blk .h.l{left:0} .blk .h.r{right:0}
@@ -43,7 +43,7 @@
   #selrow.off{opacity:.4}
 </style></head><body>
 <header><b>RODA · SEGMENT</b>
-  <span class="src" title="raw footage path/URL — type or pick a recent, then Load (📁 = browse a local file)">
+  <span class="src" title="raw footage: a server path, a recent (▼), or paste a YouTube URL to download it · 📁 = browse a local file">
     <small>video</small><input class="path" id="vidPath" list="vidR" placeholder="/videos/first_5_moves.mp4"><datalist id="vidR"></datalist>
     <input type="file" id="vid" accept="video/mp4" hidden><button class="mini" id="vidBrowse" title="browse a local file">📁</button></span>
   <span class="src" title="segments JSON — the move INTERVALS you label here (start/end + move + camera + quality)">
@@ -57,6 +57,7 @@
   <span class="sp"></span>
   <button id="defaults" title="auto-load the default video + track + segments from the server">↻ defaults</button>
   <button id="restore" title="restore your last unsaved draft from this browser">restore draft</button>
+  <button id="undo" title="undo the last change (Ctrl+Z)">↶ undo</button>
   <button id="clear">Clear</button>
   <button class="gold" id="export">Export JSON</button>
 </header>
@@ -66,6 +67,10 @@
   <button id="back1" title="back one frame (←)">◀ 1f</button>
   <button id="fwd1" title="forward one frame (→)">1f ▶</button>
   <code id="clock">0:00.00 · f0</code>
+  <span class="lab" style="min-width:auto;margin-left:14px">speed</span>
+  <button id="spdm" title="slower (−0.1×)">&minus;</button>
+  <code id="spdv" title="playback speed">1.0×</code>
+  <button id="spdp" title="faster (+0.1×)">+</button>
   <span class="lab" style="min-width:auto;margin-left:14px" title="shift the skeleton overlay by N frames to compensate for a backend's pipeline latency">overlay&nbsp;offset</span>
   <button id="offm" title="overlay −1 frame">&minus;</button>
   <code id="offv" title="frames the overlay is shifted vs the video">0f</code>
@@ -93,7 +98,7 @@
     <span class="sp"></span>
     <small id="covtot" title="moves with all 4 camera angles covered"></small>
   </div>
-  <div class="row" id="selrow">
+  <div class="row" id="selrow" title="[ / ] set start/end to cursor · ±1f fine trims · n new segment · Del remove · Esc deselect · Ctrl+Z undo">
     <span class="lab">selection</span>
     <span class="lab" style="min-width:auto">start</span>
     <button class="nb" id="sminus" title="start −1 frame (also [ )">−1f</button>
@@ -128,12 +133,12 @@ function refreshTags(){
   faceTagsEl.querySelectorAll('.fc').forEach(b=>b.classList.toggle('on',b.dataset.f===activeFace));
 }
 // picking a move / camera sets the brush; if an interval is selected it also re-tags it.
-moveSel.onchange=()=>{ activeMove=moveSel.value; if(sel>=0)segs[sel].move=activeMove; draw(); saveDraft(); };
-faceTagsEl.querySelectorAll('.fc').forEach(b=>b.onclick=()=>{ activeFace=b.dataset.f; if(sel>=0)segs[sel].facing=activeFace; b.blur(); refreshTags(); draw(); saveDraft(); });
+moveSel.onchange=()=>{ activeMove=moveSel.value; if(sel>=0){ snapshot(); segs[sel].move=activeMove; } draw(); saveDraft(); };
+faceTagsEl.querySelectorAll('.fc').forEach(b=>b.onclick=()=>{ activeFace=b.dataset.f; if(sel>=0){ snapshot(); segs[sel].facing=activeFace; } b.blur(); refreshTags(); draw(); saveDraft(); });
 refreshTags();
 document.getElementById('vid').onchange=e=>{const f=e.target.files[0]; if(f) v.src=URL.createObjectURL(f);};
 document.getElementById('seg').onchange=e=>{const f=e.target.files[0]; if(!f)return;
-  const r=new FileReader(); r.onload=()=>{const j=JSON.parse(r.result); fps=j.fps||30; segs=j.segments||[]; draw();}; r.readAsText(f);};
+  const r=new FileReader(); r.onload=()=>{const j=JSON.parse(r.result); fps=j.fps||30; segs=j.segments||[]; clearHistory(); draw();}; r.readAsText(f);};
 // pose track.json -> 2D skeleton overlay (so you can confirm move/facing/quality visually)
 let TRK=null;
 // overlay frame offset: backends differ in pipeline latency, so the skeleton can sit a couple
@@ -144,6 +149,19 @@ function setOffset(n){ ovOffset=Math.max(-15,Math.min(15,n)); try{localStorage.s
 document.getElementById('offm').onclick=()=>setOffset(ovOffset-1);
 document.getElementById('offp').onclick=()=>setOffset(ovOffset+1);
 setOffset(ovOffset);
+// --- frame sync: which video frame is ACTUALLY on screen right now ---
+// Frame n is shown during [n/fps,(n+1)/fps). After a seek/pause currentTime lands at an
+// arbitrary sub-frame point, so round(currentTime*fps) can pick the neighbouring frame — the
+// overlay then looks 1f off until you nudge it, and the offset changes every time you rewind.
+// requestVideoFrameCallback reports the EXACT presented frame's mediaTime, killing the ambiguity
+// for play / pause / seek alike. Fallback: floor (the frame whose interval holds currentTime).
+let presentedTime=null;
+function dispFrame(){ return presentedTime!=null ? Math.round(presentedTime*fps)
+                                                 : Math.floor(v.currentTime*fps + 1e-6); }
+if(v.requestVideoFrameCallback){
+  const onFrame=(_,md)=>{ presentedTime=md.mediaTime; v.requestVideoFrameCallback(onFrame); };
+  v.requestVideoFrameCallback(onFrame);
+}
 const ov=document.getElementById('ov'), octx=ov.getContext('2d');
 const RIGHT={12:1,14:1,16:1,24:1,26:1,28:1,32:1};
 const BONES=[[11,12,'m'],[23,24,'m'],[11,23,'m'],[12,24,'m'],[0,11,'m'],[0,12,'m'],
@@ -174,6 +192,13 @@ function setVideoContext(name){ DRAFT_KEY=ctxKey(name); }
 const statusEl=document.getElementById('status');
 function setStatus(t){ statusEl.textContent=t; }
 function saveDraft(){ try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({fps,segments:segs,ts:Date.now()})); }catch(e){} }
+// --- undo: snapshot segments BEFORE each mutation; undo() rewinds one step (Ctrl+Z) ---
+let history=[];
+function snapshot(){ history.push(JSON.stringify(segs)); if(history.length>200)history.shift(); }
+function clearHistory(){ history=[]; }
+function undo(){ if(!history.length){ setStatus('nothing to undo'); return; }
+  segs=JSON.parse(history.pop()); sel=-1; refreshTags(); draw(); saveDraft();
+  setStatus('undo · '+history.length+' step'+(history.length===1?'':'s')+' left'); }
 async function fetchJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error(u+' '+r.status); return r.json(); }
 
 // --- recent paths: remember server paths you load so switching clips/tracks is one pick away ---
@@ -191,20 +216,43 @@ function addRecent(kind,p){ if(!p) return; REC[kind]=[p,...REC[kind].filter(x=>x
 function setPath(kind,p){ document.getElementById(PATHIN[kind]).value=p; lastLoaded[kind]=p; }
 refreshRecents();
 
-async function loadVideoPath(p){ if(!p)return; setVideoContext(baseName(p)); v.src=p; setPath('video',p); addRecent('video',p); setStatus('video → '+p); }
+// HEAD-ish check: is this clip already downloaded so we can play it straight off disk?
+async function onDisk(url){ try{ const r=await fetch(url,{method:'GET',headers:{Range:'bytes=0-1'}}); return r.ok||r.status===206; }catch(e){ return false; } }
+function ytId(u){ const m=String(u).match(/(?:youtu\.be\/|[?&]v=)([A-Za-z0-9_-]{6,})/); return m?m[1]:null; }
+function setVideo(p){ setVideoContext(baseName(p)); v.src=p; setPath('video',p); }
+async function loadVideoPath(p){ if(!p)return;
+  const id=ytId(p);                              // pasting a YouTube URL here downloads + loads it
+  if(id) return loadYoutube(id, p);
+  setVideo(p); addRecent('video',p); setStatus('video → '+p); }
+// Download (via serve.py) or reuse an on-disk YouTube clip, then load it + any pose overlay.
+async function loadYoutube(id, url){
+  const name='yt-'+id.toLowerCase()+'.mp4', disk='/tools/mocap/clips/'+name;
+  let vpath = await onDisk(disk) ? disk : null;
+  if(!vpath){
+    setStatus('downloading YouTube '+id+'… (first time fetches + caches the source)');
+    try{ const r=await fetch(`/api/clip?name=${encodeURIComponent(name)}&yt=${encodeURIComponent(url)}`);
+         const j=await r.json(); if(!j.ok) throw new Error(j.error||'download failed'); vpath=j.path; }
+    catch(e){ setStatus('YouTube load failed: '+e.message+' — start/restart tools/serve.py'); return; } }
+  setVideo(vpath); addRecent('video',url); segsForContext();
+  const pose='/tools/mocap/out/'+name.replace(/\.mp4$/,'.pose.json');
+  try{ const t=await fetchJSON(pose); TRK=t.frames||null; if(t.fps)fps=t.fps; setPath('track',pose);
+       setStatus('youtube '+id+' → '+vpath+'  · pose overlay on'); }
+  catch(e){ TRK=null; setStatus('youtube '+id+' → '+vpath+'  · no pose track yet (video only)'); }
+  draw();
+}
 async function loadTrackPath(p){ if(!p)return;
   try{ const t=await fetchJSON(p); TRK=t.frames||null; if(t.fps)fps=t.fps; setPath('track',p); addRecent('track',p);
        setStatus(`track → ${t.backend||'?'} · ${t.detected||'?'}/${t.n||'?'} frames`); draw(); }
   catch(e){ setStatus('track failed: '+e.message); } }
 async function loadSegPath(p){ if(!p)return;
-  try{ const s=await fetchJSON(p); fps=s.fps||fps; segs=s.segments||[]; sel=-1; setPath('segments',p); addRecent('segments',p);
+  try{ const s=await fetchJSON(p); fps=s.fps||fps; segs=s.segments||[]; sel=-1; clearHistory(); setPath('segments',p); addRecent('segments',p);
        setStatus(`segments → ${segs.length} intervals`); draw(); }
   catch(e){ setStatus('segments failed: '+e.message); } }
 async function loadDefaults(){ await loadVideoPath(DEFAULTS.video); await loadTrackPath(DEFAULTS.track); await loadSegPath(DEFAULTS.segments); }
 function restoreDraft(){
   let d=null; try{ d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); }catch(e){}
   if(!d||!d.segments){ setStatus('no draft saved in this browser'); return; }
-  fps=d.fps||fps; segs=d.segments; sel=-1; draw();
+  fps=d.fps||fps; segs=d.segments; sel=-1; clearHistory(); draw();
   setStatus(`restored draft · ${segs.length} segs · ${new Date(d.ts).toLocaleTimeString()}`);
 }
 document.getElementById('defaults').onclick=loadDefaults;
@@ -219,10 +267,11 @@ document.getElementById('trkBrowse').onclick=()=>document.getElementById('trk').
   el.addEventListener('change',go);   // fires on picking a recent or leaving the field
   el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); go(); } }); });
 v.addEventListener('loadedmetadata',draw);   // reposition timeline blocks once duration is known
+v.addEventListener('error',()=>{ if(v.getAttribute('src')) setStatus('video failed to load: '+v.getAttribute('src')+'  (is the dev server serving this path?)'); });
 // --- YouTube library: pick a previously-annotated clip; serve.py re-fetches the exact source on demand ---
 const libSel=document.getElementById('lib');
 function segsForContext(){ let d=null; try{ d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); }catch(e){}
-  segs=(d&&d.segments)?d.segments:[]; sel=-1; }
+  segs=(d&&d.segments)?d.segments:[]; sel=-1; clearHistory(); }
 async function loadLibrary(){
   try{ const cat=await fetchJSON('/tools/mocap/clips/youtube.json');
     cat.sort((a,b)=>(a.slug||'').localeCompare(b.slug||''));
@@ -232,13 +281,18 @@ async function loadLibrary(){
   catch(e){ console.warn('library:',e.message); }
 }
 async function loadLibraryClip(c){
-  setStatus('fetching '+c.slug+'… (first time downloads + caches the clip — can take a while)');
-  let vpath;
-  const sec=Array.isArray(c.section)?`&sec=${c.section[0]}-${c.section[1]}`:'';   // trim re-downloads to the annotated range
-  try{ const r=await fetch(`/api/clip?name=${encodeURIComponent(c.file)}&yt=${encodeURIComponent(c.yt_id||c.page||c.url||'')}${sec}`);
-       const j=await r.json(); if(!j.ok) throw new Error(j.error||'download failed'); vpath=j.path; }
-  catch(e){ setStatus('clip fetch failed: '+e.message+'  (is tools/serve.py running?)'); return; }
-  await loadVideoPath(vpath);            // switches the per-clip draft context
+  const disk='/tools/mocap/clips/'+c.file;
+  // 1) already downloaded? play straight off disk — works even if serve.py predates /api/clip.
+  let vpath = await onDisk(disk) ? disk : null;
+  // 2) cache miss → ask serve.py to (re)download, trimmed to the annotated section.
+  if(!vpath){
+    setStatus('fetching '+c.slug+'… (first time downloads + caches the clip — can take a while)');
+    const sec=Array.isArray(c.section)?`&sec=${c.section[0]}-${c.section[1]}`:'';
+    try{ const r=await fetch(`/api/clip?name=${encodeURIComponent(c.file)}&yt=${encodeURIComponent(c.yt_id||c.page||c.url||'')}${sec}`);
+         const j=await r.json(); if(!j.ok) throw new Error(j.error||'download failed'); vpath=j.path; }
+    catch(e){ setStatus('couldn’t load '+c.slug+': '+e.message+' — start/restart tools/serve.py for on-demand download'); return; }
+  }
+  setVideo(vpath); addRecent('video',vpath);   // switches the per-clip draft context
   segsForContext();
   const pose='/tools/mocap/out/'+c.file.replace(/\.mp4$/,'.pose.json');
   try{ const t=await fetchJSON(pose); TRK=t.frames||null; if(t.fps)fps=t.fps; setPath('track',pose);
@@ -253,7 +307,7 @@ function drawOverlay(){
   if(ov.width!==cw)ov.width=cw; if(ov.height!==ch)ov.height=ch;
   octx.clearRect(0,0,cw,ch);
   if(!TRK||!v.videoWidth)return;
-  const fr=TRK[Math.round(v.currentTime*fps)+ovOffset]; if(!fr)return;
+  const fr=TRK[dispFrame()+ovOffset]; if(!fr)return;
   const pts=fr.img||fr.k; if(!pts)return;                      // .img = MediaPipe-33, .k = COCO-17 (YouTube)
   const coco=!fr.img;
   const bones=coco?BONES17:BONES, right=coco?RIGHT17:RIGHT, faceHi=coco?5:11;
@@ -289,7 +343,7 @@ function draw(){
   [...track.querySelectorAll('.blk')].forEach(b=>b.remove());
   const D=v.duration||(segs.length?Math.max(...segs.map(s=>s.end))/fps:1);
   segs.forEach((s,i)=>{const b=document.createElement('div'); b.className='blk'+(i===sel?' sel':'')+(s.quality==='bad'?' bad':'');
-    b.style.left=(100*s.start/fps/D)+'%'; b.style.width=Math.max(0.8,100*(s.end-s.start)/fps/D)+'%';
+    b.style.left=(100*s.start/fps/D)+'%'; b.style.width=(100*(s.end-s.start)/fps/D)+'%';   // true span; CSS min-width keeps tiny blocks grabbable without inflating the right edge
     b.style.background=FCOL[s.facing]||'#888';
     b.textContent=`${LABELM[s.move]||s.move}·${(s.facing||'?')[0].toUpperCase()}${s.quality!=='good'?' '+s.quality:''}`;
     b.title=`${s.move} · ${s.facing} · ${s.quality}`;
@@ -298,8 +352,8 @@ function draw(){
       stance.value=s.startStance||'ginga'; quality.value=s.quality||'good'; refreshTags(); sync(); draw();};   // select only — leave the cursor where it is
     const hl=document.createElement('div'), hr=document.createElement('div');   // drag a block edge to resize it
     hl.className='h l'; hr.className='h r';
-    hl.onmousedown=ev=>{ev.stopPropagation(); ev.preventDefault(); edge={i,which:'start'}; sel=i; selectBrush(i); sync(); draw();};
-    hr.onmousedown=ev=>{ev.stopPropagation(); ev.preventDefault(); edge={i,which:'end'}; sel=i; selectBrush(i); sync(); draw();};
+    hl.onmousedown=ev=>{ev.stopPropagation(); ev.preventDefault(); snapshot(); edge={i,which:'start'}; sel=i; selectBrush(i); sync(); draw();};
+    hr.onmousedown=ev=>{ev.stopPropagation(); ev.preventDefault(); snapshot(); edge={i,which:'end'}; sel=i; selectBrush(i); sync(); draw();};
     b.appendChild(hl); b.appendChild(hr);
     track.appendChild(b);});
   sync();
@@ -307,16 +361,15 @@ function draw(){
 function fmt(frame){ const t=frame/fps, m=Math.floor(t/60), s=t-m*60; return `${m}:${s.toFixed(2).padStart(5,'0')}`; }
 function sync(){
   const has=sel>=0; selrow.classList.toggle('off',!has);
-  if(!has){ sstart.textContent='—'; send.textContent='—'; sdur.textContent='—';
-    info.innerHTML=`<span style="color:var(--gold)">new →</span> ${LABELM[activeMove]||activeMove} · ${activeFace} &nbsp;<small>(+ new / n / drag to start a segment here)</small>`; return; }
+  if(!has){ sstart.textContent='—'; send.textContent='—'; sdur.textContent='—'; info.textContent=''; return; }
   const s=segs[sel];
   sstart.textContent=`${fmt(s.start)} · f${s.start}`;
   send.textContent=`${fmt(s.end)} · f${s.end}`;
   sdur.textContent=`${((s.end-s.start)/fps).toFixed(2)}s`;
-    info.innerHTML=`<span style="color:#fff">editing #${sel}</span> · ${LABELM[s.move]} · ${s.facing} &nbsp;<small>([ / ] set start/end to cursor · ±1f fine trims · Del remove · Esc deselect)</small>`;
+  info.innerHTML=`<span style="color:#fff">editing #${sel}</span>`;   // minimal + fixed-width so the row never reflows; full hints live in the selrow tooltip
 }
-document.getElementById('stance').onchange=()=>{ if(sel>=0){segs[sel].startStance=stance.value; saveDraft();} };
-document.getElementById('quality').onchange=()=>{ if(sel>=0){segs[sel].quality=quality.value; draw(); saveDraft();} };
+document.getElementById('stance').onchange=()=>{ if(sel>=0){snapshot(); segs[sel].startStance=stance.value; saveDraft();} };
+document.getElementById('quality').onchange=()=>{ if(sel>=0){snapshot(); segs[sel].quality=quality.value; draw(); saveDraft();} };
 // no-overlap clamping: a boundary can never cross a neighbouring interval (capoeira = one move at a time)
 function leftBound(i){ let lb=0; segs.forEach((o,j)=>{ if(j!==i && o.start<segs[i].start) lb=Math.max(lb,o.end); }); return lb; }
 function rightBound(i){ let rb=Infinity; segs.forEach((o,j)=>{ if(j!==i && o.start>segs[i].start) rb=Math.min(rb,o.start); }); return rb; }
@@ -337,7 +390,7 @@ function setEnd(i,f){ const s=segs[i];
 // precise per-frame editing of the selected interval's endpoints
 const selrow=document.getElementById('selrow'), sstart=document.getElementById('sstart'),
       send=document.getElementById('send'), sdur=document.getElementById('sdur');
-function nudge(field,delta){ if(sel<0)return; const s=segs[sel];
+function nudge(field,delta){ if(sel<0)return; snapshot(); const s=segs[sel];
   if(field==='start') setStart(sel,s.start+delta); else setEnd(sel,s.end+delta);
   v.currentTime=(field==='start'?s.start:s.end)/fps;   // jump playhead so the overlay shows the edited frame
   draw(); saveDraft(); }
@@ -348,7 +401,7 @@ document.getElementById('eplus').onclick=()=>nudge('end',1);
 sstart.onclick=()=>{ if(sel>=0)v.currentTime=segs[sel].start/fps; };   // click a timestamp to jump there
 send.onclick=()=>{ if(sel>=0)v.currentTime=segs[sel].end/fps; };
 // --- mark in / out, decoupled from the cursor ---
-function curF(){ return Math.round(v.currentTime*fps); }
+function curF(){ return dispFrame(); }   // mark in/out at the frame you actually see
 function selectBrush(i){ const s=segs[i]; activeMove=s.move; activeFace=s.facing;
   stance.value=s.startStance||'ginga'; quality.value=s.quality||'good'; refreshTags(); }
 // create a new ~30-frame segment at the playhead, shrunk to the free gap; select it.
@@ -359,6 +412,7 @@ function newSeg(){
   let rb=Infinity; segs.forEach(o=>{ if(o.start>F) rb=Math.min(rb,o.start); });   // next segment after the cursor
   const end=Math.min(F+30, rb);
   if(end-F<1){ setStatus('no room for a new segment here'); return; }
+  snapshot();
   segs.push({i:segs.length,start:F,end,move:activeMove,facing:activeFace,rep:0,startStance:stance.value,quality:quality.value});
   sel=segs.length-1; draw(); saveDraft();
 }
@@ -375,11 +429,11 @@ function pickFor(which){
 }
 function markIn(){ const i=pickFor('start');
   if(i<0){ setStatus('nothing to mark — use + new (or n) to start a segment'); return; }
-  sel=i; selectBrush(i); const f=curF(); setStart(i,f);
+  snapshot(); sel=i; selectBrush(i); const f=curF(); setStart(i,f);
   setStatus(segs[i].start===f?'start → cursor':'start clamped at a neighbour'); sync(); draw(); saveDraft(); }
 function markOut(){ const i=pickFor('end');
   if(i<0){ setStatus('nothing to mark — use + new (or n) to start a segment'); return; }
-  sel=i; selectBrush(i); const f=curF(); setEnd(i,f);
+  snapshot(); sel=i; selectBrush(i); const f=curF(); setEnd(i,f);
   setStatus(segs[i].end===f?'end → cursor':'end clamped at a neighbour — clear it to extend further'); sync(); draw(); saveDraft(); }
 document.getElementById('newseg').onclick=newSeg;
 document.getElementById('markin').onclick=markIn;
@@ -405,6 +459,7 @@ window.addEventListener('mouseup',e=>{ if(edge){ edge=null; saveDraft(); return;
     if(o.start<end&&o.end>start){ if(o.start>=start)rb=Math.min(rb,o.start); else lb=Math.max(lb,o.end); } });
   start=Math.max(start,lb); end=Math.min(end,rb);
   if(end-start<1){ setStatus('no room there — overlaps an existing label'); draw(); return; }
+  snapshot();
   segs.push({i:segs.length,start,end,move:activeMove,facing:activeFace,rep:0,startStance:stance.value,quality:quality.value});
   sel=segs.length-1; v.currentTime=start/fps; draw(); saveDraft(); });
 // --- timeline zoom + pan (a 7-min clip needs finer control) ---
@@ -426,28 +481,41 @@ tl.addEventListener('wheel',e=>{
 applyZoom();
 // --- transport: play/pause + single-frame stepping (precise scrubbing) ---
 const pp=document.getElementById('pp'), clock=document.getElementById('clock');
-function step(df){ v.pause(); v.currentTime=Math.max(0,Math.min(v.duration||1e9,(Math.round(v.currentTime*fps)+df)/fps)); }
+// land on a frame CENTER (n+0.5)/fps so the browser unambiguously presents frame n (avoids
+// boundary rounding landing on n-1), keeping the overlay locked while stepping.
+function gotoFrame(n){ n=Math.max(0,Math.min(Math.round((v.duration||1e9)*fps)-1,n)); v.pause(); v.currentTime=(n+0.5)/fps; }
+function step(df){ gotoFrame(dispFrame()+df); }
 document.getElementById('back1').onclick=()=>step(-1);
 document.getElementById('fwd1').onclick=()=>step(1);
 pp.onclick=()=>{ v.paused?v.play():v.pause(); };
 v.addEventListener('play',()=>pp.textContent='⏸'); v.addEventListener('pause',()=>pp.textContent='▶');
-function tick(){ const D=v.duration||1, F=Math.round(v.currentTime*fps), px=(v.currentTime/D)*track.clientWidth;
+// playback speed (0.1 steps, persisted; reapplied on each clip load since the media element resets its rate)
+const spdv=document.getElementById('spdv');
+let speed=1; try{ speed=parseFloat(localStorage.getItem('roda_seg_speed'))||1; }catch(e){}
+function setSpeed(x){ speed=Math.max(0.1,Math.min(4,Math.round(x*10)/10)); v.playbackRate=v.defaultPlaybackRate=speed;
+  try{ localStorage.setItem('roda_seg_speed',speed); }catch(e){} spdv.textContent=speed.toFixed(1)+'×'; }
+document.getElementById('spdm').onclick=()=>setSpeed(speed-0.1);
+document.getElementById('spdp').onclick=()=>setSpeed(speed+0.1);
+v.addEventListener('loadedmetadata',()=>{ v.playbackRate=speed; });
+setSpeed(speed);
+function tick(){ const D=v.duration||1, F=dispFrame(), px=(v.currentTime/D)*track.clientWidth;
   ph.style.left=(100*v.currentTime/D)+'%'; clock.textContent=`${fmt(F)} · f${F}`;
   if(zoom>1 && !v.paused && (px<tl.scrollLeft+20 || px>tl.scrollLeft+tl.clientWidth-20)) centerOnTime(v.currentTime);
   drawOverlay(); requestAnimationFrame(tick);} tick();
 addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!/^(INPUT|TEXTAREA)$/.test(e.target.tagName)){ e.preventDefault(); undo(); return; }
   if(/^(SELECT|INPUT|TEXTAREA)$/.test(e.target.tagName))return;
-  const F=Math.round(v.currentTime*fps);
   if(e.key===' '){e.preventDefault(); v.paused?v.play():v.pause();}
-  else if(e.key==='ArrowRight'){e.preventDefault(); v.currentTime+=1/fps;}
-  else if(e.key==='ArrowLeft'){e.preventDefault(); v.currentTime-=1/fps;}
+  else if(e.key==='ArrowRight'){e.preventDefault(); step(1);}    // snap to the next frame (same as 1f ▶)
+  else if(e.key==='ArrowLeft'){e.preventDefault(); step(-1);}
   else if(e.key==='['){ markIn(); }     // set start of selected (does not create)
   else if(e.key===']'){ markOut(); }    // set end of selected (does not create)
   else if(e.key==='n'){ newSeg(); }     // new segment at the playhead
-  else if((e.key==='Delete'||e.key==='Backspace') && sel>=0){segs.splice(sel,1); sel=-1; draw(); saveDraft();}
+  else if((e.key==='Delete'||e.key==='Backspace') && sel>=0){snapshot(); segs.splice(sel,1); sel=-1; draw(); saveDraft();}
   else if(e.key==='Escape'){ sel=-1; draw(); }
 });
-document.getElementById('clear').onclick=()=>{ if(confirm('Clear all segments? (start a fresh labeling pass)')){ segs=[]; sel=-1; draw(); saveDraft(); } };
+document.getElementById('undo').onclick=undo;
+document.getElementById('clear').onclick=()=>{ if(confirm('Clear all segments? (start a fresh labeling pass)')){ snapshot(); segs=[]; sel=-1; draw(); saveDraft(); } };
 document.getElementById('export').onclick=()=>{
   segs.forEach((s,i)=>s.i=i);
   const blob=new Blob([JSON.stringify({file:'first_5_moves.mp4',fps,segments:segs},null,2)],{type:'application/json'});

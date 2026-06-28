@@ -25,7 +25,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 CLIPS = os.path.join(ROOT, "tools", "mocap", "clips")
 FETCH_ONE = os.path.join(ROOT, "tools", "mocap", "fetch_one.py")
 _RANGE = re.compile(r"bytes=(\d*)-(\d*)\s*$")
-_CLIP_NAME = re.compile(r"^yt-[a-z0-9\-]+\.mp4$")
+_CLIP_NAME = re.compile(r"^yt-[a-z0-9_\-]+\.mp4$")   # yt id can carry '_' / '-'
 MIN_BYTES = 250_000
 
 
