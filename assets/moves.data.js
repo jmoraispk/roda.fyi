@@ -40,7 +40,7 @@ window.RODA_MOVES = [
 },
 {
   id:'esquivas', kicker:'The Escapes', title:'Dodges',
-  blurb:'Capoeira does not block — it disappears. Each esquiva slips the body off the line of a kick while staying coiled, so the escape is already the start of the next attack.',
+  blurb:'In capoeira the first instinct is to vanish, not block — the esquiva slips the body off the line of a kick while staying coiled, so the escape is already the start of the next attack. Blocks have their place, but evasion keeps you free to answer.',
   tag:()=>'folha', tagLabel:'level',
   moves:[
     {n:'Esquiva baixa', g:'low dodge', t:'Low', d:'Drop low over a bent front leg to slide under a high kick.',
