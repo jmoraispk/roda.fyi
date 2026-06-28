@@ -44,6 +44,18 @@ def mp_world_to_roda(world33):
         p[1] = -p[1]
         p[2] = -p[2]
         out[JI[j]] = p
+    # Anchor the head ball at the skull centre (mid-point of the ears) rather than
+    # the nose tip. The nose sits at the front of the face (+z toward viewer and a
+    # little low), so a ball centred there reads as the head "falling forward",
+    # badly so when the torso bends. The ear mid-point is centred front-to-back over
+    # the neck. Keeps the nose (set above) as a fallback if an ear is missing.
+    ears = []
+    for e in ("left_ear", "right_ear"):
+        pe = w[MP[e]].copy(); pe[1] = -pe[1]; pe[2] = -pe[2]
+        ears.append(pe)
+    head = (ears[0] + ears[1]) / 2.0
+    if np.all(np.isfinite(head)):
+        out[JI["head"]] = head
     return out
 
 
@@ -115,7 +127,11 @@ def normalize_sequence(frames, target_torso=40.0, floor_y=20.0, headR=9):
     hipmid = (P[:, JI["hipL"]] + P[:, JI["hipR"]]) / 2.0
     P[..., 0] -= float(np.median(hipmid[:, 0])) - 60.0   # center the sway path on x=60
     P[..., 2] -= float(np.median(P[..., 2]))             # center depth
-    P[..., 1] += floor_y - float(np.min(P[..., 1]))      # lowest point -> floor line
+    # Ground EVERY frame: the lowest joint each frame sits on the floor (the support
+    # foot in a stance, the hands when inverted in an aú). Pinning only the single
+    # global minimum (the old behaviour) let every other frame float above the floor
+    # line — the base stance hovered and the aú's hands never met the ground.
+    P[..., 1] += floor_y - P[..., 1].min(axis=1, keepdims=True)
 
     out = []
     for i in range(P.shape[0]):
@@ -132,11 +148,14 @@ def normalize_sequence(frames, target_torso=40.0, floor_y=20.0, headR=9):
 def test_mp_mapping_shape_and_yzflip():
     w = np.zeros((33, 3))
     w[MP["nose"]] = [1, 2, 3]
+    w[MP["left_ear"]] = [2, 4, 6]
+    w[MP["right_ear"]] = [0, 4, 6]
     w[MP["left_ankle"]] = [0, 5, 0]
     roda = mp_world_to_roda(w)
     assert roda.shape == (13, 3)
-    assert list(roda[JI["head"]]) == [1, -2, -3]   # y down->up and z away->toward-viewer
-    assert roda[JI["footL"]][1] == -5
+    # head is anchored at the ear mid-point (raw [1,4,6]), then y,z flipped — NOT the nose
+    assert list(roda[JI["head"]]) == [1, -4, -6]
+    assert roda[JI["footL"]][1] == -5   # y down -> up, z away -> toward-viewer
 
 
 @register

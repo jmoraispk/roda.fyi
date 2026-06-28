@@ -108,20 +108,46 @@ def _foot_motion(clean):
     return float((fl + fr) / bl)
 
 
-def _pick_rep(W, segs):
+def _grounded_start(W, s0, fps, max_back_s=2.0, band_frac=0.12):
+    """Walk backward from a segment's start to the nearest frame where BOTH feet are
+    on the ground (a real base stance). Some reps were labelled starting mid-windup —
+    the active foot already lifted — so the very first frame floats one foot. Extending
+    to the grounded frame gives a both-feet-planted base WITHOUT fabricating motion
+    (these are real captured frames). Capped so we never wander into neighbouring
+    material, and we stop at a detection gap rather than cross it."""
+    lo = max(0, s0 - int(max_back_s * fps))
+    for t in range(s0, lo - 1, -1):
+        fr = W[t]
+        if not np.all(np.isfinite(fr)):
+            break
+        sho = (fr[_JI["shoulderL"]] + fr[_JI["shoulderR"]]) / 2.0
+        hip = (fr[_JI["hipL"]] + fr[_JI["hipR"]]) / 2.0
+        torso = float(np.linalg.norm(sho - hip)) or 1.0
+        yL, yR = float(fr[_JI["footL"], 1]), float(fr[_JI["footR"], 1])
+        feet_lowest = (min(yL, yR) - float(fr[:, 1].min())) < band_frac * torso  # upright
+        level = abs(yL - yR) < band_frac * torso                                 # feet same height
+        if feet_lowest and level:
+            return t
+    return s0
+
+
+def _pick_rep(W, segs, fps):
     """Choose ONE rep for a move. The segments are now hand-labelled, so TRUST the
     stored facing instead of re-deriving it geometrically (that recombination was
     rotating mislabelled facings by the wrong yaw → mirror flips). We take the FIRST
     front-facing 'good' rep: front shows the full frontal plane with the least
     occlusion and needs no yaw rotation; fall back to the first good rep of any
     facing. We deliberately do NOT fuse the four orientations or average reps yet
-    (that cancels motion) — one clean rep keeps the movement crisp."""
+    (that cancels motion) — one clean rep keeps the movement crisp. The start is
+    nudged back to the nearest grounded base so the first frame has both feet down."""
     good = [s for s in segs if s.get("quality") != "bad"] or list(segs)
     fronts = [s for s in good if s.get("facing") == "front"]
     s = min(fronts or good, key=lambda s: s["start"])      # earliest rep (first repetition)
-    clean = retarget.fill_smooth_rigidify(W[s["start"]:s["end"]])
-    return {"seg": s, "clean": clean, "facing": s.get("facing", "front"),
-            "motion": _foot_motion(clean), "dur": s["end"] - s["start"]}
+    st = _grounded_start(W, s["start"], fps)
+    en = s["end"]
+    clean = retarget.fill_smooth_rigidify(W[st:en])
+    return {"seg": s, "start": st, "end": en, "clean": clean, "facing": s.get("facing", "front"),
+            "motion": _foot_motion(clean), "dur": en - st}
 
 
 def build(track, manifest, do_qa):
@@ -143,8 +169,9 @@ def build(track, manifest, do_qa):
     w, h = track.get("w", 1), track.get("h", 1)
     by_slug = {}
     for (slug, variant), segs in groups.items():
-        best = _pick_rep(W, segs)
+        best = _pick_rep(W, segs, track["fps"])
         s = best["seg"]
+        st, en = best["start"], best["end"]
         clean = best["clean"]
         # rotate the chosen rep into a front-facing common frame, then normalise.
         common = fuse.to_common_frame(clean, best["facing"])
@@ -152,14 +179,15 @@ def build(track, manifest, do_qa):
         sho = (clean[:, _JI["shoulderL"]] + clean[:, _JI["shoulderR"]]) / 2
         hip = (clean[:, _JI["hipL"]] + clean[:, _JI["hipR"]]) / 2
         torso_m = float(np.median(np.linalg.norm(sho - hip, axis=1)))
-        root = _root_translation(img[s["start"]:s["end"]], w, h, torso_m)
+        root = _root_translation(img[st:en], w, h, torso_m)
         common = common + geom.rotate_y(root, -geom.FACING_YAW[best["facing"]])[:, None, :]
         frames = retarget.normalize_sequence(common)
         by_slug.setdefault(slug, {})[variant] = frames
         travel = float(np.linalg.norm(root[-1] - root[0]) / max(torso_m, 1e-6))
-        print(f"    {slug}/{variant}: rep i={s['i']} f={s['start']}-{s['end']} "
-              f"({best['dur']}f) facing={best['facing']} footTravel={best['motion']:.1f} "
-              f"rootTravel={travel:.2f}bl")
+        lead = s["start"] - st
+        print(f"    {slug}/{variant}: rep i={s['i']} f={st}-{en} "
+              f"(+{lead}f base lead, {best['dur']}f) facing={best['facing']} "
+              f"footTravel={best['motion']:.1f} rootTravel={travel:.2f}bl")
         if do_qa:
             _qa_report(slug, variant, frames, out_fps)
 
