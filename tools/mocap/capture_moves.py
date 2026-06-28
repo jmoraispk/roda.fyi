@@ -108,24 +108,20 @@ def _foot_motion(clean):
     return float((fl + fr) / bl)
 
 
-def _pick_best_rep(W, img, segs, min_frames=40):
-    """Choose ONE clean rep for a move. We deliberately do NOT fuse the four
-    orientations or average reps: that recombination was rotating mislabeled
-    facings by the wrong yaw (mirroring) and averaging real reps with static
-    junk spans (cancelling motion). Instead: re-derive facing geometrically
-    (the stored positional label is unreliable), prefer the user-marked 'good'
-    reps, prefer a front view, and take the rep with the most leg travel."""
-    pool = [s for s in segs if s.get("quality") == "good"] or \
-           [s for s in segs if s.get("quality") != "bad"]
-    scored = []
-    for s in pool:
-        clean = retarget.fill_smooth_rigidify(W[s["start"]:s["end"]])
-        facing = segment.classify_facing(clean, img[s["start"]:s["end"]])
-        scored.append({"seg": s, "clean": clean, "facing": facing,
-                       "motion": _foot_motion(clean), "dur": s["end"] - s["start"]})
-    cands = [t for t in scored if t["dur"] >= min_frames] or scored
-    fronts = [t for t in cands if t["facing"] == "front"]
-    return max(fronts or cands, key=lambda t: t["motion"])
+def _pick_rep(W, segs):
+    """Choose ONE rep for a move. The segments are now hand-labelled, so TRUST the
+    stored facing instead of re-deriving it geometrically (that recombination was
+    rotating mislabelled facings by the wrong yaw → mirror flips). We take the FIRST
+    front-facing 'good' rep: front shows the full frontal plane with the least
+    occlusion and needs no yaw rotation; fall back to the first good rep of any
+    facing. We deliberately do NOT fuse the four orientations or average reps yet
+    (that cancels motion) — one clean rep keeps the movement crisp."""
+    good = [s for s in segs if s.get("quality") != "bad"] or list(segs)
+    fronts = [s for s in good if s.get("facing") == "front"]
+    s = min(fronts or good, key=lambda s: s["start"])      # earliest rep (first repetition)
+    clean = retarget.fill_smooth_rigidify(W[s["start"]:s["end"]])
+    return {"seg": s, "clean": clean, "facing": s.get("facing", "front"),
+            "motion": _foot_motion(clean), "dur": s["end"] - s["start"]}
 
 
 def build(track, manifest, do_qa):
@@ -147,7 +143,7 @@ def build(track, manifest, do_qa):
     w, h = track.get("w", 1), track.get("h", 1)
     by_slug = {}
     for (slug, variant), segs in groups.items():
-        best = _pick_best_rep(W, img, segs)
+        best = _pick_rep(W, segs)
         s = best["seg"]
         clean = best["clean"]
         # rotate the chosen rep into a front-facing common frame, then normalise.
