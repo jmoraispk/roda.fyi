@@ -12,43 +12,102 @@
   header b{letter-spacing:.04em} .sp{flex:1}
   button,select,input{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 10px}
   button{cursor:pointer} button.gold{background:var(--gold);color:#1a130a;font-weight:700;border-color:var(--gold)}
-  .stage{flex:1;display:flex;align-items:center;justify-content:center;background:#000;min-height:0;position:relative}
-  .vidwrap{position:relative;display:inline-flex;max-width:100%;max-height:64vh}
-  video{max-width:100%;max-height:64vh;display:block}
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;background:#000;min-height:0;overflow:hidden;position:relative}
+  .vidwrap{position:relative;display:inline-flex;max-width:100%;max-height:100%}
+  video{max-width:100%;max-height:100%;display:block}
   #ov{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-  .timeline{position:relative;height:64px;background:var(--panel2);border-top:1px solid var(--line);cursor:pointer}
-  .blk{position:absolute;top:8px;height:48px;border-radius:5px;opacity:.8;border:1px solid #0006}
-  .blk.sel{outline:2px solid var(--gold)} .playhead{position:absolute;top:0;width:2px;height:100%;background:#fff}
-  .ctl{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
-  .ctl label{color:var(--mut);font-family:var(--mono);font-size:12px}
+  .timeline{position:relative;height:78px;background:var(--panel2);border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;user-select:none}
+  .timeline::-webkit-scrollbar{height:10px} .timeline::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
+  .track{position:relative;height:60px;min-width:100%;cursor:crosshair}
+  .blk{position:absolute;top:6px;height:48px;border-radius:5px;border:1px solid #0006;overflow:hidden;
+    font:11px/1.3 var(--mono);color:#1a130a;padding:4px 6px;cursor:pointer;white-space:nowrap}
+  .blk.sel{outline:2px solid #fff;z-index:3} .blk.bad{opacity:.4}
+  #prev{position:absolute;top:6px;height:48px;border-radius:5px;background:#ffffff22;border:1px dashed var(--gold);pointer-events:none;display:none}
+  .playhead{position:absolute;top:0;width:2px;height:60px;background:#fff;pointer-events:none;z-index:4}
+  .tlbar{display:flex;gap:8px;align-items:center;padding:6px 16px;border-top:1px solid var(--line);background:var(--panel)}
+  .tlbar button{padding:3px 11px}
+  .ctl{display:flex;flex-direction:column;gap:7px;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel)}
+  .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .lab{color:var(--mut);font-family:var(--mono);font-size:12px;min-width:74px}
+  .tag{cursor:pointer;padding:6px 12px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit}
+  .tag.on{outline:2px solid #fff;font-weight:700}
   small{color:var(--mut);font-family:var(--mono)}
+  .ctl code,.tlbar code{color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:3px 7px;font-family:var(--mono);font-size:12px}
+  .ctl code[data-jump]{cursor:pointer} .ctl code[data-jump]:hover{border-color:var(--gold)}
+  .ctl .nb{padding:4px 9px}
+  #selrow.off{opacity:.4}
 </style></head><body>
-<header><b>RODA · SEGMENT CONFIRM</b>
-  <small>space play · ←/→ step · [ in · ] out · n new · Del remove · <span style="color:var(--gold)">right</span>/<span style="color:#5ea0ff">left</span></small><span class="sp"></span>
-  <label><small>video</small> <input type="file" id="vid" accept="video/mp4"></label>
-  <label><small>segments</small> <input type="file" id="seg" accept="application/json"></label>
-  <label><small>track</small> <input type="file" id="trk" accept="application/json" title="pick out/first_5_moves.image.track.json — lag-free per-frame overlay"></label>
+<header><b>RODA · SEGMENT</b><span class="sp"></span>
+  <label title="raw footage (the .mp4 you recorded)"><small>video</small> <input type="file" id="vid" accept="video/mp4"></label>
+  <label title="capture/segments.json — the move INTERVALS you label here (start/end + move + camera + quality)"><small>segments</small> <input type="file" id="seg" accept="application/json"></label>
+  <label title="out/*.image.track.json — the per-frame POSE KEYPOINTS from the model, drawn as the skeleton overlay (read-only here)"><small>track</small> <input type="file" id="trk" accept="application/json"></label>
   <button id="defaults" title="auto-load video + image track + capture/segments.json from the server">↻ defaults</button>
   <button id="restore" title="restore your last unsaved draft from this browser">restore draft</button>
   <button id="clear">Clear all</button>
   <button class="gold" id="export">Export JSON</button>
 </header>
 <div class="stage"><div class="vidwrap"><video id="v" controls></video><canvas id="ov"></canvas></div></div>
-<div class="timeline" id="tl"><div class="playhead" id="ph"></div></div>
+<div class="tlbar">
+  <button id="pp" title="play / pause (space)">▶</button>
+  <button id="back1" title="back one frame (←)">◀ 1f</button>
+  <button id="fwd1" title="forward one frame (→)">1f ▶</button>
+  <code id="clock">0:00.00 · f0</code>
+  <span class="lab" style="min-width:auto;margin-left:14px">zoom</span>
+  <button id="zoomout" title="zoom out">&minus;</button>
+  <small id="zoomlvl">1×</small>
+  <button id="zoomin" title="zoom in (Ctrl/⌘ + scroll over the timeline)">+</button>
+  <button id="zoomfit" title="fit the whole video">fit</button>
+  <span class="sp"></span>
+  <small id="status" style="color:var(--gold)"></small>
+  <small style="margin-left:12px">drag = new · click = edit · scroll = pan · Ctrl+scroll = zoom</small>
+</div>
+<div class="timeline" id="tl"><div class="track" id="track"><div class="playhead" id="ph"></div></div></div>
 <div class="ctl">
-  <label>move <select id="move"></select></label>
-  <label>facing <select id="facing"><option>front</option><option>left</option><option>back</option><option>right</option></select></label>
-  <label>rep <select id="rep"><option>0</option><option>1</option><option>2</option></select></label>
-  <label>start <select id="stance"><option>ginga</option><option>paralela</option><option>stand</option></select></label>
-  <label>quality <select id="quality"><option>good</option><option>ok</option><option>bad</option></select></label>
-  <span class="sp"></span><small id="status" style="color:var(--gold)"></small> &nbsp; <small id="cov"></small> &nbsp; <small id="info"></small>
+  <div class="row">
+    <span class="lab">1 · move</span><span id="moveTags"></span>
+    <span class="lab" style="margin-left:16px">2 · camera</span><span id="faceTags"></span>
+    <span class="sp"></span>
+    <span class="lab" style="min-width:auto">coverage</span><small id="cov"></small>
+  </div>
+  <div class="row" id="selrow">
+    <span class="lab">selection</span>
+    <span class="lab" style="min-width:auto">start</span>
+    <button class="nb" id="sminus" title="start −1 frame (also [ )">−1f</button>
+    <code id="sstart" data-jump="start" title="click to jump the playhead here">—</code>
+    <button class="nb" id="splus" title="start +1 frame">+1f</button>
+    <button class="nb" id="markin" title="set START to the current playhead (also [ )">[ in</button>
+    <span class="lab" style="min-width:auto;margin-left:12px">end</span>
+    <button class="nb" id="eminus" title="end −1 frame">−1f</button>
+    <code id="send" data-jump="end" title="click to jump the playhead here">—</code>
+    <button class="nb" id="eplus" title="end +1 frame (also ] )">+1f</button>
+    <button class="nb" id="markout" title="set END to the current playhead (also ] )">out ]</button>
+    <span class="lab" style="min-width:auto;margin-left:10px">dur</span><code id="sdur">—</code>
+    <span class="lab" style="min-width:auto;margin-left:16px">quality</span>
+    <select id="quality"><option>good</option><option>ok</option><option>bad</option></select>
+    <span class="lab" style="min-width:auto">stance</span>
+    <select id="stance"><option>ginga</option><option>paralela</option><option>stand</option></select>
+    <span class="sp"></span><small id="info"></small>
+  </div>
 </div>
 <script>
 const SLUGS=["ginga","bencao","meia-lua-de-frente","armada","au"];
-const COL={good:"#7fc36b",ok:"#e2c044",bad:"#d2502a"};
+const LABELM={ginga:"ginga",bencao:"bençao","meia-lua-de-frente":"meia-lua",armada:"armada",au:"aú"};
+const FAC=["front","left","back","right"];
+const FCOL={front:"#7fc36b",left:"#5ea0ff",back:"#d28a4a",right:"#eba63c"};
 let fps=30, segs=[], sel=-1;
-const v=document.getElementById('v'), tl=document.getElementById('tl'), ph=document.getElementById('ph');
-document.getElementById('move').innerHTML=SLUGS.map(s=>`<option>${s}</option>`).join('');
+let activeMove=SLUGS[0], activeFace="front";   // the "brush" applied to new (or selected) intervals
+const v=document.getElementById('v'), tl=document.getElementById('tl'), track=document.getElementById('track'), ph=document.getElementById('ph');
+const moveTagsEl=document.getElementById('moveTags'), faceTagsEl=document.getElementById('faceTags');
+moveTagsEl.innerHTML=SLUGS.map(s=>`<button class="tag mv" data-m="${s}">${LABELM[s]}</button>`).join(' ');
+faceTagsEl.innerHTML=FAC.map(f=>`<button class="tag fc" data-f="${f}" style="background:${FCOL[f]};color:#1a130a">${f}</button>`).join(' ');
+function refreshTags(){
+  moveTagsEl.querySelectorAll('.mv').forEach(b=>b.classList.toggle('on',b.dataset.m===activeMove));
+  faceTagsEl.querySelectorAll('.fc').forEach(b=>b.classList.toggle('on',b.dataset.f===activeFace));
+}
+// clicking a move/camera button sets the brush; if an interval is selected it also re-tags it.
+moveTagsEl.querySelectorAll('.mv').forEach(b=>b.onclick=()=>{ activeMove=b.dataset.m; if(sel>=0)segs[sel].move=activeMove; b.blur(); refreshTags(); draw(); saveDraft(); });
+faceTagsEl.querySelectorAll('.fc').forEach(b=>b.onclick=()=>{ activeFace=b.dataset.f; if(sel>=0)segs[sel].facing=activeFace; b.blur(); refreshTags(); draw(); saveDraft(); });
+refreshTags();
 document.getElementById('vid').onchange=e=>{const f=e.target.files[0]; if(f) v.src=URL.createObjectURL(f);};
 document.getElementById('seg').onchange=e=>{const f=e.target.files[0]; if(!f)return;
   const r=new FileReader(); r.onload=()=>{const j=JSON.parse(r.result); fps=j.fps||30; segs=j.segments||[]; draw();}; r.readAsText(f);};
@@ -122,29 +181,123 @@ function updateCov(){
 }
 function draw(){
   updateCov();
-  [...tl.querySelectorAll('.blk')].forEach(b=>b.remove());
+  [...track.querySelectorAll('.blk')].forEach(b=>b.remove());
   const D=v.duration||(segs.length?Math.max(...segs.map(s=>s.end))/fps:1);
-  segs.forEach((s,i)=>{const b=document.createElement('div'); b.className='blk'+(i===sel?' sel':'');
-    b.style.left=(100*s.start/fps/D)+'%'; b.style.width=Math.max(0.6,100*(s.end-s.start)/fps/D)+'%';
-    b.style.background=COL[s.quality]||'#888'; b.title=`${s.move} ${s.facing} r${s.rep}`;
-    b.onclick=ev=>{ev.stopPropagation(); sel=i; v.currentTime=s.start/fps; sync(); draw();}; tl.appendChild(b);});
+  segs.forEach((s,i)=>{const b=document.createElement('div'); b.className='blk'+(i===sel?' sel':'')+(s.quality==='bad'?' bad':'');
+    b.style.left=(100*s.start/fps/D)+'%'; b.style.width=Math.max(0.8,100*(s.end-s.start)/fps/D)+'%';
+    b.style.background=FCOL[s.facing]||'#888';
+    b.textContent=`${LABELM[s.move]||s.move}·${(s.facing||'?')[0].toUpperCase()}${s.quality!=='good'?' '+s.quality:''}`;
+    b.title=`${s.move} · ${s.facing} · ${s.quality}`;
+    b.onmousedown=ev=>ev.stopPropagation();   // click a block to edit it; don't start a new-interval drag
+    b.onclick=ev=>{ev.stopPropagation(); sel=i; activeMove=s.move; activeFace=s.facing;
+      stance.value=s.startStance||'ginga'; quality.value=s.quality||'good'; refreshTags(); v.currentTime=s.start/fps; sync(); draw(); scrollToFrame(s.start);};
+    track.appendChild(b);});
+  sync();
 }
-function sync(){ if(sel<0)return; const s=segs[sel];
-  move.value=s.move; facing.value=s.facing; rep.value=s.rep; stance.value=s.startStance||'stand'; quality.value=s.quality||'good';
-  info.textContent=`#${sel}  ${s.start}-${s.end}f`; }
-['move','facing','rep','stance','quality'].forEach(id=>{const el=document.getElementById(id);
-  el.onchange=()=>{ if(sel<0)return; const s=segs[sel];
-    s.move=move.value; s.facing=facing.value; s.rep=+rep.value; s.startStance=stance.value; s.quality=quality.value; draw(); saveDraft();};});
-tl.onclick=e=>{const D=v.duration||1; v.currentTime=(e.offsetX/tl.clientWidth)*D;};
-function tick(){ const D=v.duration||1; ph.style.left=(100*v.currentTime/D)+'%'; drawOverlay(); requestAnimationFrame(tick);} tick();
-addEventListener('keydown',e=>{ const F=Math.round(v.currentTime*fps);
+function fmt(frame){ const t=frame/fps, m=Math.floor(t/60), s=t-m*60; return `${m}:${s.toFixed(2).padStart(5,'0')}`; }
+function sync(){
+  const has=sel>=0; selrow.classList.toggle('off',!has);
+  if(!has){ sstart.textContent='—'; send.textContent='—'; sdur.textContent='—';
+    info.innerHTML=`<span style="color:var(--gold)">new interval →</span> ${LABELM[activeMove]} · ${activeFace} &nbsp;<small>(drag the timeline to mark when it happens)</small>`; return; }
+  const s=segs[sel];
+  sstart.textContent=`${fmt(s.start)} · f${s.start}`;
+  send.textContent=`${fmt(s.end)} · f${s.end}`;
+  sdur.textContent=`${((s.end-s.start)/fps).toFixed(2)}s`;
+  info.innerHTML=`<span style="color:#fff">editing #${sel}</span> · ${LABELM[s.move]} · ${s.facing} &nbsp;<small>(use the ±1f buttons for fine trims · Del remove · Esc deselect)</small>`;
+}
+document.getElementById('stance').onchange=()=>{ if(sel>=0){segs[sel].startStance=stance.value; saveDraft();} };
+document.getElementById('quality').onchange=()=>{ if(sel>=0){segs[sel].quality=quality.value; draw(); saveDraft();} };
+// no-overlap clamping: a boundary can never cross a neighbouring interval (capoeira = one move at a time)
+function leftBound(i){ let lb=0; segs.forEach((o,j)=>{ if(j!==i && o.start<segs[i].start) lb=Math.max(lb,o.end); }); return lb; }
+function rightBound(i){ let rb=Infinity; segs.forEach((o,j)=>{ if(j!==i && o.start>segs[i].start) rb=Math.min(rb,o.start); }); return rb; }
+// shared-boundary ripple: if an edge touches a neighbour, that neighbour's edge moves with it
+// (capoeira is back-to-back: one move's end IS the next move's start, so the shared cut slides as one).
+function setStart(i,f){ const s=segs[i];
+  const nb=segs.find((o,j)=>j!==i && o.end===s.start);   // left neighbour sharing this cut
+  const lo=nb?nb.start+1:leftBound(i);
+  f=Math.max(lo,Math.min(f,s.end-1));
+  if(nb) nb.end=f;                                        // slide the shared cut together → no overlap, no gap
+  s.start=f; }
+function setEnd(i,f){ const s=segs[i];
+  const nb=segs.find((o,j)=>j!==i && o.start===s.end);   // right neighbour sharing this cut
+  const hi=nb?nb.end-1:rightBound(i);
+  f=Math.min(hi,Math.max(f,s.start+1));
+  if(nb) nb.start=f;                                      // slide the shared cut together → no overlap, no gap
+  s.end=f; }
+// precise per-frame editing of the selected interval's endpoints
+const selrow=document.getElementById('selrow'), sstart=document.getElementById('sstart'),
+      send=document.getElementById('send'), sdur=document.getElementById('sdur');
+function nudge(field,delta){ if(sel<0)return; const s=segs[sel];
+  if(field==='start') setStart(sel,s.start+delta); else setEnd(sel,s.end+delta);
+  v.currentTime=(field==='start'?s.start:s.end)/fps;   // jump playhead so the overlay shows the edited frame
+  draw(); saveDraft(); }
+document.getElementById('sminus').onclick=()=>nudge('start',-1);
+document.getElementById('splus').onclick=()=>nudge('start',1);
+document.getElementById('eminus').onclick=()=>nudge('end',-1);
+document.getElementById('eplus').onclick=()=>nudge('end',1);
+sstart.onclick=()=>{ if(sel>=0)v.currentTime=segs[sel].start/fps; };   // click a timestamp to jump there
+send.onclick=()=>{ if(sel>=0)v.currentTime=segs[sel].end/fps; };
+// snap the selected interval's start/end to the current playhead (same as the [ and ] keys)
+document.getElementById('markin').onclick=()=>{ if(sel<0)return; setStart(sel,Math.round(v.currentTime*fps)); draw(); saveDraft(); };
+document.getElementById('markout').onclick=()=>{ if(sel<0)return; setEnd(sel,Math.round(v.currentTime*fps)); draw(); saveDraft(); };
+// --- draw an interval by dragging across the timeline (captures the current move + camera brush) ---
+const prev=document.createElement('div'); prev.id='prev'; track.appendChild(prev);
+let drag=null;
+function tlTime(clientX){ const r=track.getBoundingClientRect(); const D=v.duration||1; return Math.max(0,Math.min(D,(clientX-r.left)/r.width*D)); }
+track.addEventListener('mousedown',e=>{ if(e.target!==track)return; drag={t0:tlTime(e.clientX),x0:e.clientX,moved:false}; });
+window.addEventListener('mousemove',e=>{ if(!drag)return; if(Math.abs(e.clientX-drag.x0)>3)drag.moved=true;
+  const D=v.duration||1, t1=tlTime(e.clientX), a=Math.min(drag.t0,t1), b=Math.max(drag.t0,t1);
+  prev.style.display='block'; prev.style.left=(100*a/D)+'%'; prev.style.width=(100*(b-a)/D)+'%'; });
+window.addEventListener('mouseup',e=>{ if(!drag)return; const d=drag; drag=null; prev.style.display='none';
+  if(!d.moved){ sel=-1; v.currentTime=d.t0; draw(); return; }            // plain click = seek + deselect
+  const t1=tlTime(e.clientX), a=Math.min(d.t0,t1), b=Math.max(d.t0,t1);
+  let start=Math.round(a*fps), end=Math.max(start+1,Math.round(b*fps));
+  // keep the new interval inside the free gap so it never overlaps an existing label
+  let lb=0, rb=Infinity; segs.forEach(o=>{ if(o.end<=start)lb=Math.max(lb,o.end); if(o.start>=end)rb=Math.min(rb,o.start);
+    if(o.start<end&&o.end>start){ if(o.start>=start)rb=Math.min(rb,o.start); else lb=Math.max(lb,o.end); } });
+  start=Math.max(start,lb); end=Math.min(end,rb);
+  if(end-start<1){ setStatus('no room there — overlaps an existing label'); draw(); return; }
+  segs.push({i:segs.length,start,end,move:activeMove,facing:activeFace,rep:0,startStance:stance.value,quality:quality.value});
+  sel=segs.length-1; v.currentTime=start/fps; draw(); saveDraft(); });
+// --- timeline zoom + pan (a 7-min clip needs finer control) ---
+const zoomin=document.getElementById('zoomin'), zoomout=document.getElementById('zoomout'),
+      zoomfit=document.getElementById('zoomfit'), zoomlvl=document.getElementById('zoomlvl');
+let zoom=1;
+function applyZoom(){ zoom=Math.max(1,Math.min(64,zoom)); track.style.width=(zoom*100)+'%'; zoomlvl.textContent=(Math.round(zoom*10)/10)+'×'; }
+function centerOnTime(t){ const D=v.duration||1; tl.scrollLeft=(t/D)*track.clientWidth - tl.clientWidth/2; }
+function scrollToFrame(f){ if(zoom<=1)return; const D=v.duration||1, px=(f/fps/D)*track.clientWidth;
+  if(px<tl.scrollLeft+12 || px>tl.scrollLeft+tl.clientWidth-12) centerOnTime(f/fps); }
+zoomin.onclick=()=>{ zoom*=2; applyZoom(); centerOnTime(v.currentTime); };
+zoomout.onclick=()=>{ zoom/=2; applyZoom(); centerOnTime(v.currentTime); };
+zoomfit.onclick=()=>{ zoom=1; applyZoom(); tl.scrollLeft=0; };
+tl.addEventListener('wheel',e=>{
+  if(e.ctrlKey||e.metaKey){ e.preventDefault(); const tBefore=tlTime(e.clientX); zoom*=(e.deltaY<0?1.25:0.8); applyZoom();
+    const D=v.duration||1; tl.scrollLeft=(tBefore/D)*track.clientWidth - (e.clientX-tl.getBoundingClientRect().left); }
+  else if(e.deltaY){ e.preventDefault(); tl.scrollLeft+=e.deltaY; }
+},{passive:false});
+applyZoom();
+// --- transport: play/pause + single-frame stepping (precise scrubbing) ---
+const pp=document.getElementById('pp'), clock=document.getElementById('clock');
+function step(df){ v.pause(); v.currentTime=Math.max(0,Math.min(v.duration||1e9,(Math.round(v.currentTime*fps)+df)/fps)); }
+document.getElementById('back1').onclick=()=>step(-1);
+document.getElementById('fwd1').onclick=()=>step(1);
+pp.onclick=()=>{ v.paused?v.play():v.pause(); };
+v.addEventListener('play',()=>pp.textContent='⏸'); v.addEventListener('pause',()=>pp.textContent='▶');
+function tick(){ const D=v.duration||1, F=Math.round(v.currentTime*fps), px=(v.currentTime/D)*track.clientWidth;
+  ph.style.left=(100*v.currentTime/D)+'%'; clock.textContent=`${fmt(F)} · f${F}`;
+  if(zoom>1 && !v.paused && (px<tl.scrollLeft+20 || px>tl.scrollLeft+tl.clientWidth-20)) centerOnTime(v.currentTime);
+  drawOverlay(); requestAnimationFrame(tick);} tick();
+addEventListener('keydown',e=>{
+  if(/^(SELECT|INPUT|TEXTAREA)$/.test(e.target.tagName))return;
+  const F=Math.round(v.currentTime*fps);
   if(e.key===' '){e.preventDefault(); v.paused?v.play():v.pause();}
-  else if(e.key==='ArrowRight') v.currentTime+=1/fps;
-  else if(e.key==='ArrowLeft') v.currentTime-=1/fps;
-  else if(e.key==='[' && sel>=0){segs[sel].start=F; draw(); saveDraft();}
-  else if(e.key===']' && sel>=0){segs[sel].end=F; draw(); saveDraft();}
-  else if(e.key==='n'){segs.push({i:segs.length,start:F,end:F+30,move:'ginga',facing:'front',rep:0,startStance:'ginga',quality:'good'}); sel=segs.length-1; sync(); draw(); saveDraft();}
-  else if(e.key==='Delete' && sel>=0){segs.splice(sel,1); sel=-1; draw(); saveDraft();}
+  else if(e.key==='ArrowRight'){e.preventDefault(); v.currentTime+=1/fps;}
+  else if(e.key==='ArrowLeft'){e.preventDefault(); v.currentTime-=1/fps;}
+  else if(e.key==='[' && sel>=0){setStart(sel,F); draw(); saveDraft();}
+  else if(e.key===']' && sel>=0){setEnd(sel,F); draw(); saveDraft();}
+  else if(e.key==='n'){segs.push({i:segs.length,start:F,end:F+30,move:activeMove,facing:activeFace,rep:0,startStance:stance.value,quality:quality.value}); sel=segs.length-1; draw(); saveDraft();}
+  else if((e.key==='Delete'||e.key==='Backspace') && sel>=0){segs.splice(sel,1); sel=-1; draw(); saveDraft();}
+  else if(e.key==='Escape'){ sel=-1; draw(); }
 });
 document.getElementById('clear').onclick=()=>{ if(confirm('Clear all segments? (start a fresh labeling pass)')){ segs=[]; sel=-1; draw(); saveDraft(); } };
 document.getElementById('export').onclick=()=>{
