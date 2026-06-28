@@ -16,14 +16,16 @@
   .vidwrap{position:relative;display:inline-flex;max-width:100%;max-height:100%}
   video{max-width:100%;max-height:100%;display:block}
   #ov{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-  .timeline{position:relative;height:78px;background:var(--panel2);border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;user-select:none}
-  .timeline::-webkit-scrollbar{height:10px} .timeline::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
-  .track{position:relative;height:60px;min-width:100%;cursor:crosshair}
-  .blk{position:absolute;top:6px;height:48px;border-radius:5px;border:1px solid #0006;overflow:hidden;
+  .timeline{position:relative;height:48px;background:var(--panel2);border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;user-select:none}
+  .timeline::-webkit-scrollbar{height:8px} .timeline::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
+  .track{position:relative;height:100%;min-width:100%;cursor:crosshair}
+  .blk{position:absolute;top:3px;height:34px;border-radius:5px;border:1px solid #0006;overflow:hidden;
     font:11px/1.3 var(--mono);color:#1a130a;padding:4px 6px;cursor:pointer;white-space:nowrap}
   .blk.sel{outline:2px solid #fff;z-index:3} .blk.bad{opacity:.4}
-  #prev{position:absolute;top:6px;height:48px;border-radius:5px;background:#ffffff22;border:1px dashed var(--gold);pointer-events:none;display:none}
-  .playhead{position:absolute;top:0;width:2px;height:60px;background:#fff;pointer-events:none;z-index:4}
+  .blk .h{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:2} .blk .h.l{left:0} .blk .h.r{right:0}
+  .blk .h:hover{background:#ffffff66}
+  #prev{position:absolute;top:3px;height:34px;border-radius:5px;background:#ffffff22;border:1px dashed var(--gold);pointer-events:none;display:none}
+  .playhead{position:absolute;top:0;width:2px;height:100%;background:#fff;pointer-events:none;z-index:4}
   .tlbar{display:flex;gap:8px;align-items:center;padding:6px 16px;border-top:1px solid var(--line);background:var(--panel)}
   .tlbar button{padding:3px 11px}
   .ctl{display:flex;flex-direction:column;gap:7px;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel)}
@@ -59,15 +61,21 @@
   <button id="zoomfit" title="fit the whole video">fit</button>
   <span class="sp"></span>
   <small id="status" style="color:var(--gold)"></small>
-  <small style="margin-left:12px">drag = new · click = edit · scroll = pan · Ctrl+scroll = zoom</small>
+  <small style="margin-left:12px">drag / n = new · [ ] = set in/out · click = seek · Esc = deselect · scroll = pan</small>
 </div>
 <div class="timeline" id="tl"><div class="track" id="track"><div class="playhead" id="ph"></div></div></div>
 <div class="ctl">
   <div class="row">
-    <span class="lab">1 · move</span><span id="moveTags"></span>
-    <span class="lab" style="margin-left:16px">2 · camera</span><span id="faceTags"></span>
+    <span class="lab">1 · move</span>
+    <select id="move"></select>
+    <small id="cov" title="camera angles with a GOOD rep for the picked move"></small>
+    <span class="lab" style="margin-left:14px">2 · camera</span><span id="faceTags"></span>
+    <span class="lab" style="min-width:auto;margin-left:14px">seg</span>
+    <button class="nb" id="newseg" title="n key — start a NEW segment at the playhead">+ new</button>
+    <button class="nb" id="markin" title="[ key — set the SELECTED segment's start to the playhead">[ in</button>
+    <button class="nb" id="markout" title="] key — set the SELECTED segment's end to the playhead">out ]</button>
     <span class="sp"></span>
-    <span class="lab" style="min-width:auto">coverage</span><small id="cov"></small>
+    <small id="covtot" title="moves with all 4 camera angles covered"></small>
   </div>
   <div class="row" id="selrow">
     <span class="lab">selection</span>
@@ -75,12 +83,10 @@
     <button class="nb" id="sminus" title="start −1 frame (also [ )">−1f</button>
     <code id="sstart" data-jump="start" title="click to jump the playhead here">—</code>
     <button class="nb" id="splus" title="start +1 frame">+1f</button>
-    <button class="nb" id="markin" title="set START to the current playhead (also [ )">[ in</button>
     <span class="lab" style="min-width:auto;margin-left:12px">end</span>
     <button class="nb" id="eminus" title="end −1 frame">−1f</button>
     <code id="send" data-jump="end" title="click to jump the playhead here">—</code>
-    <button class="nb" id="eplus" title="end +1 frame (also ] )">+1f</button>
-    <button class="nb" id="markout" title="set END to the current playhead (also ] )">out ]</button>
+    <button class="nb" id="eplus" title="end +1 frame">+1f</button>
     <span class="lab" style="min-width:auto;margin-left:10px">dur</span><code id="sdur">—</code>
     <span class="lab" style="min-width:auto;margin-left:16px">quality</span>
     <select id="quality"><option>good</option><option>ok</option><option>bad</option></select>
@@ -97,15 +103,16 @@ const FCOL={front:"#7fc36b",left:"#5ea0ff",back:"#d28a4a",right:"#eba63c"};
 let fps=30, segs=[], sel=-1;
 let activeMove=SLUGS[0], activeFace="front";   // the "brush" applied to new (or selected) intervals
 const v=document.getElementById('v'), tl=document.getElementById('tl'), track=document.getElementById('track'), ph=document.getElementById('ph');
-const moveTagsEl=document.getElementById('moveTags'), faceTagsEl=document.getElementById('faceTags');
-moveTagsEl.innerHTML=SLUGS.map(s=>`<button class="tag mv" data-m="${s}">${LABELM[s]}</button>`).join(' ');
+const moveSel=document.getElementById('move'), faceTagsEl=document.getElementById('faceTags');
+const cov=document.getElementById('cov'), covtot=document.getElementById('covtot');
+moveSel.innerHTML=SLUGS.map(s=>`<option value="${s}">${LABELM[s]||s}</option>`).join('');
 faceTagsEl.innerHTML=FAC.map(f=>`<button class="tag fc" data-f="${f}" style="background:${FCOL[f]};color:#1a130a">${f}</button>`).join(' ');
 function refreshTags(){
-  moveTagsEl.querySelectorAll('.mv').forEach(b=>b.classList.toggle('on',b.dataset.m===activeMove));
+  moveSel.value=activeMove;
   faceTagsEl.querySelectorAll('.fc').forEach(b=>b.classList.toggle('on',b.dataset.f===activeFace));
 }
-// clicking a move/camera button sets the brush; if an interval is selected it also re-tags it.
-moveTagsEl.querySelectorAll('.mv').forEach(b=>b.onclick=()=>{ activeMove=b.dataset.m; if(sel>=0)segs[sel].move=activeMove; b.blur(); refreshTags(); draw(); saveDraft(); });
+// picking a move / camera sets the brush; if an interval is selected it also re-tags it.
+moveSel.onchange=()=>{ activeMove=moveSel.value; if(sel>=0)segs[sel].move=activeMove; draw(); saveDraft(); };
 faceTagsEl.querySelectorAll('.fc').forEach(b=>b.onclick=()=>{ activeFace=b.dataset.f; if(sel>=0)segs[sel].facing=activeFace; b.blur(); refreshTags(); draw(); saveDraft(); });
 refreshTags();
 document.getElementById('vid').onchange=e=>{const f=e.target.files[0]; if(f) v.src=URL.createObjectURL(f);};
@@ -168,16 +175,19 @@ function drawOverlay(){
     octx.beginPath(); octx.arc(P[i][0],P[i][1],i===0?5:3,0,7); octx.fill(); }
 }
 function updateCov(){
-  // label one GOOD rep per direction per move; letters go green as each facing is covered.
-  const NEEDM=['ginga','bencao','meia-lua-de-frente','armada','au'];
-  const FAC=['front','left','back','right'];
+  // one GOOD rep per camera angle per move. Scales to any number of moves:
+  //  - the colored F L B R readout is for the move you've picked,
+  //  - each dropdown option carries its own coverage, and a total sits on the right.
+  const FACO=['front','left','back','right'], L={front:'F',left:'L',back:'B',right:'R'};
   const have={};
   segs.filter(s=>s.quality==='good').forEach(s=>{(have[s.move]=have[s.move]||new Set()).add(s.facing);});
-  cov.innerHTML=NEEDM.map(m=>{
-    const set=have[m]||new Set();
-    const tag=FAC.map(f=>`<span style="color:${set.has(f)?'var(--good)':'var(--mut)'}">${f[0].toUpperCase()}</span>`).join('');
-    return (m==='meia-lua-de-frente'?'meia':m)+'['+tag+']';
-  }).join('&nbsp; ');
+  const set=have[activeMove]||new Set();
+  cov.innerHTML=FACO.map(f=>`<span style="color:${set.has(f)?'var(--good)':'var(--mut)'}">${L[f]}</span>`).join(' ');
+  let done=0;
+  [...moveSel.options].forEach(o=>{ const st=have[o.value]||new Set();
+    o.textContent=`${LABELM[o.value]||o.value}   ${FACO.map(f=>st.has(f)?L[f]:'x').join('')}`;
+    if(st.size>=4)done++; });
+  covtot.textContent=`${done}/${moveSel.options.length} done`;
 }
 function draw(){
   updateCov();
@@ -190,7 +200,12 @@ function draw(){
     b.title=`${s.move} · ${s.facing} · ${s.quality}`;
     b.onmousedown=ev=>ev.stopPropagation();   // click a block to edit it; don't start a new-interval drag
     b.onclick=ev=>{ev.stopPropagation(); sel=i; activeMove=s.move; activeFace=s.facing;
-      stance.value=s.startStance||'ginga'; quality.value=s.quality||'good'; refreshTags(); v.currentTime=s.start/fps; sync(); draw(); scrollToFrame(s.start);};
+      stance.value=s.startStance||'ginga'; quality.value=s.quality||'good'; refreshTags(); sync(); draw();};   // select only — leave the cursor where it is
+    const hl=document.createElement('div'), hr=document.createElement('div');   // drag a block edge to resize it
+    hl.className='h l'; hr.className='h r';
+    hl.onmousedown=ev=>{ev.stopPropagation(); ev.preventDefault(); edge={i,which:'start'}; sel=i; selectBrush(i); sync(); draw();};
+    hr.onmousedown=ev=>{ev.stopPropagation(); ev.preventDefault(); edge={i,which:'end'}; sel=i; selectBrush(i); sync(); draw();};
+    b.appendChild(hl); b.appendChild(hr);
     track.appendChild(b);});
   sync();
 }
@@ -198,12 +213,12 @@ function fmt(frame){ const t=frame/fps, m=Math.floor(t/60), s=t-m*60; return `${
 function sync(){
   const has=sel>=0; selrow.classList.toggle('off',!has);
   if(!has){ sstart.textContent='—'; send.textContent='—'; sdur.textContent='—';
-    info.innerHTML=`<span style="color:var(--gold)">new interval →</span> ${LABELM[activeMove]} · ${activeFace} &nbsp;<small>(drag the timeline to mark when it happens)</small>`; return; }
+    info.innerHTML=`<span style="color:var(--gold)">new →</span> ${LABELM[activeMove]||activeMove} · ${activeFace} &nbsp;<small>(+ new / n / drag to start a segment here)</small>`; return; }
   const s=segs[sel];
   sstart.textContent=`${fmt(s.start)} · f${s.start}`;
   send.textContent=`${fmt(s.end)} · f${s.end}`;
   sdur.textContent=`${((s.end-s.start)/fps).toFixed(2)}s`;
-  info.innerHTML=`<span style="color:#fff">editing #${sel}</span> · ${LABELM[s.move]} · ${s.facing} &nbsp;<small>(use the ±1f buttons for fine trims · Del remove · Esc deselect)</small>`;
+    info.innerHTML=`<span style="color:#fff">editing #${sel}</span> · ${LABELM[s.move]} · ${s.facing} &nbsp;<small>([ / ] set start/end to cursor · ±1f fine trims · Del remove · Esc deselect)</small>`;
 }
 document.getElementById('stance').onchange=()=>{ if(sel>=0){segs[sel].startStance=stance.value; saveDraft();} };
 document.getElementById('quality').onchange=()=>{ if(sel>=0){segs[sel].quality=quality.value; draw(); saveDraft();} };
@@ -237,19 +252,57 @@ document.getElementById('eminus').onclick=()=>nudge('end',-1);
 document.getElementById('eplus').onclick=()=>nudge('end',1);
 sstart.onclick=()=>{ if(sel>=0)v.currentTime=segs[sel].start/fps; };   // click a timestamp to jump there
 send.onclick=()=>{ if(sel>=0)v.currentTime=segs[sel].end/fps; };
-// snap the selected interval's start/end to the current playhead (same as the [ and ] keys)
-document.getElementById('markin').onclick=()=>{ if(sel<0)return; setStart(sel,Math.round(v.currentTime*fps)); draw(); saveDraft(); };
-document.getElementById('markout').onclick=()=>{ if(sel<0)return; setEnd(sel,Math.round(v.currentTime*fps)); draw(); saveDraft(); };
+// --- mark in / out, decoupled from the cursor ---
+function curF(){ return Math.round(v.currentTime*fps); }
+function selectBrush(i){ const s=segs[i]; activeMove=s.move; activeFace=s.facing;
+  stance.value=s.startStance||'ginga'; quality.value=s.quality||'good'; refreshTags(); }
+// create a new ~30-frame segment at the playhead, shrunk to the free gap; select it.
+function newSeg(){
+  const F=curF();
+  const inside=segs.findIndex(o=>F>=o.start && F<o.end);
+  if(inside>=0){ sel=inside; selectBrush(inside); sync(); draw(); setStatus('cursor is inside a segment — selected it'); return; }
+  let rb=Infinity; segs.forEach(o=>{ if(o.start>F) rb=Math.min(rb,o.start); });   // next segment after the cursor
+  const end=Math.min(F+30, rb);
+  if(end-F<1){ setStatus('no room for a new segment here'); return; }
+  segs.push({i:segs.length,start:F,end,move:activeMove,facing:activeFace,rep:0,startStance:stance.value,quality:quality.value});
+  sel=segs.length-1; draw(); saveDraft();
+}
+// [ in / out ] = resize the SELECTED segment's start/end to the playhead (move that edge to the cursor).
+// if nothing is selected, fall back to the obvious segment: the one under the cursor, else the nearest.
+function pickFor(which){
+  if(sel>=0) return sel;
+  const F=curF();
+  const inside=segs.findIndex(o=>F>=o.start && F<o.end); if(inside>=0) return inside;
+  let b=-1, bs=(which==='end')?-Infinity:Infinity;
+  segs.forEach((o,i)=>{ if(which==='end'){ if(o.start<=F && o.start>bs){bs=o.start;b=i;} }   // last segment at/before the cursor
+                        else if(o.start>=F && o.start<bs){bs=o.start;b=i;} });                // first segment at/after the cursor
+  return b;
+}
+function markIn(){ const i=pickFor('start');
+  if(i<0){ setStatus('nothing to mark — use + new (or n) to start a segment'); return; }
+  sel=i; selectBrush(i); const f=curF(); setStart(i,f);
+  setStatus(segs[i].start===f?'start → cursor':'start clamped at a neighbour'); sync(); draw(); saveDraft(); }
+function markOut(){ const i=pickFor('end');
+  if(i<0){ setStatus('nothing to mark — use + new (or n) to start a segment'); return; }
+  sel=i; selectBrush(i); const f=curF(); setEnd(i,f);
+  setStatus(segs[i].end===f?'end → cursor':'end clamped at a neighbour — clear it to extend further'); sync(); draw(); saveDraft(); }
+document.getElementById('newseg').onclick=newSeg;
+document.getElementById('markin').onclick=markIn;
+document.getElementById('markout').onclick=markOut;
 // --- draw an interval by dragging across the timeline (captures the current move + camera brush) ---
 const prev=document.createElement('div'); prev.id='prev'; track.appendChild(prev);
-let drag=null;
+let drag=null, edge=null;
 function tlTime(clientX){ const r=track.getBoundingClientRect(); const D=v.duration||1; return Math.max(0,Math.min(D,(clientX-r.left)/r.width*D)); }
 track.addEventListener('mousedown',e=>{ if(e.target!==track)return; drag={t0:tlTime(e.clientX),x0:e.clientX,moved:false}; });
-window.addEventListener('mousemove',e=>{ if(!drag)return; if(Math.abs(e.clientX-drag.x0)>3)drag.moved=true;
+window.addEventListener('mousemove',e=>{
+  if(edge){ const f=Math.round(tlTime(e.clientX)*fps);   // dragging a block edge → live resize (clamped + rippled)
+    if(edge.which==='start') setStart(edge.i,f); else setEnd(edge.i,f); draw(); return; }
+  if(!drag)return; if(Math.abs(e.clientX-drag.x0)>3)drag.moved=true;
   const D=v.duration||1, t1=tlTime(e.clientX), a=Math.min(drag.t0,t1), b=Math.max(drag.t0,t1);
   prev.style.display='block'; prev.style.left=(100*a/D)+'%'; prev.style.width=(100*(b-a)/D)+'%'; });
-window.addEventListener('mouseup',e=>{ if(!drag)return; const d=drag; drag=null; prev.style.display='none';
-  if(!d.moved){ sel=-1; v.currentTime=d.t0; draw(); return; }            // plain click = seek + deselect
+window.addEventListener('mouseup',e=>{ if(edge){ edge=null; saveDraft(); return; }
+  if(!drag)return; const d=drag; drag=null; prev.style.display='none';
+  if(!d.moved){ v.currentTime=d.t0; return; }            // plain click = seek only (selection persists; Esc deselects)
   const t1=tlTime(e.clientX), a=Math.min(d.t0,t1), b=Math.max(d.t0,t1);
   let start=Math.round(a*fps), end=Math.max(start+1,Math.round(b*fps));
   // keep the new interval inside the free gap so it never overlaps an existing label
@@ -293,9 +346,9 @@ addEventListener('keydown',e=>{
   if(e.key===' '){e.preventDefault(); v.paused?v.play():v.pause();}
   else if(e.key==='ArrowRight'){e.preventDefault(); v.currentTime+=1/fps;}
   else if(e.key==='ArrowLeft'){e.preventDefault(); v.currentTime-=1/fps;}
-  else if(e.key==='[' && sel>=0){setStart(sel,F); draw(); saveDraft();}
-  else if(e.key===']' && sel>=0){setEnd(sel,F); draw(); saveDraft();}
-  else if(e.key==='n'){segs.push({i:segs.length,start:F,end:F+30,move:activeMove,facing:activeFace,rep:0,startStance:stance.value,quality:quality.value}); sel=segs.length-1; draw(); saveDraft();}
+  else if(e.key==='['){ markIn(); }     // set start of selected (does not create)
+  else if(e.key===']'){ markOut(); }    // set end of selected (does not create)
+  else if(e.key==='n'){ newSeg(); }     // new segment at the playhead
   else if((e.key==='Delete'||e.key==='Backspace') && sel>=0){segs.splice(sel,1); sel=-1; draw(); saveDraft();}
   else if(e.key==='Escape'){ sel=-1; draw(); }
 });
