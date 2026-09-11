@@ -645,6 +645,7 @@
 .compare-panel-desc{font-family:var(--body);font-size:.9rem;color:var(--muted);line-height:1.6;margin:16px 0}
 .compare-panel-targets{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 </style>
+<link rel="stylesheet" href="assets/auth.css">
 </head>
 <body>
 <div class="grain"></div>
@@ -678,8 +679,35 @@
           </svg>
         </button>
     </div>
+    <button class="auth-entry" id="authEntry" type="button" aria-haspopup="dialog">Sign in</button>
   </div>
 </header>
+
+<dialog class="auth-dialog" id="authDialog" aria-labelledby="authDialogTitle">
+  <button class="auth-close" id="authClose" type="button" aria-label="Close sign in">×</button>
+  <div class="auth-kicker">Your roda, remembered</div>
+  <h2 id="authDialogTitle">Sign in</h2>
+  <p class="auth-intro">Use one button whether this is your first visit or you are coming back.</p>
+  <div id="authActions">
+    <button class="auth-method auth-google" id="googleSignIn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#4285f4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.6h3.3c1.9-1.8 2.9-4.4 2.9-7.5Z"/>
+        <path fill="#34a853" d="M12 22c2.7 0 5-.9 6.7-2.3l-3.3-2.6c-.9.6-2.1 1-3.4 1a5.9 5.9 0 0 1-5.5-4.1H3.1v2.7A10 10 0 0 0 12 22Z"/>
+        <path fill="#fbbc05" d="M6.5 14a6 6 0 0 1 0-3.9V7.4H3.1a10 10 0 0 0 0 9.3L6.5 14Z"/>
+        <path fill="#ea4335" d="M12 6a5.4 5.4 0 0 1 3.8 1.5l2.9-2.8A9.7 9.7 0 0 0 12 2a10 10 0 0 0-8.9 5.4l3.4 2.7A5.9 5.9 0 0 1 12 6Z"/>
+      </svg>
+      <span>Continue with Google</span>
+      <span class="auth-recommended">Recommended</span>
+    </button>
+    <div class="auth-divider" role="separator"><span>or use email</span></div>
+    <form id="emailSignIn">
+      <label class="auth-label" for="authEmail">Email address</label>
+      <input class="auth-input" id="authEmail" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com">
+      <button class="auth-method auth-email" id="emailSignInButton" type="submit">Email me a sign-in link</button>
+    </form>
+  </div>
+  <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
+</dialog>
 
 <section class="hero">
   <div class="hero-text">
@@ -2528,5 +2556,6 @@ document.querySelectorAll('.lang .flag').forEach(b=>b.addEventListener('click',(
   else { showPage(HASH_PAGE[h] || 'lexicon', true); }
 })();
 </script>
+<script type="module" src="assets/generated/public-auth.js"></script>
 </body>
 </html>

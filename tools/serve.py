@@ -99,6 +99,12 @@ class RangeHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/api/clip"):
             return self.handle_clip()
+        parsed = urllib.parse.urlsplit(self.path)
+        clean_path = self.translate_path(parsed.path)
+        if not os.path.isfile(clean_path) and os.path.isfile(clean_path + ".html"):
+            self.path = parsed.path + ".html"
+            if parsed.query:
+                self.path += "?" + parsed.query
         rng = self.headers.get("Range")
         path = self.translate_path(self.path)
         if rng is None or not os.path.isfile(path):

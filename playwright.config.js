@@ -10,7 +10,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'python tools/serve.py 8137',
+    command: 'python3 tools/serve.py 8137',
     url: 'http://127.0.0.1:8137',
     reuseExistingServer: true,
   },

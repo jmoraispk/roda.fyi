@@ -1,0 +1,87 @@
+export function createAuthDialog({
+  document,
+  authService,
+  returnRoute = () => '/dashboard',
+  navigate = (route) => globalThis.location.assign(route),
+}) {
+  const entry = document.querySelector('#authEntry');
+  const dialog = document.querySelector('#authDialog');
+  const close = document.querySelector('#authClose');
+  const actions = document.querySelector('#authActions');
+  const google = document.querySelector('#googleSignIn');
+  const emailForm = document.querySelector('#emailSignIn');
+  const emailInput = document.querySelector('#authEmail');
+  const emailButton = document.querySelector('#emailSignInButton');
+  const message = document.querySelector('#authMessage');
+  let session = null;
+  let busy = false;
+
+  function setBusy(value) {
+    busy = value;
+    google.disabled = value;
+    emailButton.disabled = value;
+    emailInput.disabled = value;
+  }
+
+  function showError(error) {
+    message.textContent = error?.message || 'Something went wrong. Please try again.';
+    setBusy(false);
+  }
+
+  entry.addEventListener('click', () => {
+    if (session) {
+      navigate('/dashboard');
+      return;
+    }
+    actions.hidden = false;
+    message.textContent = '';
+    dialog.showModal();
+    google.focus();
+  });
+
+  close.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => entry.focus());
+
+  google.addEventListener('click', async () => {
+    if (busy) return;
+    setBusy(true);
+    message.textContent = 'Opening Google…';
+    try {
+      await authService.signInWithGoogle(returnRoute());
+    } catch (error) {
+      showError(error);
+    }
+  });
+
+  emailForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    if (!emailForm.checkValidity()) {
+      emailForm.reportValidity();
+      return;
+    }
+
+    setBusy(true);
+    message.textContent = 'Sending your sign-in link…';
+    try {
+      await authService.sendEmailLink(emailInput.value, returnRoute());
+      actions.hidden = true;
+      message.textContent = 'Check your email for a sign-in link.';
+      setBusy(false);
+    } catch (error) {
+      showError(error);
+    }
+  });
+
+  return {
+    setSession(nextSession) {
+      session = nextSession;
+      entry.textContent = session ? 'Dashboard' : 'Sign in';
+      if (session) {
+        entry.removeAttribute('aria-haspopup');
+      } else {
+        entry.setAttribute('aria-haspopup', 'dialog');
+      }
+    },
+  };
+}

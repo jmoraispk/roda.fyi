@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { rm } from 'node:fs/promises';
 
 import { config as loadDotEnv } from 'dotenv';
 import { build } from 'esbuild';
@@ -38,13 +39,20 @@ export function readPublicConfig(env) {
 export async function buildBrowserBundles({ test = false } = {}) {
   loadDotEnv({ path: '.env.local', quiet: true });
   const publicConfig = readPublicConfig(test ? TEST_CONFIG : process.env);
+  const entryPoints = {
+    'public-auth': 'src/app/entries/public-auth.js',
+    'auth-callback': 'src/app/entries/auth-callback.js',
+    dashboard: 'src/app/entries/dashboard.js',
+  };
+
+  if (!test) {
+    await Promise.all(Object.keys(entryPoints).map((name) => (
+      rm(`assets/generated/${name}.js.map`, { force: true })
+    )));
+  }
 
   await build({
-    entryPoints: {
-      'public-auth': 'src/app/entries/public-auth.js',
-      'auth-callback': 'src/app/entries/auth-callback.js',
-      dashboard: 'src/app/entries/dashboard.js',
-    },
+    entryPoints,
     outdir: 'assets/generated',
     entryNames: '[name]',
     bundle: true,
