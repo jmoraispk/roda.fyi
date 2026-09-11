@@ -29,6 +29,9 @@ archive/berimbau-music/supabase/.branches/
 # Vercel CLI link state (project + org IDs).
 .vercel/
 
+# Local brainstorming companion sessions.
+.superpowers/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
