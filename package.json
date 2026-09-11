@@ -1,0 +1,27 @@
+{
+  "name": "roda-fyi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:test": "node scripts/build.mjs --test",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run",
+    "test:e2e": "npm run build:test && playwright test",
+    "test:db": "supabase test db",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "check": "npm run build && npm run test:unit && npm run test:e2e && npm run test:db"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@supabase/supabase-js": "2.116.0",
+    "dotenv": "17.4.2",
+    "esbuild": "0.28.2",
+    "jsdom": "30.0.1",
+    "supabase": "2.117.0",
+    "vitest": "5.0.0"
+  }
+}
