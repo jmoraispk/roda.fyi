@@ -173,3 +173,18 @@ uv run tools/mocap/capture_moves.py --build --qa
 - `tools/mocap/README.md` — the YouTube move library + ginga hero extraction.
 - `docs/superpowers/plans/` — design/implementation plans (incl. the server-side
   2D-estimation handoff).
+
+## Authenticated platform foundation
+
+- [`auth-and-database-operations.md`](auth-and-database-operations.md) — exact
+  Supabase, Google, SMTP, Vercel, migration, rotation, and incident procedures.
+- [`security-checklist.md`](security-checklist.md) — evidence-based production
+  launch gate for authentication, RLS, storage, and deployment.
+- [`superpowers/specs/2026-09-11-auth-group-foundation-design.md`](superpowers/specs/2026-09-11-auth-group-foundation-design.md)
+  — approved account, profile, group, hierarchy, and privacy model.
+- [`superpowers/plans/2026-09-11-auth-group-foundation.md`](superpowers/plans/2026-09-11-auth-group-foundation.md)
+  — staged implementation and verification plan.
+- [`training-platform-design-decisions.md`](training-platform-design-decisions.md)
+  — workouts, sessions, feedback, statistics, and group-hierarchy decisions.
+- [`../ROADMAP.md`](../ROADMAP.md) — deferred product directions, including
+  two-person and travelling training.
