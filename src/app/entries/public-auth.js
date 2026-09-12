@@ -3,9 +3,15 @@ import { publicConfig } from '../config.js';
 import { createRodaClient } from '../supabase-client.js';
 import { createE2EAuthService } from '../testing/fake-services.js';
 import { createAuthDialog } from '../ui/auth-dialog.js';
+import { sanitizeReturnRoute } from '../return-route.js';
 
 function currentRoute(location) {
   return `${location.pathname}${location.search}${location.hash}`;
+}
+
+function intendedRoute(location) {
+  const next = new URLSearchParams(location.search).get('next');
+  return next === null ? currentRoute(location) : sanitizeReturnRoute(next);
 }
 
 async function main() {
@@ -20,12 +26,14 @@ async function main() {
   const dialog = createAuthDialog({
     document,
     authService,
-    returnRoute: () => currentRoute(location),
+    returnRoute: () => intendedRoute(location),
     navigate: (route) => location.assign(route),
   });
 
-  dialog.setSession(await authService.getSession());
+  const session = await authService.getSession();
+  dialog.setSession(session);
   authService.onAuthStateChange((_event, session) => dialog.setSession(session));
+  if (!session && new URLSearchParams(location.search).has('next')) dialog.open();
 }
 
 main();

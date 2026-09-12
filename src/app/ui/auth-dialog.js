@@ -28,7 +28,7 @@ export function createAuthDialog({
     setBusy(false);
   }
 
-  entry.addEventListener('click', () => {
+  function open() {
     if (session) {
       navigate('/dashboard');
       return;
@@ -37,7 +37,9 @@ export function createAuthDialog({
     message.textContent = '';
     dialog.showModal();
     google.focus();
-  });
+  }
+
+  entry.addEventListener('click', open);
 
   close.addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => entry.focus());
@@ -74,6 +76,7 @@ export function createAuthDialog({
   });
 
   return {
+    open,
     setSession(nextSession) {
       session = nextSession;
       entry.textContent = session ? 'Dashboard' : 'Sign in';

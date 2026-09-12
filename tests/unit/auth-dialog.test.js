@@ -77,6 +77,16 @@ describe('createAuthDialog', () => {
     expect(document.body.textContent).not.toMatch(/\bRegister\b|\bLogin\b/);
   });
 
+  it('can open from a retained protected destination without another click', () => {
+    const { service } = fakeAuth();
+    const controller = createAuthDialog({ document, authService: service });
+
+    controller.open();
+
+    expect(document.querySelector('#authDialog').hasAttribute('open')).toBe(true);
+    expect(document.activeElement).toBe(document.querySelector('#googleSignIn'));
+  });
+
   it('starts Google sign-in for the current safe destination', async () => {
     const { service, calls } = fakeAuth();
     createAuthDialog({
