@@ -37,6 +37,11 @@
 
       <p class="dashboard-status" id="dashboardStatus" role="status" aria-live="polite"></p>
       <section class="dashboard-content" id="dashboardContent" aria-live="polite"></section>
+      <section class="group-workspace" id="groupWorkspace" hidden>
+        <p class="group-status" id="groupStatus" role="status" aria-label="Group status" aria-live="polite"></p>
+        <section id="groupDiscovery"></section>
+        <section id="groupManagement"></section>
+      </section>
     </main>
   </div>
 
@@ -71,6 +76,92 @@
 
       <p class="profile-status" id="profileStatus" role="status" aria-live="polite"></p>
       <button class="primary-button" id="saveProfile" type="submit">Save profile</button>
+    </form>
+  </dialog>
+
+  <dialog class="profile-dialog group-dialog" id="createGroupDialog" aria-labelledby="createGroupTitle">
+    <form id="createGroupForm">
+      <button class="profile-close" data-close-dialog type="button" aria-label="Close group creation">×</button>
+      <div class="profile-kicker">Coaching</div>
+      <h1 id="createGroupTitle">Create a group</h1>
+      <p class="profile-intro">Start a training group. You will become its owner and first coach.</p>
+
+      <label class="field-label" for="groupName">Group name</label>
+      <input class="field-input" id="groupName" name="name" required maxlength="100">
+      <label class="field-label" for="groupDescription">Description (optional)</label>
+      <textarea class="field-input field-textarea" id="groupDescription" name="description" maxlength="500"></textarea>
+      <label class="field-label" for="groupLocation">Location</label>
+      <input class="field-input" id="groupLocation" name="location" maxlength="120">
+      <label class="leaderboard-choice">
+        <input id="groupDiscoverable" name="discoverable" type="checkbox" checked>
+        <span>Show this group in search</span>
+      </label>
+      <p class="profile-status" data-dialog-status role="status"></p>
+      <button class="primary-button" type="submit">Create group</button>
+    </form>
+  </dialog>
+
+  <dialog class="profile-dialog group-dialog" id="relationshipDialog" aria-labelledby="relationshipDialogTitle">
+    <form id="relationshipForm">
+      <button class="profile-close" data-close-dialog type="button" aria-label="Close relationship settings">×</button>
+      <div class="profile-kicker">Group hierarchy</div>
+      <h1 id="relationshipDialogTitle">Group relationship</h1>
+      <p class="profile-intro"><strong>Immediate parent only.</strong> Access never cascades to higher ancestors. Anonymous aggregate rankings are future work.</p>
+      <fieldset class="sharing-fieldset">
+        <legend>What may the immediate parent group see?</legend>
+        <label><input type="radio" name="sharingLevel" value="named_progress"> Named progress</label>
+        <label><input type="radio" name="sharingLevel" value="full_coaching"> Full coaching access</label>
+      </fieldset>
+      <p class="profile-status" data-dialog-status role="status"></p>
+      <button class="primary-button" type="submit">Save sharing</button>
+    </form>
+  </dialog>
+
+  <dialog class="profile-dialog group-dialog" id="childGroupDialog" aria-labelledby="childGroupDialogTitle">
+    <form id="childGroupForm">
+      <button class="profile-close" data-close-dialog type="button" aria-label="Close hierarchy invitation">×</button>
+      <div class="profile-kicker">Group hierarchy</div>
+      <h1 id="childGroupDialogTitle">Invite a child group</h1>
+      <p class="profile-intro">Invite another group to connect directly beneath this group. Its owner must accept.</p>
+      <label class="field-label" for="childGroup">Child group</label>
+      <select class="field-input" id="childGroup" name="childGroup" required></select>
+      <p class="profile-status" data-dialog-status role="status"></p>
+      <button class="primary-button" type="submit">Send group invitation</button>
+    </form>
+  </dialog>
+
+  <dialog class="profile-dialog group-dialog" id="memberInvitationDialog" aria-labelledby="memberInvitationTitle">
+    <form id="memberInvitationForm">
+      <button class="profile-close" data-close-dialog type="button" aria-label="Close group invitation">×</button>
+      <div class="profile-kicker">Group invitation</div>
+      <h1 id="memberInvitationTitle">Group invitation</h1>
+      <p class="profile-intro">You were invited to join a group as a practitioner. The invitation can be used once.</p>
+      <p class="profile-status" data-dialog-status role="status"></p>
+      <button class="primary-button" type="submit">Accept invitation</button>
+    </form>
+  </dialog>
+
+  <dialog class="profile-dialog group-dialog" id="transferOwnershipDialog" aria-labelledby="transferOwnershipTitle">
+    <form id="transferOwnershipForm">
+      <button class="profile-close" data-close-dialog type="button" aria-label="Close ownership transfer">×</button>
+      <div class="profile-kicker">Owner action</div>
+      <h1 id="transferOwnershipTitle">Transfer ownership</h1>
+      <p class="profile-intro">Choose an active coach. You will remain a coach and can leave afterward.</p>
+      <label class="field-label" for="newOwner">New owner</label>
+      <select class="field-input" id="newOwner" name="newOwner" required></select>
+      <p class="profile-status" data-dialog-status role="status"></p>
+      <button class="primary-button" type="submit">Transfer ownership</button>
+    </form>
+  </dialog>
+
+  <dialog class="profile-dialog group-dialog" id="archiveGroupDialog" aria-labelledby="archiveGroupTitle">
+    <form id="archiveGroupForm">
+      <button class="profile-close" data-close-dialog type="button" aria-label="Close archive confirmation">×</button>
+      <div class="profile-kicker">Owner action</div>
+      <h1 id="archiveGroupTitle">Archive group</h1>
+      <p class="profile-intro">This closes active group access and removes the group from normal dashboard views.</p>
+      <p class="profile-status" data-dialog-status role="status"></p>
+      <button class="primary-button" type="submit">Confirm archive</button>
     </form>
   </dialog>
 

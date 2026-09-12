@@ -97,7 +97,8 @@ test('uses the same entry as a dashboard action for a signed-in account', async 
 test('exchanges a callback once and returns to a safe local destination', async ({ page }) => {
   await page.goto('/auth/callback?code=e2e-success&next=%2Fdashboard%3Fgroup_link%3Dsafe-token');
 
-  await expect(page).toHaveURL('/dashboard?group_link=safe-token');
+  await expect(page).toHaveURL('/dashboard');
+  await expect(page.getByRole('heading', { name: 'Shared group' })).toBeVisible();
   await expect.poll(() => page.evaluate(() => JSON.parse(
     localStorage.getItem('roda.e2e.session'),
   )?.user?.id)).toBe('practitioner-1');

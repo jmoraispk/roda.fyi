@@ -13,6 +13,9 @@ export function createDashboardView({
   profileService,
   onEditProfile,
   onSignOut,
+  onGroupAction = () => {},
+  onContextChange = () => {},
+  onCoachRegistration = () => {},
 }) {
   const app = document.querySelector('#dashboardApp');
   const loading = document.querySelector('#dashboardLoading');
@@ -84,10 +87,16 @@ export function createDashboardView({
       addTextElement('h1', '', 'Coaching');
       addTextElement('p', 'dashboard-lead', 'Create or choose a group to manage its members. Workout planning will arrive in a later delivery.');
       addAction('Create a group', 'create-group', true);
+      addAction('Find a group', 'find-group');
     }
 
     loading.hidden = true;
     app.hidden = false;
+    onContextChange({
+      mode: view.mode,
+      activeGroupId: view.activeGroupId,
+      membership: view.memberships.find((item) => item.group_id === view.activeGroupId) ?? null,
+    });
   }
 
   modeSwitch.addEventListener('click', (event) => {
@@ -109,7 +118,12 @@ export function createDashboardView({
 
   content.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
-    if (action !== 'register-coach' || registering) return;
+    if (!action) return;
+    if (action !== 'register-coach') {
+      onGroupAction(action);
+      return;
+    }
+    if (registering) return;
     registering = true;
     status.textContent = 'Registering coaching on your profile…';
     try {
@@ -120,6 +134,7 @@ export function createDashboardView({
         profile: state.profile,
         coachProfile,
       });
+      onCoachRegistration(coachProfile);
       status.textContent = 'Coaching is ready.';
       render();
     } catch (error) {
@@ -151,6 +166,25 @@ export function createDashboardView({
         profile,
         coachProfile: state.coachProfile,
       });
+      render();
+    },
+
+    replaceMemberships(memberships, preferredGroupId = null) {
+      state = reduceDashboardState(state, {
+        type: 'MEMBERSHIPS_LOADED',
+        memberships,
+        preferredMode: state.mode,
+        preferredGroupId: preferredGroupId ?? state.activeGroupId,
+      });
+      if (state.activeGroupId) storage.setItem(GROUP_KEY, state.activeGroupId);
+      else storage.removeItem(GROUP_KEY);
+      render();
+    },
+
+    accessRevoked(groupId) {
+      state = reduceDashboardState(state, { type: 'ACCESS_REVOKED', groupId });
+      if (state.activeGroupId) storage.setItem(GROUP_KEY, state.activeGroupId);
+      else storage.removeItem(GROUP_KEY);
       render();
     },
 
