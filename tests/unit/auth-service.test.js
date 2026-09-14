@@ -55,7 +55,7 @@ describe('createAuthService', () => {
     expect(calls).toEqual([['oauth', {
       provider: 'google',
       options: {
-        redirectTo: 'https://roda.fyi/auth/callback?next=%2Fdashboard%3Fgroup_link%3Dgroup-token',
+        redirectTo: 'https://roda.fyi/auth/callback',
       },
     }]]);
     expect(storage.getItem('roda.auth.returnRoute'))
@@ -64,10 +64,11 @@ describe('createAuthService', () => {
 
   it('sends a passwordless email link through the same callback', async () => {
     const { client, calls } = authClient();
+    const storage = memoryStorage();
     const service = createAuthService({
       client,
       origin: 'https://roda.fyi',
-      storage: memoryStorage(),
+      storage,
     });
 
     await service.sendEmailLink('  learner@example.com  ', '/dashboard');
@@ -75,10 +76,11 @@ describe('createAuthService', () => {
     expect(calls).toEqual([['otp', {
       email: 'learner@example.com',
       options: {
-        emailRedirectTo: 'https://roda.fyi/auth/callback?next=%2Fdashboard',
+        emailRedirectTo: 'https://roda.fyi/auth/callback',
         shouldCreateUser: true,
       },
     }]]);
+    expect(storage.getItem('roda.auth.returnRoute')).toBe('/dashboard');
   });
 
   it.each(['', 'not-an-email', '@example.com'])('rejects invalid email %s', async (email) => {
@@ -97,16 +99,16 @@ describe('createAuthService', () => {
 
   it('exchanges a callback code and restores an email invitation route', async () => {
     const { client, calls } = authClient();
-    const storage = memoryStorage();
+    const storage = memoryStorage({
+      'roda.auth.returnRoute': '/dashboard?member_invite=invite-token',
+    });
     const service = createAuthService({
       client,
       origin: 'https://roda.fyi',
       storage,
     });
 
-    const result = await service.finishCallback(
-      '?code=pkce-code&next=%2Fdashboard%3Fmember_invite%3Dinvite-token',
-    );
+    const result = await service.finishCallback('?code=pkce-code');
 
     expect(result.returnRoute).toBe('/dashboard?member_invite=invite-token');
     expect(result.session.user.id).toBe('user-1');

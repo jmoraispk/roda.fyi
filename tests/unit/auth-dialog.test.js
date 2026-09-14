@@ -16,7 +16,10 @@ function deferred() {
 
 function fixture() {
   document.body.innerHTML = `
-    <button id="authEntry" type="button" aria-haspopup="dialog">Sign in</button>
+    <button id="authEntry" type="button" aria-haspopup="dialog">
+      <span id="authEntrySignedOut">Sign in</span>
+      <span id="authEntrySignedIn" hidden>Dashboard</span>
+    </button>
     <dialog id="authDialog" aria-labelledby="authDialogTitle">
       <button id="authClose" type="button">Close</button>
       <h2 id="authDialogTitle">Sign in</h2>
@@ -183,19 +186,25 @@ describe('createAuthDialog', () => {
 
     document.querySelector('#authEntry').click();
 
-    expect(document.querySelector('#authEntry').textContent).toBe('Dashboard');
+    expect(document.querySelector('#authEntrySignedOut')).not.toBeNull();
+    expect(document.querySelector('#authEntrySignedIn')).not.toBeNull();
+    expect(document.querySelector('#authEntrySignedOut').hidden).toBe(true);
+    expect(document.querySelector('#authEntrySignedIn').hidden).toBe(false);
     expect(navigations).toEqual(['/dashboard']);
     expect(document.querySelector('#authDialog').hasAttribute('open')).toBe(false);
   });
 
-  it('restores the Portuguese entry label when a session ends', () => {
+  it('restores the localized entry when a session ends', () => {
     const { service } = fakeAuth();
     const controller = createAuthDialog({ document, authService: service });
     controller.setSession({ user: { id: 'user-1' } });
 
     controller.setSession(null);
 
-    expect(document.querySelector('#authEntry').textContent).toBe('ENTRAR');
+    expect(document.querySelector('#authEntrySignedOut')).not.toBeNull();
+    expect(document.querySelector('#authEntrySignedIn')).not.toBeNull();
+    expect(document.querySelector('#authEntrySignedOut').hidden).toBe(false);
+    expect(document.querySelector('#authEntrySignedIn').hidden).toBe(true);
     expect(document.querySelector('#authEntry').getAttribute('aria-haspopup')).toBe('dialog');
   });
 

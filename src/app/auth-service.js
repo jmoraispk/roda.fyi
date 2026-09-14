@@ -11,9 +11,9 @@ const PRIVATE_STORAGE_KEYS = [
   'roda.dashboard.group',
 ];
 
-function callbackUrl(origin, next) {
+function callbackUrl(origin) {
   const safeOrigin = origin.replace(/\/$/, '');
-  return `${safeOrigin}/auth/callback?next=${encodeURIComponent(sanitizeReturnRoute(next))}`;
+  return `${safeOrigin}/auth/callback`;
 }
 
 function validEmail(email) {
@@ -32,7 +32,7 @@ export function createAuthService({ client, origin, storage }) {
       rememberReturnRoute(storage, route);
       const result = await client.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: callbackUrl(origin, route) },
+        options: { redirectTo: callbackUrl(origin) },
       });
       return unwrap(result);
     },
@@ -48,7 +48,7 @@ export function createAuthService({ client, origin, storage }) {
       const result = await client.auth.signInWithOtp({
         email: normalizedEmail,
         options: {
-          emailRedirectTo: callbackUrl(origin, route),
+          emailRedirectTo: callbackUrl(origin),
           shouldCreateUser: true,
         },
       });

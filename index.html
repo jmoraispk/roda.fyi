@@ -679,14 +679,17 @@
           </svg>
         </button>
     </div>
-    <button class="auth-entry" id="authEntry" type="button" aria-haspopup="dialog">ENTRAR</button>
+    <button class="auth-entry" id="authEntry" type="button" aria-haspopup="dialog">
+      <span id="authEntrySignedOut" data-i18n="authEntry">Sign in</span>
+      <span id="authEntrySignedIn" hidden>Dashboard</span>
+    </button>
   </div>
 </header>
 
 <dialog class="auth-dialog" id="authDialog" aria-labelledby="authDialogTitle">
   <button class="auth-close" id="authClose" type="button" aria-label="Close sign in">×</button>
   <div class="auth-kicker">Your roda, remembered</div>
-  <h2 id="authDialogTitle">Entrar</h2>
+  <h2 id="authDialogTitle" data-i18n="authTitle">Sign in</h2>
   <p class="auth-intro">Use one button whether this is your first visit or you are coming back.</p>
   <div id="authActions">
     <button class="auth-method auth-google" id="googleSignIn" type="button">
@@ -2347,6 +2350,7 @@ function renderSeqSaved(){
    ============================================================ */
 const STR = {
   en: {
+    authEntry: 'Sign in', authTitle: 'Sign in',
     tabMoves: 'Moves', tabMusic: 'Music', tabHistory: 'History', tabGroups: 'Groups',
     navLexicon: 'Library', navSeq: 'Sequences', navStudy: 'Study',
     navTimeline: 'Timeline', navLineages: 'Lineages', navMestres: 'Mestres', navGlossary: 'Glossary', navGroups: 'Groups',
@@ -2384,6 +2388,7 @@ const STR = {
     footerSegment: `Segment tool →`,
   },
   pt: {
+    authEntry: 'Entrar', authTitle: 'Entrar',
     tabMoves: 'Movimento', tabMusic: 'Música', tabHistory: 'História', tabGroups: 'Grupos',
     navLexicon: 'Biblioteca', navSeq: 'Sequências', navStudy: 'Estudo',
     navTimeline: 'Linha do tempo', navLineages: 'Linhagens', navMestres: 'Mestres', navGlossary: 'Glossário', navGroups: 'Grupos',

@@ -5,6 +5,8 @@ export function createAuthDialog({
   navigate = (route) => globalThis.location.assign(route),
 }) {
   const entry = document.querySelector('#authEntry');
+  const signedOutLabel = document.querySelector('#authEntrySignedOut');
+  const signedInLabel = document.querySelector('#authEntrySignedIn');
   const dialog = document.querySelector('#authDialog');
   const close = document.querySelector('#authClose');
   const actions = document.querySelector('#authActions');
@@ -79,7 +81,8 @@ export function createAuthDialog({
     open,
     setSession(nextSession) {
       session = nextSession;
-      entry.textContent = session ? 'Dashboard' : 'ENTRAR';
+      signedOutLabel.hidden = Boolean(session);
+      signedInLabel.hidden = !session;
       if (session) {
         entry.removeAttribute('aria-haspopup');
       } else {
