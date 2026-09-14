@@ -54,7 +54,7 @@ begin
     raise exception using errcode = 'PT401', message = 'not_authenticated';
   end if;
   if normalized_path !~ (
-    '^' || actor_id::text || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)$'
+    '^' || actor_id::text || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[.](jpg|jpeg|png|webp)$'
   ) then
     raise exception using errcode = 'P0001', message = 'invalid_picture_path';
   end if;
@@ -199,7 +199,7 @@ begin
     raise exception using errcode = 'PT403', message = 'not_authorized';
   end if;
   if normalized_path !~ (
-    '^' || target_group_id::text || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|jpeg|png|webp)$'
+    '^' || target_group_id::text || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[.](jpg|jpeg|png|webp)$'
   ) then
     raise exception using errcode = 'P0001', message = 'invalid_picture_path';
   end if;
