@@ -125,6 +125,30 @@ select ok(
   'all eight public application tables have RLS enabled'
 );
 
+create table public.automatic_rls_probe (id integer);
+
+select ok(
+  (select c.relrowsecurity
+     from pg_catalog.pg_class c
+     join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relname = 'automatic_rls_probe'),
+  'the automatic RLS guard enables RLS on every new public table'
+);
+select ok(
+  exists (
+    select 1
+      from pg_catalog.pg_event_trigger trigger
+      join pg_catalog.pg_proc function on function.oid = trigger.evtfoid
+      join pg_catalog.pg_namespace namespace on namespace.oid = function.pronamespace
+     where trigger.evtname = 'ensure_rls'
+       and trigger.evtenabled = 'O'
+       and namespace.nspname = 'private'
+       and function.proname = 'rls_auto_enable'
+  ),
+  'the automatic RLS event trigger uses its private helper'
+);
+
 select ok(
   (select count(*) = 5
           and bool_and(
