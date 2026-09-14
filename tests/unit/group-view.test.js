@@ -139,9 +139,10 @@ describe('group management actions', () => {
     });
 
     expect(document.body.textContent).toContain('Invite a student');
-    expect(document.querySelector('[data-request-id="request-member"][data-decision="approve"]')).not.toBeNull();
+    expect(document.querySelector('[data-request-id="request-member"][data-decision="approved"]')).not.toBeNull();
+    expect(document.querySelector('[data-request-id="request-member"][data-decision="declined"]')).not.toBeNull();
     expect(document.querySelector('[data-profile-id="student-1"][data-action="remove-member"]')).not.toBeNull();
-    expect(document.querySelector('[data-request-id="request-coach"][data-decision="approve"]')).toBeNull();
+    expect(document.querySelector('[data-request-id="request-coach"][data-decision="approved"]')).toBeNull();
     expect(document.querySelector('[data-action="transfer-ownership"]')).toBeNull();
     expect(document.querySelector('[data-action="archive-group"]')).toBeNull();
   });
@@ -164,7 +165,7 @@ describe('group management actions', () => {
       }],
     });
 
-    expect(document.querySelector('[data-request-id="request-coach"][data-decision="approve"]')).not.toBeNull();
+    expect(document.querySelector('[data-request-id="request-coach"][data-decision="approved"]')).not.toBeNull();
     expect(document.querySelector('[data-profile-id="coach-2"][data-action="remove-member"]')).not.toBeNull();
     expect(document.querySelector('[data-action="transfer-ownership"]')).not.toBeNull();
     expect(document.querySelector('[data-action="archive-group"]')).not.toBeNull();
@@ -194,6 +195,32 @@ describe('group management actions', () => {
 
     expect(document.querySelector('[data-action="relationship-settings"]')).toBeNull();
     expect(document.querySelector('[data-action="revoke-relationship"]')).not.toBeNull();
+  });
+
+  it('uses the database decision vocabulary for a pending parent invitation', () => {
+    const view = createGroupView({
+      document,
+      groupService: service(),
+      identity: { profileId: 'owner-1', isCoach: true },
+    });
+
+    view.renderManagement({
+      group,
+      membership: { access_level: 'coach', state: 'active' },
+      roster,
+      requests: [],
+      relationships: [{
+        id: 'relationship-1', parent_group_id: 'parent-1', child_group_id: 'group-1',
+        parent_name: 'Grupo Regional', state: 'pending', sharing_level: 'named_progress',
+      }],
+    });
+
+    expect(document.querySelector(
+      '[data-relationship-id="relationship-1"][data-relationship-decision="accepted"]',
+    )).not.toBeNull();
+    expect(document.querySelector(
+      '[data-relationship-id="relationship-1"][data-relationship-decision="declined"]',
+    )).not.toBeNull();
   });
 
   it('shows a safe service error instead of treating hidden controls as authorization', async () => {

@@ -229,11 +229,11 @@ export function createGroupView({
         const actions = [];
         if (request.requested_access === 'member' || isOwner) {
           actions.push(actionButton(document, `Approve ${request.display_name}`, {
-            decision: 'approve', requestId: request.id,
+            decision: 'approved', requestId: request.id,
           }));
         }
         actions.push(actionButton(document, `Decline ${request.display_name}`, {
-          decision: 'decline', requestId: request.id,
+          decision: 'declined', requestId: request.id,
         }));
         appendRow(requestSection, `${request.display_name} · ${request.requested_access}`, actions);
       }
@@ -289,10 +289,10 @@ export function createGroupView({
         if (isOwner && relationship.child_group_id === group.id && relationship.state === 'pending') {
           actions.push(
             actionButton(document, `Accept ${relationship.parent_name} as parent`, {
-              relationshipDecision: 'accept', relationshipId: relationship.id,
+              relationshipDecision: 'accepted', relationshipId: relationship.id,
             }),
             actionButton(document, `Decline ${relationship.parent_name} as parent`, {
-              relationshipDecision: 'decline', relationshipId: relationship.id,
+              relationshipDecision: 'declined', relationshipId: relationship.id,
             }),
           );
         }
@@ -404,7 +404,7 @@ export function createGroupView({
         status.textContent = 'Invitation link created.';
       } else if (target.dataset.requestId) {
         await groupService.decideJoinRequest(target.dataset.requestId, target.dataset.decision);
-        await reloadManagement(target.dataset.decision === 'approve' ? 'Request approved.' : 'Request declined.');
+        await reloadManagement(target.dataset.decision === 'approved' ? 'Request approved.' : 'Request declined.');
       } else if (target.dataset.action === 'remove-member') {
         await groupService.removeMember(current.group.id, target.dataset.profileId);
         await reloadManagement('Member removed.');
@@ -413,7 +413,7 @@ export function createGroupView({
           target.dataset.relationshipId,
           target.dataset.relationshipDecision,
         );
-        await reloadManagement(target.dataset.relationshipDecision === 'accept'
+        await reloadManagement(target.dataset.relationshipDecision === 'accepted'
           ? 'Parent group accepted.'
           : 'Parent group declined.');
       } else if (target.dataset.action === 'revoke-relationship') {

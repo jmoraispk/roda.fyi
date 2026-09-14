@@ -264,8 +264,8 @@ export function createE2EGroupService({ window }) {
       for (const [groupId, requests] of Object.entries(state.joinRequests)) {
         const request = requests.find((item) => item.id === requestId);
         if (!request) continue;
-        request.state = decision === 'approve' ? 'approved' : 'declined';
-        if (decision === 'approve') {
+        request.state = decision === 'approved' ? 'approved' : 'declined';
+        if (decision === 'approved') {
           state.rosters[groupId] = [...(state.rosters[groupId] ?? []), {
             profile_id: request.profile_id,
             display_name: request.display_name,
@@ -383,10 +383,10 @@ export function createE2EGroupService({ window }) {
       const state = readState();
       for (const relationships of Object.values(state.relationships)) {
         const relationship = relationships.find((item) => item.id === relationshipId);
-        if (relationship) relationship.state = decision === 'accept' ? 'active' : 'declined';
+        if (relationship) relationship.state = decision === 'accepted' ? 'active' : 'declined';
       }
       writeState(state);
-      return { status: decision === 'accept' ? 'active' : 'declined' };
+      return { status: decision === 'accepted' ? 'active' : 'declined' };
     },
 
     async revokeRelationship(relationshipId) {
