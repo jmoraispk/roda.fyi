@@ -5,13 +5,9 @@ import { createE2EAuthService } from '../testing/fake-services.js';
 import { createAuthDialog } from '../ui/auth-dialog.js';
 import { sanitizeReturnRoute } from '../return-route.js';
 
-function currentRoute(location) {
-  return `${location.pathname}${location.search}${location.hash}`;
-}
-
 function intendedRoute(location) {
   const next = new URLSearchParams(location.search).get('next');
-  return next === null ? currentRoute(location) : sanitizeReturnRoute(next);
+  return next === null ? '/dashboard' : sanitizeReturnRoute(next);
 }
 
 async function main() {

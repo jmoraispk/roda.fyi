@@ -43,12 +43,12 @@ test('keeps the movement library usable around one Google-first sign-in dialog',
   await expect(page.locator('article.card:visible')).toHaveCount(1);
   await expect(page.locator('article.card:visible')).toContainText('Bananeira');
 
-  const entry = page.getByRole('button', { name: 'Sign in' });
+  const entry = page.getByRole('button', { name: 'ENTRAR' });
   await expect(entry).toHaveCount(1);
   await expect(page.getByRole('button', { name: /register|login/i })).toHaveCount(0);
   await entry.click();
 
-  const dialog = page.getByRole('dialog', { name: 'Sign in' });
+  const dialog = page.getByRole('dialog', { name: 'Entrar' });
   await expect(dialog).toBeVisible();
   const google = page.getByRole('button', { name: /Continue with Google.*Recommended/i });
   await expect(google).toBeFocused();
@@ -63,7 +63,7 @@ test('keeps the movement library usable around one Google-first sign-in dialog',
 
   await google.click();
   await expect.poll(() => page.evaluate(() => window.__RODA_E2E_EVENTS__)).toEqual([
-    { type: 'google', next: '/' },
+    { type: 'google', next: '/dashboard' },
   ]);
   await expect(page.getByRole('button', { name: /Continue with Google/i })).toBeDisabled();
 
@@ -72,13 +72,13 @@ test('keeps the movement library usable around one Google-first sign-in dialog',
 });
 
 test('offers passwordless email as the secondary sign-in method', async ({ page }) => {
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'ENTRAR' }).click();
   await page.getByLabel('Email address').fill('student@example.com');
   await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
 
   await expect(page.getByRole('status')).toContainText('Check your email');
   await expect.poll(() => page.evaluate(() => window.__RODA_E2E_EVENTS__)).toEqual([
-    { type: 'email', email: 'student@example.com', next: '/' },
+    { type: 'email', email: 'student@example.com', next: '/dashboard' },
   ]);
 });
 
@@ -118,7 +118,7 @@ test('returns unauthenticated dashboard visits to the unified sign-in destinatio
   await page.goto('/dashboard');
 
   await expect(page).toHaveURL('/?next=%2Fdashboard');
-  await expect(page.getByRole('dialog', { name: 'Sign in' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Entrar' })).toBeVisible();
 });
 
 test('completes the practitioner profile with an optional automatic timezone', async ({ page }) => {
@@ -184,7 +184,7 @@ test('keeps a coach in My Training by default and clears private UI on expiry', 
   await page.evaluate(() => window.__RODA_E2E_EXPIRE__());
   await expect(page).toHaveURL('/?next=%2Fdashboard');
   await expect(page.getByRole('heading', { name: 'Coaching' })).toHaveCount(0);
-  await expect(page.getByRole('dialog', { name: 'Sign in' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Entrar' })).toBeVisible();
 });
 
 test('signs out from the dashboard and removes persisted private state', async ({ page }) => {

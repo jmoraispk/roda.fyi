@@ -188,6 +188,17 @@ describe('createAuthDialog', () => {
     expect(document.querySelector('#authDialog').hasAttribute('open')).toBe(false);
   });
 
+  it('restores the Portuguese entry label when a session ends', () => {
+    const { service } = fakeAuth();
+    const controller = createAuthDialog({ document, authService: service });
+    controller.setSession({ user: { id: 'user-1' } });
+
+    controller.setSession(null);
+
+    expect(document.querySelector('#authEntry').textContent).toBe('ENTRAR');
+    expect(document.querySelector('#authEntry').getAttribute('aria-haspopup')).toBe('dialog');
+  });
+
   it('returns focus to the entry when the dialog closes', () => {
     const { service } = fakeAuth();
     createAuthDialog({ document, authService: service });

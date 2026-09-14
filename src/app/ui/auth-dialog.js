@@ -79,7 +79,7 @@ export function createAuthDialog({
     open,
     setSession(nextSession) {
       session = nextSession;
-      entry.textContent = session ? 'Dashboard' : 'Sign in';
+      entry.textContent = session ? 'Dashboard' : 'ENTRAR';
       if (session) {
         entry.removeAttribute('aria-haspopup');
       } else {
