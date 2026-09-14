@@ -552,5 +552,194 @@ select ok(
   'public projection wrappers remain security invokers'
 );
 
+insert into public.group_memberships (group_id, profile_id, access_level)
+values (
+  '20000000-0000-0000-0000-000000000014',
+  '10000000-0000-0000-0000-000000000014',
+  'member'
+);
+
+insert into public.group_join_requests (
+  group_id, profile_id, requested_access
+)
+values (
+  '20000000-0000-0000-0000-000000000014',
+  '10000000-0000-0000-0000-000000000012',
+  'member'
+);
+
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000014', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer from public.profiles),
+  1,
+  'authenticated users directly read only their own complete profile row'
+);
+select is(
+  (select id from public.profiles),
+  '10000000-0000-0000-0000-000000000014'::uuid,
+  'profile RLS never substitutes another identity'
+);
+select is(
+  (select count(*)::integer from public.group_memberships),
+  1,
+  'base membership reads return only the current user memberships'
+);
+select is(
+  (select count(*)::integer from public.groups),
+  1,
+  'base group reads return only groups connected to the current user'
+);
+select throws_ok(
+  $$ update public.profiles set display_name = 'Bypass' $$,
+  '42501',
+  null,
+  'authenticated users cannot bypass checked profile RPCs with direct updates'
+);
+select throws_ok(
+  $$
+    insert into public.groups (owner_id, name)
+    values ('10000000-0000-0000-0000-000000000014', 'Bypass')
+  $$,
+  '42501',
+  null,
+  'authenticated users cannot directly insert groups'
+);
+select is(
+  public.complete_my_profile('RLS Practitioner', null, true) ->> 'status',
+  'updated',
+  'the authenticated role reaches profile mutation only through its checked wrapper'
+);
+select is(
+  (select count(*)::integer
+     from public.list_group_roster('20000000-0000-0000-0000-000000000014')),
+  0,
+  'an ordinary member receives no coach roster projection'
+);
+
+reset role;
+select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claim.role', '', true);
+
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000015', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer from public.group_memberships),
+  1,
+  'a coach base membership query still returns only their own context rows'
+);
+select is(
+  (select count(*)::integer
+     from public.list_group_roster('20000000-0000-0000-0000-000000000014')),
+  2,
+  'a direct coach receives the narrow roster projection'
+);
+select is(
+  (select count(*)::integer
+     from public.list_group_join_requests('20000000-0000-0000-0000-000000000014')),
+  1,
+  'a group owner receives its narrow join-request projection'
+);
+
+reset role;
+select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claim.role', '', true);
+
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000016', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer
+     from public.groups
+    where id = '20000000-0000-0000-0000-000000000014'),
+  0,
+  'a higher ancestor receives no raw child-group row through hierarchy alone'
+);
+
+reset role;
+select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claim.role', '', true);
+
+set local role anon;
+select throws_ok(
+  $$ select * from public.profiles $$,
+  '42501',
+  null,
+  'anonymous users cannot read application tables directly'
+);
+select throws_ok(
+  $$ insert into public.profiles (id, display_name) values (gen_random_uuid(), 'Bypass') $$,
+  '42501',
+  null,
+  'anonymous users cannot write application tables directly'
+);
+select ok(
+  (select count(*) from public.search_groups('', 50, 0)) >= 1,
+  'anonymous users can call the narrow discoverable-group projection'
+);
+select throws_ok(
+  $$ select public.register_as_coach() $$,
+  '42501',
+  null,
+  'anonymous users cannot execute authenticated mutation wrappers'
+);
+
+reset role;
+
+select is(
+  (select count(*)::integer
+     from information_schema.table_privileges
+    where table_schema = 'public'
+      and table_name in (
+        'profiles', 'coach_profiles', 'groups', 'group_memberships',
+        'group_join_requests', 'group_member_invitations',
+        'group_discovery_links', 'group_relationships'
+      )
+      and grantee = 'anon'),
+  0,
+  'anon has no application-table grants'
+);
+
+select is(
+  (select count(*)::integer
+     from information_schema.table_privileges
+    where table_schema = 'public'
+      and table_name in (
+        'profiles', 'coach_profiles', 'groups', 'group_memberships',
+        'group_join_requests', 'group_member_invitations',
+        'group_discovery_links', 'group_relationships'
+      )
+      and grantee = 'authenticated'
+      and privilege_type <> 'SELECT'),
+  0,
+  'authenticated has no direct application-table mutation grants'
+);
+
+select ok(
+  not exists (
+    select 1
+      from information_schema.routine_privileges
+     where specific_schema = 'private'
+       and grantee = 'PUBLIC'
+  ),
+  'PUBLIC cannot execute a private function'
+);
+
+select ok(
+  not exists (
+    select 1
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.prosecdef
+  ),
+  'no security-definer function exists in the exposed public schema'
+);
+
 select * from finish();
 rollback;

@@ -284,5 +284,50 @@ select is(
   'a child owner can list its active and historical relationship rows'
 );
 
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000031', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer
+     from public.list_group_relationships(
+       '20000000-0000-0000-0000-000000000031'
+     )),
+  2,
+  'a child owner reaches hierarchy history through the checked projection'
+);
+select throws_ok(
+  $$ select * from public.group_relationships $$,
+  '42501',
+  null,
+  'a child owner cannot bypass the hierarchy projection with a base-table read'
+);
+
+reset role;
+select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claim.role', '', true);
+
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000033', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer
+     from public.list_group_relationships(
+       '20000000-0000-0000-0000-000000000031'
+     )),
+  0,
+  'a grandparent coach receives no raw child hierarchy history'
+);
+select is(
+  (select count(*)::integer
+     from public.groups
+    where id = '20000000-0000-0000-0000-000000000031'),
+  0,
+  'a grandparent coach receives no raw child group row'
+);
+
+reset role;
+
 select * from finish();
 rollback;

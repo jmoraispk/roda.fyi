@@ -125,8 +125,16 @@ select ok(
   'all eight public application tables have RLS enabled'
 );
 
-select is(
-  (select count(*)::integer
+select ok(
+  (select count(*) = 5
+          and bool_and(
+            grantee = 'authenticated'
+            and privilege_type = 'SELECT'
+            and table_name in (
+              'profiles', 'coach_profiles', 'groups',
+              'group_memberships', 'group_join_requests'
+            )
+          )
      from information_schema.table_privileges
     where table_schema = 'public'
       and table_name in (
@@ -135,8 +143,7 @@ select is(
         'group_discovery_links', 'group_relationships'
       )
       and grantee in ('anon', 'authenticated')),
-  0,
-  'anon and authenticated start without direct application-table privileges'
+  'application tables expose only the five intended authenticated reads and no anon grants'
 );
 
 select tests.create_user(

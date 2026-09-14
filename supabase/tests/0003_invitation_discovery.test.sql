@@ -281,5 +281,49 @@ select ok(
   'management projections never return token hashes or unrelated owner IDs'
 );
 
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000021', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer
+     from public.list_group_member_invitations(
+       '20000000-0000-0000-0000-000000000021'
+     )),
+  2,
+  'a group coach reaches invitation history through the narrow management projection'
+);
+select throws_ok(
+  $$ select * from public.group_member_invitations $$,
+  '42501',
+  null,
+  'a group coach cannot read invitation token hashes from the base table'
+);
+select throws_ok(
+  $$ select * from public.group_discovery_links $$,
+  '42501',
+  null,
+  'a group coach cannot read discovery token hashes from the base table'
+);
+
+reset role;
+select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claim.role', '', true);
+
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000023', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+set local role authenticated;
+
+select is(
+  (select count(*)::integer
+     from public.list_group_member_invitations(
+       '20000000-0000-0000-0000-000000000021'
+     )),
+  0,
+  'an outsider receives no group invitation management rows'
+);
+
+reset role;
+
 select * from finish();
 rollback;
