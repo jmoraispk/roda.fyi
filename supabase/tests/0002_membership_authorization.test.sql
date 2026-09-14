@@ -257,6 +257,272 @@ select is(
   'an unknown discovery token reveals no group'
 );
 
+create temporary table task5_results (
+  result_name text primary key,
+  payload jsonb not null
+) on commit drop;
+
+insert into task5_results values (
+  'complete_profile',
+  private.complete_my_profile(
+    '10000000-0000-0000-0000-000000000014',
+    '  Practicing Outsider  ',
+    null,
+    true
+  )
+);
+
+select is(
+  (select payload ->> 'status' from task5_results where result_name = 'complete_profile'),
+  'updated',
+  'an authenticated practitioner completes their own profile'
+);
+select results_eq(
+  $$
+    select display_name, timezone_override, leaderboard_visible, completed_at is not null
+      from public.profiles
+     where id = '10000000-0000-0000-0000-000000000014'
+  $$,
+  $$ values ('Practicing Outsider'::text, null::text, true, true) $$,
+  'profile completion trims the name and keeps automatic timezone null'
+);
+
+select is(
+  private.register_as_coach('10000000-0000-0000-0000-000000000012') ->> 'status',
+  'created',
+  'a practitioner can add coaching capability to the same profile'
+);
+select is(
+  private.register_as_coach('10000000-0000-0000-0000-000000000012') ->> 'status',
+  'active',
+  'coach registration is idempotent'
+);
+
+select throws_ok(
+  $$
+    select private.create_group(
+      '10000000-0000-0000-0000-000000000014',
+      'Unauthorized group', null, null, true
+    )
+  $$,
+  'PT403',
+  null,
+  'a practitioner without coaching capability cannot create a group'
+);
+
+insert into task5_results values (
+  'create_group',
+  private.create_group(
+    '10000000-0000-0000-0000-000000000013',
+    'Grupo do Coach',
+    'Created atomically',
+    'Fortaleza',
+    true
+  )
+);
+
+select is(
+  (select payload ->> 'status' from task5_results where result_name = 'create_group'),
+  'created',
+  'a registered coach creates a group'
+);
+select ok(
+  exists (
+    select 1
+      from task5_results result
+      join public.groups g on g.id = (result.payload ->> 'group_id')::uuid
+      join public.group_memberships membership
+        on membership.group_id = g.id
+       and membership.profile_id = g.owner_id
+       and membership.access_level = 'coach'
+       and membership.state = 'active'
+     where result.result_name = 'create_group'
+       and g.owner_id = '10000000-0000-0000-0000-000000000013'
+  ),
+  'group creation atomically establishes the owner coach membership'
+);
+
+insert into task5_results values (
+  'member_request',
+  private.request_group_access(
+    '10000000-0000-0000-0000-000000000014',
+    '20000000-0000-0000-0000-000000000011',
+    'member',
+    null
+  )
+);
+
+select is(
+  (select payload ->> 'status' from task5_results where result_name = 'member_request'),
+  'pending',
+  'a practitioner requests member access to a discoverable group'
+);
+
+insert into task5_results values (
+  'approve_member',
+  private.decide_group_join_request(
+    '10000000-0000-0000-0000-000000000013',
+    (select (payload ->> 'request_id')::uuid from task5_results where result_name = 'member_request'),
+    'approved'
+  )
+);
+
+select is(
+  (select payload ->> 'status' from task5_results where result_name = 'approve_member'),
+  'approved',
+  'a direct coach approves an ordinary member request'
+);
+
+select is(
+  private.decide_group_join_request(
+    '10000000-0000-0000-0000-000000000013',
+    (select (payload ->> 'request_id')::uuid from task5_results where result_name = 'member_request'),
+    'approved'
+  ) ->> 'status',
+  'already_approved',
+  'retrying an approved request is idempotent'
+);
+
+insert into task5_results values (
+  'coach_request',
+  private.request_group_access(
+    '10000000-0000-0000-0000-000000000015',
+    '20000000-0000-0000-0000-000000000011',
+    'coach',
+    null
+  )
+);
+
+select throws_ok(
+  format(
+    'select private.decide_group_join_request(%L::uuid, %L::uuid, %L)',
+    '10000000-0000-0000-0000-000000000013',
+    (select payload ->> 'request_id' from task5_results where result_name = 'coach_request'),
+    'approved'
+  ),
+  'PT403',
+  null,
+  'a non-owner coach cannot approve another coach'
+);
+
+select is(
+  private.decide_group_join_request(
+    '10000000-0000-0000-0000-000000000011',
+    (select (payload ->> 'request_id')::uuid from task5_results where result_name = 'coach_request'),
+    'approved'
+  ) ->> 'status',
+  'approved',
+  'only the owner approves coach access'
+);
+
+select is(
+  private.remove_group_member(
+    '10000000-0000-0000-0000-000000000013',
+    '20000000-0000-0000-0000-000000000011',
+    '10000000-0000-0000-0000-000000000014'
+  ) ->> 'status',
+  'removed',
+  'a group coach removes an ordinary member'
+);
+select ok(
+  not private.is_active_group_member(
+    '20000000-0000-0000-0000-000000000011',
+    '10000000-0000-0000-0000-000000000014'
+  ),
+  'removed membership loses access immediately'
+);
+
+select throws_ok(
+  $$
+    select private.remove_group_member(
+      '10000000-0000-0000-0000-000000000013',
+      '20000000-0000-0000-0000-000000000011',
+      '10000000-0000-0000-0000-000000000015'
+    )
+  $$,
+  'PT403',
+  null,
+  'a non-owner coach cannot remove another coach'
+);
+
+select is(
+  private.transfer_group_ownership(
+    '10000000-0000-0000-0000-000000000011',
+    '20000000-0000-0000-0000-000000000011',
+    '10000000-0000-0000-0000-000000000012'
+  ) ->> 'status',
+  'transferred',
+  'the owner transfers ownership to another practitioner'
+);
+select ok(
+  private.is_group_owner(
+    '20000000-0000-0000-0000-000000000011',
+    '10000000-0000-0000-0000-000000000012'
+  ),
+  'ownership transfer promotes the recipient to an active coach membership'
+);
+select is(
+  (select count(*)::integer
+     from private.group_ownership_audit
+    where group_id = '20000000-0000-0000-0000-000000000011'
+      and previous_owner_id = '10000000-0000-0000-0000-000000000011'
+      and new_owner_id = '10000000-0000-0000-0000-000000000012'
+      and changed_by = '10000000-0000-0000-0000-000000000011'),
+  1,
+  'ownership transfer records one immutable audit event'
+);
+
+select throws_ok(
+  $$
+    select private.leave_group(
+      '10000000-0000-0000-0000-000000000012',
+      '20000000-0000-0000-0000-000000000011'
+    )
+  $$,
+  'P0001',
+  'owner_must_transfer',
+  'an owner cannot leave before transferring ownership'
+);
+
+select is(
+  private.remove_group_member(
+    '10000000-0000-0000-0000-000000000012',
+    '20000000-0000-0000-0000-000000000011',
+    '10000000-0000-0000-0000-000000000015'
+  ) ->> 'status',
+  'removed',
+  'the new owner can remove a coach'
+);
+
+select is(
+  private.update_group(
+    '10000000-0000-0000-0000-000000000012',
+    '20000000-0000-0000-0000-000000000011',
+    'Grupo Local Atualizado',
+    null,
+    'Salvador',
+    false
+  ) ->> 'status',
+  'updated',
+  'only the current owner updates group settings'
+);
+
+select is(
+  private.archive_group(
+    '10000000-0000-0000-0000-000000000012',
+    '20000000-0000-0000-0000-000000000011'
+  ) ->> 'status',
+  'archived',
+  'only the current owner archives the group'
+);
+select ok(
+  not private.is_group_coach(
+    '20000000-0000-0000-0000-000000000011',
+    '10000000-0000-0000-0000-000000000013'
+  ),
+  'archiving a group immediately closes coach access'
+);
+
 select ok(
   not exists (
     select 1
