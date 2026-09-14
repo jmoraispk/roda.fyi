@@ -1,5 +1,13 @@
 \set ON_ERROR_STOP on
 
+\if :{?RODA_HELPERS_INCLUDED}
+\else
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path = extensions, public, pg_catalog;
+select no_plan();
+\endif
+
 create schema if not exists tests;
 
 create or replace function tests.create_user(
@@ -82,3 +90,10 @@ begin
   perform set_config('request.jwt.claims', '{}', true);
 end;
 $$;
+
+\if :{?RODA_HELPERS_INCLUDED}
+\else
+select pass('database test helpers load independently');
+select * from finish();
+rollback;
+\endif

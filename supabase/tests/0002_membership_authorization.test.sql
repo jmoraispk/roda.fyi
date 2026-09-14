@@ -4,7 +4,9 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, pg_catalog;
 
+\set RODA_HELPERS_INCLUDED true
 \ir 0000_test_helpers.sql
+\unset RODA_HELPERS_INCLUDED
 
 select no_plan();
 
