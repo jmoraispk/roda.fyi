@@ -19,9 +19,33 @@ The public movement library remains available without an account. Every
 signed-in account is a practitioner. “Register as a coach” adds a capability
 to the same profile; it does not create another user.
 
-`https://roda.fyi` was rechecked on 2026-09-11 and responds directly from
+`https://roda.fyi` was rechecked on 2026-09-14 and responds directly from
 Vercel without redirecting to a different host. It is therefore the canonical
 production origin unless the domain configuration intentionally changes.
+
+## Hosted security baseline
+
+The linked hosted project was rechecked on 2026-09-14 after applying the
+tracked migration chain:
+
+- the hosted migration history is up to date and the tracked schema has no
+  drift across `public`, `private`, and `storage`;
+- database SSL enforcement is enabled;
+- anonymous group discovery succeeds through `public.search_groups`, while
+  anonymous direct profile access is rejected;
+- Supabase Security Advisor reports only three informational
+  `rls_enabled_no_policy` findings: `group_discovery_links`,
+  `group_member_invitations`, and `group_relationships`.
+
+Those three findings are intentional. The tables have RLS enabled, no direct
+client table grants, and no policies because access is mediated by the checked
+RPC/projection boundary. Do not add a broad policy merely to silence the
+advisor. A future migration that intentionally introduces direct reads must
+add a narrowly tested policy and update this exception list.
+
+SSL enforcement applies to direct Postgres and pooler connections. HTTP APIs
+already require TLS. Any future server-side database client must explicitly
+use SSL (preferably full certificate verification) before it is deployed.
 
 ## Values and secrets
 
@@ -202,6 +226,9 @@ hosted project.
 5. Link a non-production project and inspect `npx supabase db diff` for drift.
 6. Commit each migration with the authorization tests that prove it.
 7. Require the Supabase GitHub check before merging to `main`.
+
+After a hosted migration, also rerun Supabase Security Advisor and review every
+new finding. Recheck SSL enforcement rather than assuming a project default.
 
 Rollback means a new forward migration that safely reverses the faulty change.
 Do not reset production or delete membership, invitation, relationship, or
