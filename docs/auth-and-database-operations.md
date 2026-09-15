@@ -82,11 +82,15 @@ https://roda.fyi
 Redirect URLs
 https://roda.fyi/auth/callback
 http://127.0.0.1:8137/auth/callback
+http://localhost:*/auth/callback
 ```
 
-Do not add `*`, `/**`, Vercel preview wildcards, `localhost` aliases, or a
-second production hostname. Add a preview callback only when a specific
-preview environment and its data-isolation policy have been approved.
+Keep the production and fixed local callbacks exact. The narrow
+`localhost:*` development wildcard is required because Codex previews use an
+ephemeral port; the callback path remains fixed at `/auth/callback`. Do not add
+`/**`, production-host wildcards, Vercel preview wildcards, or a second
+production hostname. Add any other preview callback only when its environment
+and data-isolation policy have been approved.
 
 The application uses PKCE. It captures a safe relative return route, exchanges
 the code at `/auth/callback`, and removes callback, invitation, and discovery

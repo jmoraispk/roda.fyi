@@ -14,9 +14,10 @@ or pull request; do not check an item based only on dashboard appearance.
   the exact hosted Supabase callback URI.
 - [ ] Google client secret exists only in Google and Supabase provider settings.
 - [ ] Supabase Site URL is exactly `https://roda.fyi`.
-- [ ] Supabase redirect allowlist contains exactly the production and
-  `http://127.0.0.1:8137/auth/callback` callback URLs documented in the runbook;
-  no wildcard is present.
+- [ ] Supabase redirect allowlist contains the exact production and
+  `http://127.0.0.1:8137/auth/callback` URLs plus only the narrow
+  `http://localhost:*/auth/callback` Codex-preview pattern documented in the
+  runbook; no production-host or path wildcard is present.
 - [ ] Email confirmations/magic links are enabled with an expiry no longer than
   one hour.
 - [ ] Custom SMTP, branded templates, SPF, DKIM, delivery tests, and appropriate
