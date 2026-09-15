@@ -323,6 +323,10 @@ insert into task5_results values (
   )
 );
 
+set constraints groups_owner_integrity, memberships_owner_integrity immediate;
+select pass('group creation survives the deferred owner-integrity check at commit');
+set constraints groups_owner_integrity, memberships_owner_integrity deferred;
+
 select is(
   (select payload ->> 'status' from task5_results where result_name = 'create_group'),
   'created',

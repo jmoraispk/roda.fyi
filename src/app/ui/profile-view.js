@@ -7,6 +7,7 @@ export function createProfileView({ document, profileService, intl = Intl, onSav
   const cancel = document.querySelector('#profileCancel');
   const displayName = document.querySelector('#profileDisplayName');
   const picture = document.querySelector('#profilePicture');
+  const picturePreview = document.querySelector('#profilePicturePreview');
   const automatic = document.querySelector('#automaticTimezone');
   const automaticLabel = document.querySelector('#automaticTimezoneLabel');
   const timezoneOverride = document.querySelector('#timezoneOverride');
@@ -17,6 +18,8 @@ export function createProfileView({ document, profileService, intl = Intl, onSav
   let profile = null;
   let required = false;
   let busy = false;
+  let defaultPictureUrl = null;
+  let temporaryPictureUrl = null;
 
   automaticLabel.textContent = detectedTimezone
     ? `Automatic (${detectedTimezone})`
@@ -24,6 +27,27 @@ export function createProfileView({ document, profileService, intl = Intl, onSav
 
   function syncTimezone() {
     timezoneOverride.disabled = automatic.checked;
+  }
+
+  function releaseTemporaryPicture() {
+    if (!temporaryPictureUrl) return;
+    URL.revokeObjectURL(temporaryPictureUrl);
+    temporaryPictureUrl = null;
+  }
+
+  function showPicture(url) {
+    if (url) {
+      picturePreview.src = url;
+      picturePreview.hidden = false;
+      return;
+    }
+    picturePreview.removeAttribute('src');
+    picturePreview.hidden = true;
+  }
+
+  function resetPicturePreview() {
+    releaseTemporaryPicture();
+    showPicture(defaultPictureUrl);
   }
 
   function close() {
@@ -34,6 +58,7 @@ export function createProfileView({ document, profileService, intl = Intl, onSav
     profile = nextProfile;
     required = requiredCompletion;
     const values = profilePrefill(user, profile);
+    defaultPictureUrl = values.providerAvatarUrl;
     title.textContent = required ? 'Complete your profile' : 'Profile settings';
     cancel.hidden = required;
     displayName.value = values.displayName;
@@ -41,6 +66,7 @@ export function createProfileView({ document, profileService, intl = Intl, onSav
     timezoneOverride.value = automatic.checked ? '' : values.timezoneChoice;
     leaderboardVisible.checked = values.leaderboardVisible;
     picture.value = '';
+    resetPicturePreview();
     status.textContent = '';
     syncTimezone();
     if (!dialog.open) dialog.showModal();
@@ -48,7 +74,20 @@ export function createProfileView({ document, profileService, intl = Intl, onSav
   }
 
   automatic.addEventListener('change', syncTimezone);
+  picture.addEventListener('change', () => {
+    releaseTemporaryPicture();
+    const file = picture.files[0];
+    if (!file) {
+      showPicture(defaultPictureUrl);
+      return;
+    }
+    temporaryPictureUrl = URL.createObjectURL(file);
+    showPicture(temporaryPictureUrl);
+  });
   cancel.addEventListener('click', close);
+  dialog.addEventListener('close', () => {
+    releaseTemporaryPicture();
+  });
   dialog.addEventListener('cancel', (event) => {
     if (required) event.preventDefault();
   });

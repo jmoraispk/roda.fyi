@@ -69,8 +69,13 @@
       <label class="field-label" for="profileDisplayName">Display name</label>
       <input class="field-input" id="profileDisplayName" name="displayName" required maxlength="80" autocomplete="name">
 
-      <label class="field-label" for="profilePicture">Profile picture (optional)</label>
-      <input class="field-file" id="profilePicture" name="picture" type="file" accept="image/jpeg,image/png,image/webp">
+      <div class="profile-picture-field">
+        <img class="profile-picture-preview" id="profilePicturePreview" alt="Profile picture preview" hidden>
+        <div class="profile-picture-picker">
+          <label class="field-label" for="profilePicture">Profile picture (optional)</label>
+          <input class="field-file" id="profilePicture" name="picture" type="file" accept="image/jpeg,image/png,image/webp">
+        </div>
+      </div>
 
       <fieldset class="timezone-fieldset">
         <legend>Timezone</legend>

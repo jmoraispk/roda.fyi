@@ -66,6 +66,10 @@ button, input, select, textarea { font: inherit; }
 .field-label { display: block; margin: 16px 0 7px; color: var(--sand); font-weight: 600; font-size: .82rem; }
 .field-input { width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--bg-2); color: var(--cream); }
 .field-textarea { min-height: 92px; padding-block: 11px; resize: vertical; }
+.profile-picture-field { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+.profile-picture-picker { min-width: 0; flex: 1; }
+.profile-picture-picker .field-label { margin-top: 0; }
+.profile-picture-preview { width: 72px; height: 72px; flex: 0 0 72px; border: 2px solid var(--gold); border-radius: 50%; background: var(--bg-2); object-fit: cover; }
 .field-file { width: 100%; color: var(--muted); font-size: .82rem; }
 .field-file::file-selector-button { margin-right: 10px; border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; background: var(--card-2); color: var(--cream); cursor: pointer; }
 .timezone-fieldset { margin: 22px 0 0; border: 1px solid var(--line); border-radius: 12px; padding: 14px; }

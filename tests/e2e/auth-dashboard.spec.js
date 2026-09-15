@@ -180,6 +180,42 @@ test('replaces a failed profile startup with a recoverable error', async ({ page
   await expect(error).toBeHidden();
 });
 
+test('previews the profile picture in its circular crop before saving', async ({ page }) => {
+  await seedAccount(page, {
+    profile: { ...completeProfile, display_name: 'Capoeirista', completed_at: null },
+  });
+  await page.goto('/dashboard');
+
+  const dialog = page.getByRole('dialog', { name: 'Complete your profile' });
+  const preview = dialog.getByRole('img', { name: 'Profile picture preview' });
+  await expect(preview).toHaveAttribute('src', 'https://images.example/ana.jpg');
+
+  await page.getByLabel('Profile picture (optional)').setInputFiles({
+    name: 'portrait.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+
+  await expect(preview).toHaveAttribute('src', /^blob:/);
+  await expect(preview).toBeVisible();
+  const crop = await preview.evaluate((image) => {
+    const style = getComputedStyle(image);
+    const bounds = image.getBoundingClientRect();
+    return {
+      borderRadius: style.borderRadius,
+      objectFit: style.objectFit,
+      width: bounds.width,
+      height: bounds.height,
+    };
+  });
+  expect(crop.borderRadius).toBe('50%');
+  expect(crop.objectFit).toBe('cover');
+  expect(crop.width).toBe(crop.height);
+});
+
 test('completes the practitioner profile with an optional automatic timezone', async ({ page }) => {
   await seedAccount(page, {
     profile: { ...completeProfile, display_name: 'Capoeirista', completed_at: null },
