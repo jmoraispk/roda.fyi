@@ -181,6 +181,15 @@ export function createDashboardView({
       render();
     },
 
+    replaceCoachProfile(coachProfile) {
+      state = reduceDashboardState(state, {
+        type: 'PROFILE_LOADED',
+        profile: state.profile,
+        coachProfile,
+      });
+      render();
+    },
+
     accessRevoked(groupId) {
       state = reduceDashboardState(state, { type: 'ACCESS_REVOKED', groupId });
       if (state.activeGroupId) storage.setItem(GROUP_KEY, state.activeGroupId);

@@ -135,6 +135,51 @@ test('returns unauthenticated dashboard visits to the unified sign-in destinatio
   await expect(page.getByRole('dialog', { name: 'Sign in' })).toBeVisible();
 });
 
+test('retries one transient dashboard data failure automatically', async ({ page }) => {
+  await seedAccount(page);
+  await page.evaluate(() => localStorage.setItem('roda.e2e.failMembershipLoads', '1'));
+
+  await page.goto('/dashboard');
+
+  await expect(page.getByRole('heading', { name: 'My Training' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Dashboard status' })).toBeEmpty();
+  await expect(page.evaluate(() => localStorage.getItem(
+    'roda.e2e.failMembershipLoads',
+  ))).resolves.toBe('0');
+});
+
+test('keeps personal training available when group data remains unavailable', async ({ page }) => {
+  await seedAccount(page);
+  await page.evaluate(() => localStorage.setItem('roda.e2e.failMembershipLoads', '2'));
+
+  await page.goto('/dashboard');
+
+  await expect(page.getByRole('heading', { name: 'My Training' })).toBeVisible();
+  const warning = page.getByRole('status').filter({
+    hasText: "We couldn't load your coaching groups.",
+  });
+  await expect(warning).toBeVisible();
+  await warning.getByRole('button', { name: 'Try groups again' }).click();
+  await expect(warning).toBeHidden();
+});
+
+test('replaces a failed profile startup with a recoverable error', async ({ page }) => {
+  await seedAccount(page);
+  await page.evaluate(() => localStorage.setItem('roda.e2e.failProfileLoads', '2'));
+
+  await page.goto('/dashboard');
+
+  const error = page.getByRole('alert');
+  await expect(error.getByRole('heading', {
+    name: "We couldn't open your dashboard",
+  })).toBeVisible();
+  await expect(page.getByText('Opening your roda…')).toBeHidden();
+
+  await error.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.getByRole('heading', { name: 'My Training' })).toBeVisible();
+  await expect(error).toBeHidden();
+});
+
 test('completes the practitioner profile with an optional automatic timezone', async ({ page }) => {
   await seedAccount(page, {
     profile: { ...completeProfile, display_name: 'Capoeirista', completed_at: null },

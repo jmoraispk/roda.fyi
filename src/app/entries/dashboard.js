@@ -20,10 +20,48 @@ function returnToSignIn() {
   location.replace(`/?next=${encodeURIComponent(currentRoute())}`);
 }
 
+function waitForRetry() {
+  if (__RODA_E2E__) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, 200));
+}
+
+async function retryRead(read) {
+  try {
+    return await read();
+  } catch (_firstError) {
+    await waitForRetry();
+    return read();
+  }
+}
+
+async function loadStartupData(profileService, groupService) {
+  const [profileResult, coachResult, membershipsResult] = await Promise.allSettled([
+    retryRead(() => profileService.loadProfile()),
+    retryRead(() => profileService.loadCoachProfile()),
+    retryRead(() => groupService.listMyMemberships()),
+  ]);
+
+  if (profileResult.status === 'rejected') throw profileResult.reason;
+  return {
+    profile: profileResult.value,
+    coachProfile: coachResult.status === 'fulfilled' ? coachResult.value : null,
+    memberships: membershipsResult.status === 'fulfilled' ? membershipsResult.value : [],
+    supplementalFailed: coachResult.status === 'rejected'
+      || membershipsResult.status === 'rejected',
+  };
+}
+
 async function main() {
   const entryParams = new URLSearchParams(location.search);
   const discoveryToken = entryParams.get('group_link');
   const memberInvitationToken = entryParams.get('member_invite');
+  const loading = document.querySelector('#dashboardLoading');
+  const startupError = document.querySelector('#dashboardStartupError');
+  const startupMessage = document.querySelector('#dashboardStartupMessage');
+  const retryDashboard = document.querySelector('#retryDashboard');
+  const startupSignOut = document.querySelector('#startupSignOut');
+  const warning = document.querySelector('#dashboardWarning');
+  const retryGroups = document.querySelector('#retryGroups');
   const client = __RODA_E2E__ ? null : createRodaClient(publicConfig);
   const authService = __RODA_E2E__
     ? createE2EAuthService({ window })
@@ -34,98 +72,168 @@ async function main() {
   const groupService = __RODA_E2E__
     ? createE2EGroupService({ window })
     : createGroupService(client);
-
-  const session = await authService.getSession();
-  if (!session) {
-    returnToSignIn();
-    return;
-  }
-
-  const [profile, coachProfile, memberships] = await Promise.all([
-    profileService.loadProfile(),
-    profileService.loadCoachProfile(),
-    groupService.listMyMemberships(),
-  ]);
-
+  let session;
+  let profile;
+  let dashboard;
   let profileController;
   let groupController;
-  const dashboard = createDashboardView({
-    document,
-    storage: localStorage,
-    profileService,
-    onEditProfile: (profile) => profileController.show({
-      user: session.user,
-      nextProfile: profile,
-    }),
-    onSignOut: async () => {
-      groupController.clearPrivate();
-      dashboard.clear();
-      await authService.signOut();
-      returnToSignIn();
-    },
-    onGroupAction: (action) => {
-      if (action === 'find-group') groupController.showDiscovery();
-      if (action === 'create-group') groupController.openCreateGroup();
-    },
-    onContextChange: ({ mode, membership }) => {
-      if (mode === 'coaching' && membership) {
-        groupController.loadManagement(membership.group, membership);
-      } else {
-        groupController.hide();
-      }
-    },
-    onCoachRegistration: () => groupController.setIdentity({
-      profileId: profile.id,
-      isCoach: true,
-    }),
-  });
-  groupController = createGroupView({
-    document,
-    groupService,
-    identity: { profileId: profile.id, isCoach: Boolean(coachProfile) },
-    onMembershipsChanged: async (preferredGroupId) => {
-      const nextMemberships = await groupService.listMyMemberships();
-      dashboard.replaceMemberships(nextMemberships, preferredGroupId);
-      return nextMemberships;
-    },
-    onAccessRevoked: async (groupId) => dashboard.accessRevoked(groupId),
-  });
-  profileController = createProfileView({
-    document,
-    profileService,
-    onSaved: async (profile) => dashboard.updateProfile(profile),
-  });
+  let initializing = false;
+  let initialized = false;
 
-  dashboard.load({ session, profile, coachProfile, memberships });
-  if (memberInvitationToken) {
-    history.replaceState({}, '', '/dashboard');
-    groupController.handleMemberInvitation(memberInvitationToken);
+  function showLoading() {
+    startupError.hidden = true;
+    loading.hidden = false;
   }
-  if (discoveryToken) {
-    history.replaceState({}, '', '/dashboard');
-    try {
-      const group = await groupService.resolveDiscoveryToken(discoveryToken);
-      groupController.renderDiscovery(group ? [group] : [], { title: 'Shared group' });
-    } catch (error) {
-      document.querySelector('#groupWorkspace').hidden = false;
-      document.querySelector('#groupStatus').textContent = error?.message
-        || 'This group link is unavailable.';
+
+  function showStartupError(error) {
+    loading.hidden = true;
+    startupMessage.textContent = error?.message
+      || 'Your information is safe. Please try loading it again.';
+    startupError.hidden = false;
+  }
+
+  function setSupplementalWarning(visible, busy = false) {
+    warning.hidden = !visible;
+    retryGroups.disabled = busy;
+    retryGroups.textContent = busy ? 'Trying…' : 'Try groups again';
+  }
+
+  async function reloadSupplementalData() {
+    setSupplementalWarning(true, true);
+    const [coachResult, membershipsResult] = await Promise.allSettled([
+      retryRead(() => profileService.loadCoachProfile()),
+      retryRead(() => groupService.listMyMemberships()),
+    ]);
+    if (coachResult.status === 'fulfilled') {
+      dashboard.replaceCoachProfile(coachResult.value);
+      groupController.setIdentity({
+        profileId: profile.id,
+        isCoach: Boolean(coachResult.value),
+      });
     }
+    if (membershipsResult.status === 'fulfilled') {
+      dashboard.replaceMemberships(membershipsResult.value);
+    }
+    setSupplementalWarning(
+      coachResult.status === 'rejected' || membershipsResult.status === 'rejected',
+    );
   }
-  if (!profile.completed_at) {
-    profileController.show({
-      user: session.user,
-      nextProfile: profile,
-      requiredCompletion: true,
+
+  function createControllers(coachProfile) {
+    dashboard = createDashboardView({
+      document,
+      storage: localStorage,
+      profileService,
+      onEditProfile: (nextProfile) => profileController.show({
+        user: session.user,
+        nextProfile,
+      }),
+      onSignOut: async () => {
+        groupController.clearPrivate();
+        dashboard.clear();
+        await authService.signOut();
+        returnToSignIn();
+      },
+      onGroupAction: (action) => {
+        if (action === 'find-group') groupController.showDiscovery();
+        if (action === 'create-group') groupController.openCreateGroup();
+      },
+      onContextChange: ({ mode, membership }) => {
+        if (mode === 'coaching' && membership) {
+          groupController.loadManagement(membership.group, membership);
+        } else {
+          groupController.hide();
+        }
+      },
+      onCoachRegistration: () => groupController.setIdentity({
+        profileId: profile.id,
+        isCoach: true,
+      }),
+    });
+    groupController = createGroupView({
+      document,
+      groupService,
+      identity: { profileId: profile.id, isCoach: Boolean(coachProfile) },
+      onMembershipsChanged: async (preferredGroupId) => {
+        const nextMemberships = await groupService.listMyMemberships();
+        dashboard.replaceMemberships(nextMemberships, preferredGroupId);
+        return nextMemberships;
+      },
+      onAccessRevoked: async (groupId) => dashboard.accessRevoked(groupId),
+    });
+    profileController = createProfileView({
+      document,
+      profileService,
+      onSaved: async (nextProfile) => dashboard.updateProfile(nextProfile),
     });
   }
 
-  authService.onAuthStateChange((_event, nextSession) => {
-    if (nextSession) return;
-    groupController.clearPrivate();
-    dashboard.clear();
+  async function initialize() {
+    if (initializing || initialized) return;
+    initializing = true;
+    showLoading();
+    try {
+      session = await retryRead(() => authService.getSession());
+      if (!session) {
+        returnToSignIn();
+        return;
+      }
+      const startup = await loadStartupData(profileService, groupService);
+      profile = startup.profile;
+      createControllers(startup.coachProfile);
+      dashboard.load({
+        session,
+        profile,
+        coachProfile: startup.coachProfile,
+        memberships: startup.memberships,
+      });
+      setSupplementalWarning(startup.supplementalFailed);
+      initialized = true;
+
+      if (memberInvitationToken) {
+        history.replaceState({}, '', '/dashboard');
+        groupController.handleMemberInvitation(memberInvitationToken);
+      }
+      if (discoveryToken) {
+        history.replaceState({}, '', '/dashboard');
+        try {
+          const group = await groupService.resolveDiscoveryToken(discoveryToken);
+          groupController.renderDiscovery(group ? [group] : [], { title: 'Shared group' });
+        } catch (error) {
+          document.querySelector('#groupWorkspace').hidden = false;
+          document.querySelector('#groupStatus').textContent = error?.message
+            || 'This group link is unavailable.';
+        }
+      }
+      if (!profile.completed_at) {
+        profileController.show({
+          user: session.user,
+          nextProfile: profile,
+          requiredCompletion: true,
+        });
+      }
+
+      authService.onAuthStateChange((_event, nextSession) => {
+        if (nextSession) return;
+        groupController.clearPrivate();
+        dashboard.clear();
+        returnToSignIn();
+      });
+    } catch (error) {
+      showStartupError(error);
+    } finally {
+      initializing = false;
+    }
+  }
+
+  retryDashboard.addEventListener('click', initialize);
+  retryGroups.addEventListener('click', reloadSupplementalData);
+  startupSignOut.addEventListener('click', async () => {
+    await authService.signOut();
     returnToSignIn();
   });
+
+  await initialize();
 }
 
 main();

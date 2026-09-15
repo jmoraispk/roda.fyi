@@ -4,6 +4,13 @@ import { AppError } from '../errors.js';
 
 const SESSION_KEY = 'roda.e2e.session';
 
+function consumeLoadFailure(storage, key, message) {
+  const remaining = Number(storage.getItem(key) ?? 0);
+  if (remaining <= 0) return;
+  storage.setItem(key, String(remaining - 1));
+  throw new AppError('network', 'network_failure', message, { retryable: true });
+}
+
 function readSession(storage) {
   try {
     return JSON.parse(storage.getItem(SESSION_KEY));
@@ -70,6 +77,11 @@ export function createE2EProfileService({ window }) {
 
   return {
     async loadProfile() {
+      consumeLoadFailure(
+        storage,
+        'roda.e2e.failProfileLoads',
+        'The profile could not be loaded.',
+      );
       const saved = JSON.parse(storage.getItem('roda.e2e.profile'));
       if (saved) return saved;
       const profile = {
@@ -85,6 +97,11 @@ export function createE2EProfileService({ window }) {
     },
 
     async loadCoachProfile() {
+      consumeLoadFailure(
+        storage,
+        'roda.e2e.failCoachLoads',
+        'Coaching details could not be loaded.',
+      );
       return JSON.parse(storage.getItem('roda.e2e.coachProfile'));
     },
 
@@ -155,6 +172,11 @@ export function createE2EGroupService({ window }) {
 
   return {
     async listMyMemberships() {
+      consumeLoadFailure(
+        storage,
+        'roda.e2e.failMembershipLoads',
+        'Group memberships could not be loaded.',
+      );
       return readState().memberships;
     },
 

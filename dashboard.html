@@ -13,6 +13,16 @@
   <div class="dashboard-grain" aria-hidden="true"></div>
   <p class="dashboard-loading" id="dashboardLoading" role="status">Opening your roda…</p>
 
+  <section class="dashboard-startup-error" id="dashboardStartupError" role="alert" hidden>
+    <div class="dashboard-eyebrow">Connection interrupted</div>
+    <h1>We couldn't open your dashboard</h1>
+    <p id="dashboardStartupMessage">Your information is safe. Please try loading it again.</p>
+    <div class="dashboard-actions">
+      <button class="primary-button" id="retryDashboard" type="button">Try again</button>
+      <button class="secondary-button" id="startupSignOut" type="button">Sign out</button>
+    </div>
+  </section>
+
   <div id="dashboardApp" hidden>
     <header class="dashboard-header">
       <a class="dashboard-brand" href="/"><span></span><b>RODA</b></a>
@@ -35,7 +45,11 @@
         </label>
       </div>
 
-      <p class="dashboard-status" id="dashboardStatus" role="status" aria-live="polite"></p>
+      <aside class="dashboard-warning" id="dashboardWarning" role="status" aria-live="polite" hidden>
+        <span>We couldn't load your coaching groups. Your personal training is still available.</span>
+        <button class="secondary-button" id="retryGroups" type="button">Try groups again</button>
+      </aside>
+      <p class="dashboard-status" id="dashboardStatus" role="status" aria-label="Dashboard status" aria-live="polite"></p>
       <section class="dashboard-content" id="dashboardContent" aria-live="polite"></section>
       <section class="group-workspace" id="groupWorkspace" hidden>
         <p class="group-status" id="groupStatus" role="status" aria-label="Group status" aria-live="polite"></p>
