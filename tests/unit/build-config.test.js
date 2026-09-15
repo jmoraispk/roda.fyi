@@ -1,4 +1,6 @@
-import { access } from 'node:fs/promises';
+import { access, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -36,25 +38,28 @@ describe('readPublicConfig', () => {
 });
 
 describe('buildBrowserBundles', () => {
-  it('removes test source maps when producing a deployment build', async () => {
-    await buildBrowserBundles({ test: true });
-    await expect(access('assets/generated/public-auth.js.map')).resolves.toBeUndefined();
+  it('isolates test artifacts and removes their source maps for deployment', async () => {
+    const outputDirectory = await mkdtemp(join(tmpdir(), 'roda-browser-build-'));
 
     const priorUrl = process.env.RODA_SUPABASE_URL;
     const priorKey = process.env.RODA_SUPABASE_PUBLISHABLE_KEY;
-    process.env.RODA_SUPABASE_URL = 'https://example.supabase.co';
-    process.env.RODA_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_build_test';
     try {
-      await buildBrowserBundles();
+      await buildBrowserBundles({ test: true, outputDirectory });
+      await expect(access(join(outputDirectory, 'public-auth.js.map'))).resolves.toBeUndefined();
+
+      process.env.RODA_SUPABASE_URL = 'https://example.supabase.co';
+      process.env.RODA_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_build_test';
+      await buildBrowserBundles({ outputDirectory });
+
+      await expect(access(join(outputDirectory, 'public-auth.js.map'))).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
     } finally {
       if (priorUrl === undefined) delete process.env.RODA_SUPABASE_URL;
       else process.env.RODA_SUPABASE_URL = priorUrl;
       if (priorKey === undefined) delete process.env.RODA_SUPABASE_PUBLISHABLE_KEY;
       else process.env.RODA_SUPABASE_PUBLISHABLE_KEY = priorKey;
+      await rm(outputDirectory, { force: true, recursive: true });
     }
-
-    await expect(access('assets/generated/public-auth.js.map')).rejects.toMatchObject({
-      code: 'ENOENT',
-    });
   });
 });

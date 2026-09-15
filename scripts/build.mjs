@@ -36,7 +36,10 @@ export function readPublicConfig(env) {
   return { supabaseUrl, supabasePublishableKey };
 }
 
-export async function buildBrowserBundles({ test = false } = {}) {
+export async function buildBrowserBundles({
+  test = false,
+  outputDirectory = 'assets/generated',
+} = {}) {
   loadDotEnv({ path: '.env.local', quiet: true });
   const publicConfig = readPublicConfig(test ? TEST_CONFIG : process.env);
   const entryPoints = {
@@ -47,13 +50,13 @@ export async function buildBrowserBundles({ test = false } = {}) {
 
   if (!test) {
     await Promise.all(Object.keys(entryPoints).map((name) => (
-      rm(`assets/generated/${name}.js.map`, { force: true })
+      rm(`${outputDirectory}/${name}.js.map`, { force: true })
     )));
   }
 
   await build({
     entryPoints,
-    outdir: 'assets/generated',
+    outdir: outputDirectory,
     entryNames: '[name]',
     bundle: true,
     platform: 'browser',
