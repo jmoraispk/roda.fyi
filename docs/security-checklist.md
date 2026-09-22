@@ -62,9 +62,11 @@ or pull request; do not check an item based only on dashboard appearance.
 - [ ] Profile and group storage policies constrain type, size, ownership prefix,
   read scope, replacement, and deletion.
 - [ ] Supabase Security Advisor has no unexplained finding.
-  The current three informational `rls_enabled_no_policy` findings are
+  The current four informational `rls_enabled_no_policy` findings are
   explained in the operations runbook and intentionally protect RPC-only
-  tables from direct reads.
+  tables from direct reads. The compromised-password warning is inapplicable
+  while the product offers only Google and passwordless-email sign-in; enable
+  that protection before adding password authentication.
 - [ ] Database SSL enforcement is enabled, and every approved direct Postgres
   or pooler client explicitly uses SSL.
 

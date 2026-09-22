@@ -25,7 +25,7 @@ production origin unless the domain configuration intentionally changes.
 
 ## Hosted security baseline
 
-The linked hosted project was rechecked on 2026-09-14 after applying the
+The linked hosted project was rechecked on 2026-09-22 after applying the
 tracked migration chain:
 
 - the hosted migration history is up to date and the tracked schema has no
@@ -33,15 +33,21 @@ tracked migration chain:
 - database SSL enforcement is enabled;
 - anonymous group discovery succeeds through `public.search_groups`, while
   anonymous direct profile access is rejected;
-- Supabase Security Advisor reports only three informational
-  `rls_enabled_no_policy` findings: `group_discovery_links`,
-  `group_member_invitations`, and `group_relationships`.
+- Supabase Security Advisor reports four informational
+  `rls_enabled_no_policy` findings: `coach_student_connections`,
+  `group_discovery_links`, `group_member_invitations`, and
+  `group_relationships`, plus the compromised-password-protection warning.
 
-Those three findings are intentional. The tables have RLS enabled, no direct
-client table grants, and no policies because access is mediated by the checked
-RPC/projection boundary. Do not add a broad policy merely to silence the
-advisor. A future migration that intentionally introduces direct reads must
-add a narrowly tested policy and update this exception list.
+Those four informational findings are intentional. The tables have RLS
+enabled, no direct client table grants, and no policies because access is
+mediated by the checked RPC/projection boundary. Do not add a broad policy
+merely to silence the advisor. A future migration that intentionally
+introduces direct reads must add a narrowly tested policy and update this
+exception list.
+
+The compromised-password warning does not affect the current Google and
+passwordless-email flows because roda.fyi does not offer password sign-in.
+Enable leaked-password protection before adding password authentication.
 
 SSL enforcement applies to direct Postgres and pooler connections. HTTP APIs
 already require TLS. Any future server-side database client must explicitly
