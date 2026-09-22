@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppError } from '../../src/app/errors.js';
+import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
 import {
   createCoachingTrainingView,
   scheduledInstant,
@@ -76,6 +77,11 @@ function createView(overrideServices = {}, options = {}) {
     ...api,
     timezone: 'Europe/Lisbon',
     profileId: 'coach-1',
+    i18n: createDashboardI18n({
+      document,
+      storage: { getItem: () => options.locale ?? 'en', setItem: vi.fn() },
+      navigator: { languages: [options.locale ?? 'en'] },
+    }),
     onAccessRevoked,
     ...options,
   });
@@ -296,5 +302,22 @@ describe('coaching training view', () => {
     expect(document.querySelector('#coachingTrainingWorkspace').textContent).toBe('');
     expect(document.querySelector('[data-completion-form]').textContent).toBe('');
     expect(document.querySelector('[aria-label="Confirm training"]').open).toBe(false);
+  });
+
+  it('renders planning, scheduling, and confirmation controls in Portuguese', async () => {
+    const { view } = createView({}, { locale: 'pt' });
+    view.setContext({ mode: 'coaching', activeTab: 'schedule', groupId: 'group-1', isCoach: true });
+    await view.load();
+
+    expect(document.body.textContent).toContain('Planeamento do treinador');
+    expect(document.querySelector('[data-action="new-plan"]').textContent)
+      .toBe('Criar plano de treino');
+    document.querySelector('[data-action="schedule-group"]').click();
+    expect(document.querySelector('#scheduleTrainingDialog').textContent)
+      .toContain('Agendar treino de grupo');
+    document.querySelector('[data-action="close-schedule"]').click();
+    document.querySelector('[data-action="confirm-training"]').click();
+    expect(document.querySelector('[data-completion-form]').textContent)
+      .toContain('Confirmar treino concluído');
   });
 });

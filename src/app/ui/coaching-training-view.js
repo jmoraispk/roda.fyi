@@ -113,6 +113,7 @@ export function createCoachingTrainingView({
   trainingService,
   connectionService,
   groupService,
+  i18n,
   timezone = 'UTC',
   profileId,
   onAccessRevoked = async () => {},
@@ -125,7 +126,7 @@ export function createCoachingTrainingView({
   const scheduleDialog = document.querySelector('#scheduleTrainingDialog');
   const scheduleForm = document.querySelector('#scheduleTrainingForm');
   const completionDialog = element(document, 'dialog', { className: 'profile-dialog group-dialog' });
-  completionDialog.setAttribute('aria-label', 'Confirm training');
+  completionDialog.setAttribute('aria-label', i18n.t('coach.confirmDialog'));
   const completionForm = element(document, 'form');
   completionForm.dataset.completionForm = '';
   completionDialog.append(completionForm);
@@ -222,9 +223,9 @@ export function createCoachingTrainingView({
     if (!active()) return;
     const header = element(document, 'div', { className: 'coaching-training-header' });
     header.append(
-      element(document, 'div', { className: 'dashboard-eyebrow', text: 'Coach planning' }),
-      element(document, 'h2', { text: 'Training schedule' }),
-      actionButton('Create workout plan', 'new-plan'),
+      element(document, 'div', { className: 'dashboard-eyebrow', text: i18n.t('coach.planning') }),
+      element(document, 'h2', { text: i18n.t('coach.schedule') }),
+      actionButton(i18n.t('coach.createPlan'), 'new-plan'),
     );
     workspace.append(header);
 
@@ -235,14 +236,14 @@ export function createCoachingTrainingView({
       card.append(
         element(document, 'h3', { text: plan.title }),
         element(document, 'p', {
-          text: `${plan.durationMinutes} minutes · ${plan.published ? 'Published' : 'Draft'}`,
+          text: `${i18n.t('coach.minutes', { count: plan.durationMinutes })} · ${i18n.t(plan.published ? 'coach.published' : 'coach.draft')}`,
         }),
-        actionButton(plan.published ? 'View plan' : 'Edit plan', 'edit-plan', plan.id),
+        actionButton(i18n.t(plan.published ? 'coach.viewPlan' : 'coach.editPlan'), 'edit-plan', plan.id),
       );
       if (plan.published) {
-        if (context.groupId) card.append(actionButton('Schedule group training', 'schedule-group', plan.versionId));
+        if (context.groupId) card.append(actionButton(i18n.t('coach.scheduleGroup'), 'schedule-group', plan.versionId));
         for (const student of coachStudents()) {
-          const button = actionButton(`Schedule personal class · ${student.name}`, 'schedule-personal', plan.versionId);
+          const button = actionButton(i18n.t('coach.schedulePersonal', { name: student.name }), 'schedule-personal', plan.versionId);
           button.dataset.studentId = student.profileId;
           card.append(button);
         }
@@ -251,27 +252,27 @@ export function createCoachingTrainingView({
     }
     if (plans.length === 0) {
       planList.append(element(document, 'p', {
-        className: 'calendar-empty', text: 'Create a workout plan to start scheduling.',
+        className: 'calendar-empty', text: i18n.t('coach.noPlans'),
       }));
     }
     workspace.append(planList);
 
     const scheduledList = element(document, 'section', { className: 'scheduled-training-list' });
-    scheduledList.append(element(document, 'h2', { text: 'Awaiting confirmation' }));
+    scheduledList.append(element(document, 'h2', { text: i18n.t('coach.awaiting') }));
     for (const schedule of schedules) {
       const card = element(document, 'article', { className: 'scheduled-training-card' });
       card.dataset.scheduleId = schedule.item_id;
       card.append(
-        element(document, 'h3', { text: schedule.plan_title || (schedule.kind === 'group' ? 'Group training' : 'Personal class') }),
-        element(document, 'p', { text: `${schedule.local_date} · ${schedule.duration_minutes ?? 0} minutes` }),
-        element(document, 'p', { text: 'Awaiting confirmation · not included in statistics' }),
-        actionButton('Confirm training', 'confirm-training', schedule.item_id),
+        element(document, 'h3', { text: schedule.plan_title || i18n.t(schedule.kind === 'group' ? 'coach.groupTraining' : 'coach.personalClass') }),
+        element(document, 'p', { text: `${schedule.local_date} · ${i18n.t('coach.minutes', { count: schedule.duration_minutes ?? 0 })}` }),
+        element(document, 'p', { text: i18n.t('coach.awaitingExcluded') }),
+        actionButton(i18n.t('coach.confirm'), 'confirm-training', schedule.item_id),
       );
       scheduledList.append(card);
     }
     if (schedules.length === 0) {
       scheduledList.append(element(document, 'p', {
-        className: 'calendar-empty', text: 'No scheduled training is awaiting confirmation.',
+        className: 'calendar-empty', text: i18n.t('coach.noAwaiting'),
       }));
     }
     workspace.append(scheduledList);
@@ -282,8 +283,8 @@ export function createCoachingTrainingView({
     if (!studentsActive()) return;
     const heading = element(document, 'div', { className: 'coaching-training-header' });
     heading.append(
-      element(document, 'div', { className: 'dashboard-eyebrow', text: 'Student training' }),
-      element(document, 'h2', { text: 'Students' }),
+      element(document, 'div', { className: 'dashboard-eyebrow', text: i18n.t('coach.studentTraining') }),
+      element(document, 'h2', { text: i18n.t('coach.students') }),
     );
     studentWorkspace.append(heading);
     const list = element(document, 'div', { className: 'coaching-student-list' });
@@ -291,12 +292,12 @@ export function createCoachingTrainingView({
       const card = element(document, 'article', { className: 'workout-plan-card' });
       card.append(
         element(document, 'h3', { text: student.name }),
-        actionButton(`View ${student.name}'s training`, 'view-student-training', student.profileId),
+        actionButton(i18n.t('coach.viewStudent', { name: student.name }), 'view-student-training', student.profileId),
       );
       list.append(card);
     }
     if (coachStudents().length === 0) {
-      list.append(element(document, 'p', { className: 'calendar-empty', text: 'No connected students yet.' }));
+      list.append(element(document, 'p', { className: 'calendar-empty', text: i18n.t('coach.noStudents') }));
     }
     studentWorkspace.append(list, element(document, 'section', { className: 'coaching-student-detail' }));
   }
@@ -306,7 +307,7 @@ export function createCoachingTrainingView({
     selectedStudentId = studentId;
     const target = studentWorkspace.querySelector('.coaching-student-detail');
     if (!target) return;
-    target.textContent = 'Loading student training…';
+    target.textContent = i18n.t('coach.loadingStudent');
     const year = new Date().getFullYear();
     try {
       const items = await trainingService.listCalendar({
@@ -315,22 +316,22 @@ export function createCoachingTrainingView({
       if (token !== loadToken || selectedStudentId !== studentId || !studentsActive()) return;
       target.replaceChildren();
       const student = coachStudents().find(({ profileId: id }) => id === studentId);
-      target.append(element(document, 'h3', { text: `${student?.name ?? 'Student'} · completed training` }));
+      target.append(element(document, 'h3', { text: i18n.t('coach.completedStudent', { name: student?.name ?? i18n.t('coach.students') }) }));
       for (const item of items.filter(({ item_type: type }) => type === 'completed')) {
         const card = element(document, 'article', { className: 'scheduled-training-card' });
         card.append(
-          element(document, 'strong', { text: `${item.local_date} · ${item.duration_minutes} minutes` }),
-          actionButton('Open training details', 'open-student-day', item.local_date),
+          element(document, 'strong', { text: `${item.local_date} · ${i18n.t('coach.minutes', { count: item.duration_minutes })}` }),
+          actionButton(i18n.t('coach.openDetails'), 'open-student-day', item.local_date),
         );
         card.querySelector('[data-action="open-student-day"]').dataset.studentId = studentId;
         target.append(card);
       }
       if (!items.some(({ item_type: type }) => type === 'completed')) {
-        target.append(element(document, 'p', { className: 'calendar-empty', text: 'No completed training yet.' }));
+        target.append(element(document, 'p', { className: 'calendar-empty', text: i18n.t('coach.noCompleted') }));
       }
     } catch (error) {
       if (error?.kind === 'authorization' || error?.kind === 'authentication') await revoke(context.groupId);
-      else target.textContent = safeMessage(error, 'We could not load this student training.');
+      else target.textContent = safeMessage(error, i18n.t('coach.studentLoadError'));
     }
   }
 
@@ -339,17 +340,17 @@ export function createCoachingTrainingView({
     selectedStudentId = studentId;
     const target = studentWorkspace.querySelector('.coaching-student-detail');
     if (!target) return;
-    target.textContent = 'Loading training details…';
+    target.textContent = i18n.t('coach.loadingDetails');
     try {
       const items = await trainingService.getDay({ localDate, profileId: studentId });
       if (token !== loadToken || selectedStudentId !== studentId || !studentsActive()) return;
       target.replaceChildren();
-      target.append(actionButton('Back to training history', 'view-student-training', studentId));
+      target.append(actionButton(i18n.t('coach.backHistory'), 'view-student-training', studentId));
       for (const item of items) {
         const card = element(document, 'article', { className: 'training-day-card' });
         card.dataset.localDate = localDate;
         card.append(
-          element(document, 'h3', { text: `${item.kind === 'group' ? 'Group training' : 'Personal class'} · ${item.duration_minutes} minutes` }),
+          element(document, 'h3', { text: `${i18n.t(item.kind === 'group' ? 'coach.groupTraining' : 'coach.personalClass')} · ${i18n.t('coach.minutes', { count: item.duration_minutes })}` }),
         );
         for (const feedback of item.feedback ?? []) {
           card.append(element(document, 'p', {
@@ -359,17 +360,17 @@ export function createCoachingTrainingView({
         if ((item.feedback_contexts ?? []).length) {
           const form = element(document, 'form');
           form.dataset.studentFeedback = item.participation_id;
-          const contextSelect = element(document, 'select', { name: 'context', label: 'Feedback context' });
+          const contextSelect = element(document, 'select', { name: 'context', label: i18n.t('training.feedbackContext') });
           contextSelect.className = 'field-input';
           for (const feedbackContext of item.feedback_contexts) {
             contextSelect.append(element(document, 'option', {
               value: `${feedbackContext.kind}:${feedbackContext.id}`, text: feedbackContext.label,
             }));
           }
-          const body = element(document, 'textarea', { name: 'body', required: true, label: 'Coach feedback' });
+          const body = element(document, 'textarea', { name: 'body', required: true, label: i18n.t('training.feedbackBody') });
           body.className = 'field-input field-textarea';
           const submit = element(document, 'button', {
-            type: 'submit', className: 'secondary-button', text: 'Add feedback',
+            type: 'submit', className: 'secondary-button', text: i18n.t('training.addFeedback'),
           });
           const feedbackStatus = element(document, 'p', { className: 'profile-status' });
           feedbackStatus.setAttribute('role', 'status');
@@ -380,7 +381,7 @@ export function createCoachingTrainingView({
       }
     } catch (error) {
       if (error?.kind === 'authorization' || error?.kind === 'authentication') await revoke(context.groupId);
-      else target.textContent = safeMessage(error, 'We could not load this training.');
+      else target.textContent = safeMessage(error, i18n.t('coach.detailsLoadError'));
     }
   }
 
@@ -389,7 +390,7 @@ export function createCoachingTrainingView({
     const schedule = completionState.schedule;
     const close = actionButton('×', 'close-completion');
     close.className = 'profile-close';
-    close.setAttribute('aria-label', 'Close training confirmation');
+    close.setAttribute('aria-label', i18n.t('coach.closeConfirmation'));
     const duration = element(document, 'input', {
       type: 'number', name: 'completionDuration', value: schedule.duration_minutes ?? 60,
       required: true,
@@ -399,20 +400,20 @@ export function createCoachingTrainingView({
     duration.max = '1440';
     completionForm.append(
       close,
-      element(document, 'div', { className: 'profile-kicker', text: 'Coach confirmation' }),
-      element(document, 'h1', { text: 'Confirm completed training' }),
-      field(document, 'Actual duration in minutes', duration),
+      element(document, 'div', { className: 'profile-kicker', text: i18n.t('coach.confirmation') }),
+      element(document, 'h1', { text: i18n.t('coach.confirmCompleted') }),
+      field(document, i18n.t('coach.actualDuration'), duration),
     );
     if (schedule.kind === 'group') {
       const fieldset = element(document, 'fieldset', { className: 'attendance-list' });
-      fieldset.append(element(document, 'legend', { text: 'Attendance' }));
+      fieldset.append(element(document, 'legend', { text: i18n.t('coach.attendance') }));
       for (const member of roster.filter(({ access_level: level }) => level === 'member')) {
         const row = element(document, 'div', { className: 'attendance-row' });
         const checkbox = element(document, 'input', { type: 'checkbox', name: 'attendee', value: member.profile_id });
         checkbox.checked = completionState.attendees.get(member.profile_id)?.selected ?? true;
         const override = element(document, 'input', {
           type: 'number', value: completionState.attendees.get(member.profile_id)?.duration ?? schedule.duration_minutes ?? 60,
-          label: `${member.display_name} duration`,
+          label: i18n.t('coach.memberDuration', { name: member.display_name }),
         });
         override.className = 'field-input';
         override.min = '1';
@@ -428,7 +429,7 @@ export function createCoachingTrainingView({
     completionForm.append(
       element(document, 'p', { className: 'profile-status', action: null }),
       Object.assign(element(document, 'button', {
-        type: 'submit', className: 'primary-button', text: 'Confirm and count training',
+        type: 'submit', className: 'primary-button', text: i18n.t('coach.confirmCount'),
       }), { disabled: completing }),
     );
     completionForm.querySelector('.profile-status').setAttribute('role', 'status');
@@ -489,10 +490,11 @@ export function createCoachingTrainingView({
 
   function renderPlanForm() {
     planForm.replaceChildren();
+    planDialog.setAttribute('aria-label', i18n.t('coach.planDialog'));
     const readOnly = editorState.published;
     const close = actionButton('×', 'close-plan');
     close.className = 'profile-close';
-    close.setAttribute('aria-label', 'Close workout plan');
+    close.setAttribute('aria-label', i18n.t('coach.closePlan'));
     const title = element(document, 'input', {
       name: 'planTitle', value: editorState.title, required: true, disabled: readOnly,
     });
@@ -514,18 +516,18 @@ export function createCoachingTrainingView({
     instructions.className = 'field-input field-textarea';
     planForm.append(
       close,
-      element(document, 'div', { className: 'profile-kicker', text: readOnly ? 'Published plan' : 'Workout plan' }),
-      element(document, 'h1', { text: readOnly ? editorState.title : editorState.id ? 'Edit workout plan' : 'Create workout plan' }),
-      field(document, 'Plan title', title),
-      field(document, 'Description', description),
-      field(document, 'Expected duration in minutes', duration),
-      field(document, 'Instructions', instructions),
+      element(document, 'div', { className: 'profile-kicker', text: i18n.t(readOnly ? 'coach.publishedPlan' : 'coach.workoutPlan') }),
+      element(document, 'h1', { text: readOnly ? editorState.title : i18n.t(editorState.id ? 'coach.editWorkoutPlan' : 'coach.createWorkoutPlan') }),
+      field(document, i18n.t('coach.planTitle'), title),
+      field(document, i18n.t('coach.description'), description),
+      field(document, i18n.t('coach.expectedDuration'), duration),
+      field(document, i18n.t('coach.instructions'), instructions),
     );
     const rounds = element(document, 'div', { className: 'plan-rounds' });
     editorState.rounds.forEach((round, index) => {
       const box = element(document, 'fieldset', { className: 'plan-round' });
       box.dataset.planRound = round.id;
-      box.append(element(document, 'legend', { text: `Round ${index + 1}` }));
+      box.append(element(document, 'legend', { text: i18n.t('coach.round', { number: index + 1 }) }));
       const label = element(document, 'input', { name: 'roundLabel', value: round.label, disabled: readOnly });
       const repetitions = element(document, 'input', { type: 'number', name: 'roundRepetitions', value: round.repetitions ?? '', disabled: readOnly });
       const roundDuration = element(document, 'input', { type: 'number', name: 'roundDuration', value: round.durationSeconds ?? '', disabled: readOnly });
@@ -533,16 +535,16 @@ export function createCoachingTrainingView({
       const roundInstructions = element(document, 'input', { name: 'roundInstructions', value: round.instructions, disabled: readOnly });
       for (const input of [label, repetitions, roundDuration, rest, roundInstructions]) input.className = 'field-input';
       box.append(
-        field(document, 'Round label', label),
-        field(document, 'Round repetitions', repetitions),
-        field(document, 'Round duration in seconds', roundDuration),
-        field(document, 'Rest in seconds', rest),
-        field(document, 'Round instructions', roundInstructions),
+        field(document, i18n.t('coach.roundLabel'), label),
+        field(document, i18n.t('coach.roundRepetitions'), repetitions),
+        field(document, i18n.t('coach.roundDuration'), roundDuration),
+        field(document, i18n.t('coach.rest'), rest),
+        field(document, i18n.t('coach.roundInstructions'), roundInstructions),
       );
       if (!readOnly) {
         box.append(
-          actionButton('Move round up', 'move-round-up'),
-          actionButton('Move round down', 'move-round-down'),
+          actionButton(i18n.t('coach.moveRoundUp'), 'move-round-up'),
+          actionButton(i18n.t('coach.moveRoundDown'), 'move-round-down'),
         );
       }
       const movementList = element(document, 'div', { className: 'plan-movement-list' });
@@ -553,7 +555,8 @@ export function createCoachingTrainingView({
         name.className = 'field-input';
         name.setAttribute('list', 'capoeiraMovementNames');
         const side = element(document, 'select', { name: 'movementSide', disabled: readOnly });
-        for (const [value, text] of [['', 'Any side'], ['left', 'Left'], ['right', 'Right'], ['both', 'Both']]) {
+        for (const [value, key] of [['', 'anySide'], ['left', 'left'], ['right', 'right'], ['both', 'both']]) {
+          const text = i18n.t(`coach.${key}`);
           const option = element(document, 'option', { value, text });
           option.selected = movement.side === value;
           side.append(option);
@@ -563,23 +566,23 @@ export function createCoachingTrainingView({
         const movementInstructions = element(document, 'input', { name: 'movementInstructions', value: movement.instructions, disabled: readOnly });
         for (const input of [side, movementRepetitions, movementDuration, movementInstructions]) input.className = 'field-input';
         row.append(
-          field(document, 'Movement', name),
-          field(document, 'Side', side),
-          field(document, 'Movement repetitions', movementRepetitions),
-          field(document, 'Movement duration in seconds', movementDuration),
-          field(document, 'Movement instructions', movementInstructions),
+          field(document, i18n.t('coach.movement'), name),
+          field(document, i18n.t('coach.side'), side),
+          field(document, i18n.t('coach.movementRepetitions'), movementRepetitions),
+          field(document, i18n.t('coach.movementDuration'), movementDuration),
+          field(document, i18n.t('coach.movementInstructions'), movementInstructions),
         );
         if (!readOnly) {
           row.append(
-            actionButton('Move movement up', 'move-movement-up'),
-            actionButton('Move movement down', 'move-movement-down'),
-            actionButton('Remove movement', 'remove-movement'),
+            actionButton(i18n.t('coach.moveMovementUp'), 'move-movement-up'),
+            actionButton(i18n.t('coach.moveMovementDown'), 'move-movement-down'),
+            actionButton(i18n.t('coach.removeMovement'), 'remove-movement'),
           );
         }
         movementList.append(row);
       });
       box.append(movementList);
-      if (!readOnly) box.append(actionButton('Add movement', 'add-plan-movement'));
+      if (!readOnly) box.append(actionButton(i18n.t('coach.addMovement'), 'add-plan-movement'));
       rounds.append(box);
     });
     planForm.append(rounds);
@@ -590,12 +593,12 @@ export function createCoachingTrainingView({
     if (!readOnly) {
       const actions = element(document, 'div', { className: 'dashboard-actions' });
       actions.append(
-        actionButton('Add round', 'add-round'),
+        actionButton(i18n.t('coach.addRound'), 'add-round'),
         Object.assign(element(document, 'button', {
-          type: 'submit', className: 'primary-button', text: 'Save draft', action: 'save-plan',
+          type: 'submit', className: 'primary-button', text: i18n.t('coach.saveDraft'), action: 'save-plan',
         }), { disabled: savingPlan }),
       );
-      if (editorState.id) actions.append(actionButton('Publish plan', 'publish-plan'));
+      if (editorState.id) actions.append(actionButton(i18n.t('coach.publishPlan'), 'publish-plan'));
       planForm.append(actions);
     }
     planForm.append(element(document, 'p', { className: 'profile-status' }));
@@ -611,23 +614,24 @@ export function createCoachingTrainingView({
 
   function renderScheduleForm() {
     scheduleForm.replaceChildren();
+    scheduleDialog.setAttribute('aria-label', i18n.t('coach.scheduleDialog'));
     const close = actionButton('×', 'close-schedule');
     close.className = 'profile-close';
-    close.setAttribute('aria-label', 'Close training schedule');
+    close.setAttribute('aria-label', i18n.t('coach.closeSchedule'));
     const date = element(document, 'input', { type: 'date', name: 'scheduleDate', required: true });
     const time = element(document, 'input', { type: 'time', name: 'scheduleTime', required: true });
     const visible = element(document, 'input', { type: 'checkbox', name: 'scheduleVisible' });
     visible.checked = true;
     scheduleForm.append(
       close,
-      element(document, 'div', { className: 'profile-kicker', text: 'Coach scheduling' }),
-      element(document, 'h1', { text: scheduleState.kind === 'group' ? 'Schedule group training' : 'Schedule personal class' }),
-      field(document, 'Training date', date),
-      field(document, 'Start time', time),
-      field(document, 'Show plan details before training', visible),
+      element(document, 'div', { className: 'profile-kicker', text: i18n.t('coach.scheduling') }),
+      element(document, 'h1', { text: i18n.t(scheduleState.kind === 'group' ? 'coach.scheduleGroup' : 'coach.schedulePersonalTitle') }),
+      field(document, i18n.t('coach.trainingDate'), date),
+      field(document, i18n.t('coach.startTime'), time),
+      field(document, i18n.t('coach.showBefore'), visible),
       element(document, 'p', { className: 'profile-status' }),
       Object.assign(element(document, 'button', {
-        type: 'submit', className: 'primary-button', text: 'Schedule training',
+        type: 'submit', className: 'primary-button', text: i18n.t('coach.scheduleTraining'),
       }), { disabled: scheduling }),
     );
   }
@@ -656,7 +660,7 @@ export function createCoachingTrainingView({
       return;
     }
     const groupId = context.groupId;
-    status.textContent = 'Loading coach schedule…';
+    status.textContent = i18n.t('coach.loadingSchedule');
     try {
       const [loadedPlans, loadedConnections, loadedRoster] = await Promise.all([
         trainingService.listPlans(groupId),
@@ -697,7 +701,7 @@ export function createCoachingTrainingView({
       if (error?.kind === 'authorization' || error?.kind === 'authentication') {
         await revoke(groupId);
       } else {
-        status.textContent = safeMessage(error, 'We could not load coach scheduling.');
+        status.textContent = safeMessage(error, i18n.t('coach.scheduleLoadError'));
       }
     }
   }
@@ -748,12 +752,12 @@ export function createCoachingTrainingView({
         body: form.elements.body.value,
       });
       const date = form.closest('.training-day-card')?.dataset.localDate;
-      message.textContent = 'Feedback saved.';
+      message.textContent = i18n.t('coach.feedbackSaved');
       form.elements.body.value = '';
       if (date) await openStudentDay(selectedStudentId, date);
     } catch (error) {
       if (error?.kind === 'authorization' || error?.kind === 'authentication') await revoke(context.groupId);
-      else message.textContent = safeMessage(error, 'We could not save this feedback.');
+      else message.textContent = safeMessage(error, i18n.t('coach.feedbackSaveError'));
     }
   });
 
@@ -804,7 +808,7 @@ export function createCoachingTrainingView({
         renderPlanForm();
         render();
       } catch (error) {
-        planForm.querySelector('.profile-status').textContent = safeMessage(error, 'We could not publish this plan.');
+        planForm.querySelector('.profile-status').textContent = safeMessage(error, i18n.t('coach.publishError'));
       }
     }
   });
@@ -838,7 +842,7 @@ export function createCoachingTrainingView({
       if (error?.kind === 'authorization' || error?.kind === 'authentication') {
         await revoke(context.groupId);
       } else {
-        planStatus.textContent = safeMessage(error, 'We could not save this plan. Your entries are still here.');
+        planStatus.textContent = safeMessage(error, i18n.t('coach.planSaveError'));
       }
     } finally {
       savingPlan = false;
@@ -857,14 +861,14 @@ export function createCoachingTrainingView({
     scheduleStatus.textContent = '';
     const localDate = scheduleForm.elements.scheduleDate.value;
     const time = scheduleForm.elements.scheduleTime.value;
-    const common = {
-      planVersionId: scheduleState.planVersionId,
-      localDate,
-      startsAt: scheduledInstant(localDate, time, timezone),
-      timezone,
-      visibleInAdvance: scheduleForm.elements.scheduleVisible.checked,
-    };
     try {
+      const common = {
+        planVersionId: scheduleState.planVersionId,
+        localDate,
+        startsAt: scheduledInstant(localDate, time, timezone),
+        timezone,
+        visibleInAdvance: scheduleForm.elements.scheduleVisible.checked,
+      };
       if (scheduleState.kind === 'group') {
         await trainingService.scheduleGroupTraining({ ...common, groupId: scheduleState.groupId });
       } else {
@@ -881,8 +885,14 @@ export function createCoachingTrainingView({
     } catch (error) {
       if (error?.kind === 'authorization' || error?.kind === 'authentication') {
         await revoke(context.groupId);
+      } else if (error instanceof RangeError) {
+        scheduleStatus.textContent = i18n.t(
+          error.message.includes('does not exist')
+            ? 'coach.nonexistentTime'
+            : 'coach.invalidDateTime',
+        );
       } else {
-        scheduleStatus.textContent = safeMessage(error, 'We could not schedule this training. Your entries are still here.');
+        scheduleStatus.textContent = safeMessage(error, i18n.t('coach.scheduleSaveError'));
       }
     } finally {
       scheduling = false;
@@ -930,9 +940,9 @@ export function createCoachingTrainingView({
       if (error?.kind === 'authorization' || error?.kind === 'authentication') {
         await revoke(context.groupId);
       } else if (error?.code === 'invalid_attendee' || error?.message === 'invalid_attendee') {
-        formStatus.textContent = 'The group membership changed. Review attendance and try again.';
+        formStatus.textContent = i18n.t('coach.membershipChanged');
       } else {
-        formStatus.textContent = safeMessage(error, 'We could not confirm this training. Attendance is still selected.');
+        formStatus.textContent = safeMessage(error, i18n.t('coach.confirmError'));
       }
     } finally {
       completing = false;
@@ -949,6 +959,14 @@ export function createCoachingTrainingView({
     completeGroup,
     loadStudentTraining,
     openStudentDay,
+    setLocale() {
+      completionDialog.setAttribute('aria-label', i18n.t('coach.confirmDialog'));
+      render();
+      renderStudents();
+      if (planDialog.open && editorState) renderPlanForm();
+      if (scheduleDialog.open && scheduleState) renderScheduleForm();
+      if (completionDialog.open && completionState) renderCompletionForm();
+    },
     clear() {
       loadToken += 1;
       clearPrivate();

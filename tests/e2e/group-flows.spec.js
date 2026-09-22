@@ -86,10 +86,16 @@ test('registers coaching, requests coach access, and creates a group', async ({ 
   const dialog = page.getByRole('dialog', { name: 'Create a group' });
   await dialog.getByLabel('Group name').fill('Roda do Sol');
   await dialog.getByLabel('Location').fill('Faro');
+  await expect(dialog.getByLabel('Group timezone')).not.toHaveValue('');
   await dialog.getByRole('button', { name: 'Create group' }).click();
 
   await expect(page.getByLabel('Group context')).toContainText('Roda do Sol');
+  await page.getByRole('tab', { name: 'Groups' }).click();
   await expect(page.getByRole('heading', { name: 'Roda do Sol' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('roda.e2e.groupState'));
+    return state.groups.find(({ name }) => name === 'Roda do Sol')?.timezone;
+  })).toMatch(/^[A-Za-z_]+\/[A-Za-z_]+/);
 });
 
 test('lets a direct coach approve members, remove members, and create shareable invitations', async ({ page }) => {
@@ -112,6 +118,7 @@ test('lets a direct coach approve members, remove members, and create shareable 
   });
   await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
   await page.goto('/dashboard');
+  await page.getByRole('tab', { name: 'Groups' }).click();
 
   await page.getByRole('button', { name: 'Approve Caio' }).click();
   await expect(page.getByRole('status', { name: 'Group status' })).toContainText('approved');
@@ -150,6 +157,7 @@ test('lets an owner manage coach access and immediate-parent sharing', async ({ 
   });
   await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
   await page.goto('/dashboard');
+  await page.getByRole('tab', { name: 'Groups' }).click();
 
   await page.getByRole('button', { name: 'Approve Instrutora Céu' }).click();
   await page.getByRole('button', { name: 'Relationship settings' }).click();
@@ -225,6 +233,7 @@ test('switches between coached groups and clears a group after access is revoked
   });
   await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
   await page.goto('/dashboard');
+  await page.getByRole('tab', { name: 'Groups' }).click();
 
   await expect(page.getByRole('heading', { name: 'Grupo Lua' })).toBeVisible();
   await page.getByLabel('Group context').selectOption('group-mata');
@@ -258,6 +267,7 @@ test('lets a child owner decide a parent invitation and surfaces hierarchy confl
   });
   await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
   await page.goto('/dashboard');
+  await page.getByRole('tab', { name: 'Groups' }).click();
 
   await page.getByRole('button', { name: 'Accept Grupo Lua as parent' }).click();
   await expect(page.getByRole('status', { name: 'Group status' })).toContainText('Parent group accepted');
@@ -292,6 +302,7 @@ test('lets an owner rotate discovery links and transfer ownership to an active c
   });
   await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
   await page.goto('/dashboard');
+  await page.getByRole('tab', { name: 'Groups' }).click();
 
   await page.getByRole('button', { name: 'Create discovery link' }).click();
   await expect(page.getByLabel('Discovery link')).toHaveValue(/group_link=discovery-1/);
@@ -324,6 +335,7 @@ test('lets an owner edit and archive a group', async ({ page }) => {
   });
   await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
   await page.goto('/dashboard');
+  await page.getByRole('tab', { name: 'Groups' }).click();
 
   await page.getByRole('button', { name: 'Edit group' }).click();
   const edit = page.getByRole('dialog', { name: 'Edit group' });

@@ -11,6 +11,7 @@ export function createDashboardView({
   document,
   storage,
   profileService,
+  i18n,
   onEditProfile,
   onSignOut,
   onGroupAction = () => {},
@@ -34,6 +35,51 @@ export function createDashboardView({
   const coachingTabs = document.querySelector('#coachingTabs');
   let state = createDashboardState();
   let registering = false;
+
+  function applyCopy() {
+    document.querySelector('#dashboardLocale').setAttribute('aria-label', i18n.t('dashboard.changeLanguage'));
+    editProfile.lastChild.textContent = ` · ${i18n.t('dashboard.profile')}`;
+    signOut.textContent = i18n.t('dashboard.signOut');
+    modeSwitch.setAttribute('aria-label', i18n.t('dashboard.mode'));
+    modeSwitch.querySelector('[data-mode="training"]').textContent = i18n.t('dashboard.myTraining');
+    modeSwitch.querySelector('[data-mode="coaching"]').textContent = i18n.t('dashboard.coaching');
+    groupLabel.querySelector('span').textContent = i18n.t('dashboard.groupContext');
+    groupActions.querySelector('[data-action="find-group"]').textContent = i18n.t('dashboard.findGroup');
+    groupActions.querySelector('[data-action="create-group"]').textContent = i18n.t('dashboard.createGroup');
+    document.querySelector('#trainingWorkspace > .dashboard-eyebrow').textContent = i18n.t('dashboard.practitionerMode');
+    document.querySelector('#trainingWorkspace h1').textContent = i18n.t('dashboard.myTraining');
+    document.querySelector('#trainingCalendarTab').textContent = i18n.t('dashboard.calendar');
+    document.querySelector('#trainingUpcomingTab').textContent = i18n.t('dashboard.upcoming');
+    document.querySelector('#trainingStatisticsTab').textContent = i18n.t('dashboard.statistics');
+    trainingTabs.setAttribute('aria-label', i18n.t('dashboard.trainingSections'));
+    document.querySelector('#trainingUpcomingPanel .calendar-empty').textContent = i18n.t('dashboard.upcomingEmpty');
+    document.querySelector('#coachingWorkspace > .dashboard-eyebrow').textContent = i18n.t('dashboard.coachMode');
+    document.querySelector('#coachingWorkspace > h1').textContent = i18n.t('dashboard.coaching');
+    document.querySelector('#coachingScheduleTab').textContent = i18n.t('dashboard.schedule');
+    document.querySelector('#coachingStudentsTab').textContent = i18n.t('dashboard.students');
+    document.querySelector('#coachingGroupsTab').textContent = i18n.t('dashboard.groups');
+    coachingTabs.setAttribute('aria-label', i18n.t('dashboard.coachingSections'));
+    document.querySelector('#dashboardWarning span').textContent = i18n.t('dashboard.groupsWarning');
+    document.querySelector('#retryGroups').textContent = i18n.t('dashboard.retryGroups');
+  }
+
+  function enableTabKeys(tablist) {
+    tablist.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+      const current = tabs.indexOf(event.target.closest('[role="tab"]'));
+      if (current < 0) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 0
+        : event.key === 'End' ? tabs.length - 1
+          : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      tabs[next].focus();
+      tabs[next].click();
+    });
+  }
+
+  enableTabKeys(trainingTabs);
+  enableTabKeys(coachingTabs);
 
   function addTextElement(tag, className, text) {
     const element = document.createElement(tag);
@@ -69,6 +115,7 @@ export function createDashboardView({
   }
 
   function render() {
+    applyCopy();
     const view = dashboardView(state);
     profileName.textContent = view.profile?.display_name ?? '';
     for (const button of modeSwitch.querySelectorAll('button')) {
@@ -105,10 +152,10 @@ export function createDashboardView({
     if (view.mode === 'training') {
       // Feature workspaces own practitioner-mode content.
     } else if (view.needsCoachRegistration) {
-      addTextElement('div', 'dashboard-eyebrow', 'Coaching mode');
-      addTextElement('h1', '', 'Coaching');
-      addTextElement('p', 'dashboard-lead', 'Register coaching on this same practitioner profile to create groups and request coach access.');
-      addAction('Register as a coach', 'register-coach', true);
+      addTextElement('div', 'dashboard-eyebrow', i18n.t('dashboard.coachMode'));
+      addTextElement('h1', '', i18n.t('dashboard.coaching'));
+      addTextElement('p', 'dashboard-lead', i18n.t('dashboard.registerIntro'));
+      addAction(i18n.t('dashboard.registerCoach'), 'register-coach', true);
     }
 
     loading.hidden = true;
@@ -165,7 +212,7 @@ export function createDashboardView({
     }
     if (registering) return;
     registering = true;
-    status.textContent = 'Registering coaching on your profile…';
+    status.textContent = i18n.t('dashboard.registering');
     try {
       await profileService.registerAsCoach();
       const coachProfile = await profileService.loadCoachProfile();
@@ -175,10 +222,10 @@ export function createDashboardView({
         coachProfile,
       });
       onCoachRegistration(coachProfile);
-      status.textContent = 'Coaching is ready.';
+      status.textContent = i18n.t('dashboard.coachingReady');
       render();
     } catch (error) {
-      status.textContent = error?.message || 'Something went wrong. Please try again.';
+      status.textContent = error?.message || i18n.t('dashboard.genericError');
     } finally {
       registering = false;
     }
@@ -232,6 +279,10 @@ export function createDashboardView({
         profile: state.profile,
         coachProfile,
       });
+      render();
+    },
+
+    setLocale() {
       render();
     },
 

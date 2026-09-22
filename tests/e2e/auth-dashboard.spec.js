@@ -256,6 +256,10 @@ test('uses a binary mode switch and extends a practitioner through coach registr
   await expect(page.getByRole('tablist', { name: 'Dashboard mode' })).toHaveCount(0);
   await expect(page.getByRole('tab', { name: 'Calendar' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#trainingCalendar')).toBeVisible();
+  await page.getByRole('tab', { name: 'Calendar' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Upcoming' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Calendar' }).click();
 
   await mode.getByRole('button', { name: 'Coaching' }).click();
   await expect(page.getByRole('button', { name: 'Register as a coach' })).toBeVisible();
@@ -288,6 +292,12 @@ test('signs out from the dashboard and removes persisted private state', async (
   await page.goto('/dashboard');
   await page.getByRole('button', { name: 'Coaching' }).click();
 
+  await page.getByRole('tab', { name: 'Students' }).click();
+  await page.getByRole('button', { name: 'My Training' }).click();
+  await page.getByRole('tab', { name: 'Statistics' }).click();
+  await page.getByRole('button', { name: 'Coaching' }).click();
+  await expect(page.getByRole('tab', { name: 'Students' })).toHaveAttribute('aria-selected', 'true');
+
   await page.getByRole('button', { name: 'Sign out' }).click();
 
   await expect(page).toHaveURL('/?next=%2Fdashboard');
@@ -296,4 +306,36 @@ test('signs out from the dashboard and removes persisted private state', async (
     mode: localStorage.getItem('roda.dashboard.mode'),
     group: localStorage.getItem('roda.dashboard.group'),
   }))).resolves.toEqual({ session: null, mode: null, group: null });
+  await expect(page.locator('#trainingStatisticsPanel')).toBeHidden();
+  await expect(page.locator('#coachingTrainingWorkspace')).toBeHidden();
+});
+
+test('keeps private feature workspaces blocked behind required profile completion', async ({ page }) => {
+  await seedAccount(page, {
+    profile: { ...completeProfile, display_name: 'Capoeirista', completed_at: null },
+    coach: true,
+  });
+  await page.goto('/dashboard');
+
+  const dialog = page.getByRole('dialog', { name: 'Complete your profile' });
+  await expect(dialog).toBeVisible();
+  await expect(page.locator('#trainingStatisticsPanel')).toBeHidden();
+  await expect(page.locator('#coachingTrainingWorkspace')).toBeEmpty();
+  await dialog.getByRole('button', { name: 'Save profile' }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole('tab', { name: 'Statistics' }).click();
+  await expect(page.locator('#trainingStatisticsPanel')).toContainText('Your progress');
+});
+
+test('localizes dashboard modes, tabs, and coach planning in Portuguese', async ({ page }) => {
+  await seedAccount(page, { coach: true });
+  await page.goto('/dashboard');
+  await page.locator('#dashboardLocale').click();
+
+  await expect(page.getByRole('button', { name: 'O meu treino' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Calendário' })).toBeVisible();
+  await page.getByRole('button', { name: 'Treinador', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Agenda' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Criar plano de treino' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sair' })).toBeVisible();
 });

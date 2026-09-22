@@ -122,7 +122,7 @@ async function main() {
   function setSupplementalWarning(visible, busy = false) {
     warning.hidden = !visible;
     retryGroups.disabled = busy;
-    retryGroups.textContent = busy ? 'Trying…' : 'Try groups again';
+    retryGroups.textContent = busy ? `${i18n.t('dashboard.retryGroups')}…` : i18n.t('dashboard.retryGroups');
   }
 
   async function reloadSupplementalData() {
@@ -151,6 +151,7 @@ async function main() {
       document,
       storage: localStorage,
       profileService,
+      i18n,
       onEditProfile: (nextProfile) => profileController.show({
         user: session.user,
         nextProfile,
@@ -342,9 +343,10 @@ async function main() {
   localeButton.addEventListener('click', async () => {
     i18n.setLocale(i18n.locale() === 'en' ? 'pt' : 'en');
     localeButton.textContent = i18n.locale() === 'en' ? 'PT' : 'EN';
+    dashboard?.setLocale();
     if (profile?.completed_at) await connectionController.load();
     trainingCalendarController?.setLocale();
-    coachingTrainingController?.load();
+    coachingTrainingController?.setLocale();
     statisticsController?.setLocale();
   });
 

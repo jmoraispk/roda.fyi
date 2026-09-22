@@ -83,6 +83,11 @@ test('shows personal totals, all selectors, group ranking, pinning, and privacy'
   await expect(panel.locator('[data-anonymous-note]')).toContainText('1');
   await expect(panel).not.toContainText('Private Person');
 
+  for (const period of ['This week', 'This year', 'All time', 'This month']) {
+    await panel.getByRole('button', { name: period }).click();
+    await expect(panel.getByRole('button', { name: period })).toHaveAttribute('aria-pressed', 'true');
+  }
+
   await panel.getByRole('button', { name: 'Number of trainings' }).click();
   await expect(panel.locator('[data-current-member]')).toContainText('4 trainings');
 });
@@ -90,8 +95,8 @@ test('shows personal totals, all selectors, group ranking, pinning, and privacy'
 test('localizes statistics in Portuguese', async ({ page }) => {
   await page.goto('/dashboard');
   await page.locator('#dashboardLocale').click();
-  await page.getByRole('tab', { name: 'Statistics' }).click();
-  const panel = page.getByRole('tabpanel', { name: 'Statistics' });
+  await page.getByRole('tab', { name: 'Estatísticas' }).click();
+  const panel = page.getByRole('tabpanel', { name: 'Estatísticas' });
   await expect(panel.getByRole('button', { name: 'Esta semana' })).toBeVisible();
   await expect(panel).toContainText('4 treinos');
   await expect(panel).toContainText('Classificação do grupo');

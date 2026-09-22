@@ -221,6 +221,18 @@ npm run test:db
 `supabase:reset` destroys the local Supabase database. Never point a reset at a
 hosted project.
 
+For the exact migration and verification sequence used by this release, run:
+
+```bash
+npx --yes node@22 node_modules/supabase/dist/supabase.js db reset
+npx --yes node@22 node_modules/supabase/dist/supabase.js test db
+npx --yes node@22 scripts/build.mjs
+```
+
+The reset is local-only and rebuilds the schema from every tracked migration.
+The final build must run after browser tests because the E2E build deliberately
+writes test-configured bundles before the production build replaces them.
+
 ## Migration and rollback workflow
 
 1. Start the local Supabase stack.
@@ -266,6 +278,62 @@ Use disposable accounts and inspect the browser network panel while testing:
    confirm every allowed and forbidden group action.
 8. Revoke membership/relationship access and confirm the next private read
    fails and clears the private dashboard surface.
+9. Record an Alone session, create a direct coaching connection, arrange Group
+   and Personal class sessions, confirm attendance, and verify that only
+   confirmed participation changes calendars and statistics.
+10. Keep a plan hidden before training and verify the student sees the schedule
+    without plan details; reveal it and verify the plan becomes visible.
+11. Add coach feedback through a direct context and a group context. Verify an
+    unrelated coach and another group cannot read either entry.
+12. Disable one profile's leaderboard visibility. Verify their name disappears,
+    their activity remains in the anonymous aggregate, and group totals do not
+    change.
+13. Verify named or full access from the immediate parent group, then verify a
+    higher ancestor receives anonymous aggregates only and cannot search member
+    names or fetch raw training history.
+
+## Preview and production rollout
+
+Do not link, push migrations, deploy, merge, or change OAuth settings without
+explicit authorization for the named target. For an approved non-production
+HTTPS preview:
+
+1. Create or select a Supabase preview project with isolated test data.
+2. Link it explicitly and inspect the target before applying anything:
+
+   ```bash
+   npx --yes node@22 node_modules/supabase/dist/supabase.js link --project-ref PREVIEW_PROJECT_REF
+   npx --yes node@22 node_modules/supabase/dist/supabase.js migration list
+   npx --yes node@22 node_modules/supabase/dist/supabase.js db push --dry-run
+   ```
+
+3. Apply migrations only after the dry run identifies the intended preview:
+
+   ```bash
+   npx --yes node@22 node_modules/supabase/dist/supabase.js db push
+   ```
+
+4. Configure the preview Vercel environment with only its Supabase URL and
+   publishable key, deploy HTTPS, and add the exact
+   `https://PREVIEW_HOST/auth/callback` to that preview project's Auth redirect
+   allowlist. Never use a broad Vercel wildcard.
+5. Complete the smoke checks above with disposable coach, student, unrelated,
+   immediate-parent, and higher-ancestor accounts. Confirm Google returns to
+   the exact HTTPS preview callback and then `/dashboard`.
+6. Inspect the generated bundles before promoting:
+
+   ```bash
+   rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test|__RODA_E2E_EVENTS__" assets/generated
+   ```
+
+   The command must print nothing after the final production build.
+
+Production promotion is a separate approval. Re-run the full clean-checkout
+suite, inspect migration drift and the Security Advisor, take the backup
+required by the recovery policy, apply migrations before deploying code that
+depends on them, then repeat the smoke checks on `https://roda.fyi`. Rollback is
+always a new forward migration plus an application redeploy; never reset or
+rewrite production history.
 
 ## Rotation and incident response
 

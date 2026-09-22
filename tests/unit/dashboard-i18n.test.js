@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
+import { createDashboardI18n, DASHBOARD_STRINGS } from '../../src/app/dashboard-i18n.js';
 
 function harness({ savedLocale = null, languages = ['en-US'] } = {}) {
   const values = new Map(savedLocale ? [['roda.dashboard.locale', savedLocale]] : []);
@@ -46,5 +46,10 @@ describe('dashboard i18n', () => {
 
   it('rejects unknown locale keys so untranslated UI cannot silently ship', () => {
     expect(() => harness().i18n.t('missing.key')).toThrow(/missing.key/);
+  });
+
+  it('keeps English and Portuguese translation catalogs structurally complete', () => {
+    expect(Object.keys(DASHBOARD_STRINGS.pt).sort())
+      .toEqual(Object.keys(DASHBOARD_STRINGS.en).sort());
   });
 });

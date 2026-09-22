@@ -91,11 +91,22 @@ or pull request; do not check an item based only on dashboard appearance.
   clears cached private UI.
 - [ ] Coaches remain practitioners and can record their own training; Coaching
   is an explicit binary mode, not a separate account.
-- [ ] Leaderboard participation remains optional. No ranking or training data is
-  fabricated before those models are implemented.
-- [ ] Workout, feedback, music-training, named ranking, and anonymous aggregate
-  features remain absent or clearly labeled as future work in this foundation
-  release.
+- [ ] Leaderboard participation remains optional. Opted-out members are unnamed,
+  their confirmed activity contributes only to anonymous aggregates, and no
+  client-calculated total is trusted.
+- [ ] Direct connections and group-derived coaching access end immediately on
+  revocation; stale responses cannot restore private names, plans, feedback, or
+  training history to the UI.
+- [ ] Hidden plans remain hidden from students until the coach reveals them;
+  scheduled sessions do not count until transactional confirmation succeeds.
+- [ ] Coach feedback is readable only in its authorized direct or group context;
+  personal student notes never appear in group rankings or safe member search.
+- [ ] Immediate-parent named/full sharing never cascades. Higher ancestors see
+  anonymous aggregates only and cannot search member identities.
+- [ ] Group rankings use the group's IANA timezone and membership interval;
+  personal calendars preserve the occurrence local date and timezone.
+- [ ] Music training and combined ranking labels remain clearly documented as
+  future work; no placeholder activity is presented as real history.
 - [ ] Data retention, account deletion, privacy notice, and support contact are
   approved before collecting real training/feedback history.
 
@@ -113,3 +124,32 @@ or pull request; do not check an item based only on dashboard appearance.
 Operational procedures and exact settings live in
 [auth-and-database-operations.md](auth-and-database-operations.md). Supabase's
 current baseline is its [production checklist](https://supabase.com/docs/guides/deployment/going-into-prod).
+
+## Release evidence commands
+
+Run these from a clean checkout with Docker/Supabase available and retain the
+output with the release:
+
+```bash
+npx --yes node@22 scripts/build.mjs
+npx --yes node@22 node_modules/vitest/vitest.mjs run
+npx --yes node@22 scripts/build.mjs --test
+npx --yes node@22 node_modules/@playwright/test/cli.js test
+npx --yes node@22 node_modules/supabase/dist/supabase.js db reset
+npx --yes node@22 node_modules/supabase/dist/supabase.js test db
+npx --yes node@22 scripts/build.mjs
+git diff --check
+git status --short
+```
+
+Then verify the production bundles contain none of the forbidden operator or
+test values:
+
+```bash
+rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test|__RODA_E2E_EVENTS__" assets/generated
+```
+
+The secret scan must produce no output. Manually record results for HTTPS OAuth
+return, connection revocation, hidden-plan visibility, context-scoped feedback,
+leaderboard opt-out, and immediate-parent versus higher-ancestor access before
+approving a public rollout.
