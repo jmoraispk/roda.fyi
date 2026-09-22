@@ -34,6 +34,7 @@ archive/berimbau-music/supabase/.branches/
 
 # Local brainstorming companion sessions.
 .superpowers/
+.worktrees/
 
 # Editor directories and files
 .vscode/*
