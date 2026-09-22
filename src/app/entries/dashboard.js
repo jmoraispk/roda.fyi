@@ -18,6 +18,7 @@ import { createConnectionView } from '../ui/connection-view.js';
 import { createGroupView } from '../ui/group-view.js';
 import { createProfileView } from '../ui/profile-view.js';
 import { createTrainingCalendarView } from '../ui/training-calendar-view.js';
+import { createCoachingTrainingView } from '../ui/coaching-training-view.js';
 
 function currentRoute() {
   return `${location.pathname}${location.search}${location.hash}`;
@@ -94,6 +95,7 @@ async function main() {
   let groupController;
   let connectionController;
   let trainingCalendarController;
+  let coachingTrainingController;
   let connectionIdentity;
   let initializing = false;
   let initialized = false;
@@ -150,6 +152,7 @@ async function main() {
         groupController.clearPrivate();
         connectionController.clear();
         trainingCalendarController.clear();
+        coachingTrainingController.clear();
         dashboard.clear();
         await authService.signOut();
         returnToSignIn();
@@ -159,10 +162,24 @@ async function main() {
         if (action === 'create-group') groupController.openCreateGroup();
       },
       onContextChange: ({ mode, membership, activeTab }) => {
-        if (mode === 'coaching' && membership) {
+        if (mode === 'coaching' && activeTab === 'groups' && membership) {
           groupController.loadManagement(membership.group, membership);
         } else {
           groupController.hide();
+        }
+        if (mode === 'training' || (mode === 'coaching' && activeTab === 'students')) {
+          if (profile.completed_at) connectionController.load();
+        } else {
+          connectionController.clear();
+        }
+        coachingTrainingController.setContext({
+          mode,
+          activeTab,
+          groupId: membership?.group_id ?? null,
+          isCoach: connectionIdentity.isCoach,
+        });
+        if (mode === 'coaching' && activeTab === 'schedule' && connectionIdentity.isCoach) {
+          coachingTrainingController.load();
         }
         if (mode === 'training' && activeTab === 'calendar' && profile.completed_at) {
           trainingCalendarController.refresh();
@@ -212,6 +229,20 @@ async function main() {
         || Intl.DateTimeFormat().resolvedOptions().timeZone
         || 'UTC',
     });
+    coachingTrainingController = createCoachingTrainingView({
+      document,
+      trainingService,
+      connectionService,
+      groupService,
+      i18n,
+      profileId: profile.id,
+      timezone: profile.timezone_override
+        || Intl.DateTimeFormat().resolvedOptions().timeZone
+        || 'UTC',
+      onAccessRevoked: async (groupId) => {
+        if (groupId) dashboard.accessRevoked(groupId);
+      },
+    });
   }
 
   async function initialize() {
@@ -234,7 +265,6 @@ async function main() {
         memberships: startup.memberships,
       });
       localeButton.textContent = i18n.locale() === 'en' ? 'PT' : 'EN';
-      if (profile.completed_at) await connectionController.load();
       setSupplementalWarning(startup.supplementalFailed);
       initialized = true;
 
@@ -266,6 +296,7 @@ async function main() {
         groupController.clearPrivate();
         connectionController.clear();
         trainingCalendarController.clear();
+        coachingTrainingController.clear();
         dashboard.clear();
         returnToSignIn();
       });
@@ -287,6 +318,7 @@ async function main() {
     localeButton.textContent = i18n.locale() === 'en' ? 'PT' : 'EN';
     if (profile?.completed_at) await connectionController.load();
     trainingCalendarController?.setLocale();
+    coachingTrainingController?.load();
   });
 
   await initialize();

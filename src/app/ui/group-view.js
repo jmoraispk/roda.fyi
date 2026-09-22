@@ -126,7 +126,7 @@ export function createGroupView({
     discovery.append(head);
 
     if (identity.isCoach) {
-      discovery.append(actionButton(document, 'Create a group', { action: 'create-group' }, true));
+      discovery.append(actionButton(document, 'Create another group', { action: 'create-group' }, true));
     }
     renderGroupCards(discovery, groups);
   }

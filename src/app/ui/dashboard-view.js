@@ -25,10 +25,13 @@ export function createDashboardView({
   const modeSwitch = document.querySelector('.mode-switch');
   const groupLabel = document.querySelector('#groupContextLabel');
   const groupSelect = document.querySelector('#groupContext');
+  const groupActions = document.querySelector('#dashboardGroupActions');
   const status = document.querySelector('#dashboardStatus');
   const content = document.querySelector('#dashboardContent');
   const trainingWorkspace = document.querySelector('#trainingWorkspace');
   const trainingTabs = document.querySelector('#trainingTabs');
+  const coachingWorkspace = document.querySelector('#coachingWorkspace');
+  const coachingTabs = document.querySelector('#coachingTabs');
   let state = createDashboardState();
   let registering = false;
 
@@ -72,9 +75,12 @@ export function createDashboardView({
       button.setAttribute('aria-pressed', String(button.dataset.mode === view.mode));
     }
     renderGroups(view);
+    groupActions.querySelector('[data-action="create-group"]').hidden = !view.coachProfile;
     content.replaceChildren();
     trainingWorkspace.hidden = view.mode !== 'training';
-    content.hidden = view.mode === 'training';
+    coachingWorkspace.hidden = view.mode !== 'coaching' || view.needsCoachRegistration;
+    content.hidden = view.mode === 'training'
+      || (view.mode === 'coaching' && !view.needsCoachRegistration && view.activeTab !== 'groups');
     for (const button of trainingTabs.querySelectorAll('[data-dashboard-tab]')) {
       button.setAttribute('aria-selected', String(button.dataset.dashboardTab === view.activeTab));
     }
@@ -85,6 +91,16 @@ export function createDashboardView({
         statistics: 'trainingStatisticsPanel',
       }[view.activeTab];
     }
+    for (const button of coachingTabs.querySelectorAll('[data-dashboard-tab]')) {
+      button.setAttribute('aria-selected', String(button.dataset.dashboardTab === view.activeTab));
+    }
+    for (const panel of coachingWorkspace.querySelectorAll(':scope > [role="tabpanel"]')) {
+      panel.hidden = panel.id !== {
+        schedule: 'coachingSchedulePanel',
+        students: 'coachingStudentsPanel',
+        groups: 'coachingGroupsPanel',
+      }[view.activeTab];
+    }
 
     if (view.mode === 'training') {
       // Feature workspaces own practitioner-mode content.
@@ -93,12 +109,6 @@ export function createDashboardView({
       addTextElement('h1', '', 'Coaching');
       addTextElement('p', 'dashboard-lead', 'Register coaching on this same practitioner profile to create groups and request coach access.');
       addAction('Register as a coach', 'register-coach', true);
-    } else {
-      addTextElement('div', 'dashboard-eyebrow', 'Coaching mode');
-      addTextElement('h1', '', 'Coaching');
-      addTextElement('p', 'dashboard-lead', 'Create or choose a group to manage its members. Workout planning will arrive in a later delivery.');
-      addAction('Create a group', 'create-group', true);
-      addAction('Find a group', 'find-group');
     }
 
     loading.hidden = true;
@@ -137,6 +147,15 @@ export function createDashboardView({
     render();
   });
 
+  coachingTabs.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-dashboard-tab]');
+    if (!button) return;
+    state = reduceDashboardState(state, {
+      type: 'TAB_CHOSEN', mode: 'coaching', tab: button.dataset.dashboardTab,
+    });
+    render();
+  });
+
   content.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (!action) return;
@@ -163,6 +182,11 @@ export function createDashboardView({
     } finally {
       registering = false;
     }
+  });
+
+  groupActions.addEventListener('click', (event) => {
+    const action = event.target.closest('[data-action]')?.dataset.action;
+    if (action) onGroupAction(action);
   });
 
   editProfile.addEventListener('click', () => onEditProfile(state.profile));
@@ -225,6 +249,7 @@ export function createDashboardView({
       profileName.textContent = '';
       content.replaceChildren();
       trainingWorkspace.hidden = true;
+      coachingWorkspace.hidden = true;
       app.hidden = true;
       loading.hidden = false;
     },
