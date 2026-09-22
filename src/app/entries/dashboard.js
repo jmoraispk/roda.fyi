@@ -4,17 +4,20 @@ import { publicConfig } from '../config.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
 import { createGroupService } from '../group-service.js';
 import { createProfileService } from '../profile-service.js';
+import { createTrainingService } from '../training-service.js';
 import { createRodaClient } from '../supabase-client.js';
 import {
   createE2EAuthService,
   createE2EConnectionService,
   createE2EGroupService,
   createE2EProfileService,
+  createE2ETrainingService,
 } from '../testing/fake-services.js';
 import { createDashboardView } from '../ui/dashboard-view.js';
 import { createConnectionView } from '../ui/connection-view.js';
 import { createGroupView } from '../ui/group-view.js';
 import { createProfileView } from '../ui/profile-view.js';
+import { createTrainingCalendarView } from '../ui/training-calendar-view.js';
 
 function currentRoute() {
   return `${location.pathname}${location.search}${location.hash}`;
@@ -79,6 +82,9 @@ async function main() {
   const connectionService = __RODA_E2E__
     ? createE2EConnectionService({ window })
     : createConnectionService(client);
+  const trainingService = __RODA_E2E__
+    ? createE2ETrainingService({ window })
+    : createTrainingService(client);
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
   const localeButton = document.querySelector('#dashboardLocale');
   let session;
@@ -87,6 +93,7 @@ async function main() {
   let profileController;
   let groupController;
   let connectionController;
+  let trainingCalendarController;
   let connectionIdentity;
   let initializing = false;
   let initialized = false;
@@ -142,6 +149,7 @@ async function main() {
       onSignOut: async () => {
         groupController.clearPrivate();
         connectionController.clear();
+        trainingCalendarController.clear();
         dashboard.clear();
         await authService.signOut();
         returnToSignIn();
@@ -150,11 +158,14 @@ async function main() {
         if (action === 'find-group') groupController.showDiscovery();
         if (action === 'create-group') groupController.openCreateGroup();
       },
-      onContextChange: ({ mode, membership }) => {
+      onContextChange: ({ mode, membership, activeTab }) => {
         if (mode === 'coaching' && membership) {
           groupController.loadManagement(membership.group, membership);
         } else {
           groupController.hide();
+        }
+        if (mode === 'training' && activeTab === 'calendar' && profile.completed_at) {
+          trainingCalendarController.refresh();
         }
       },
       onCoachRegistration: () => {
@@ -178,8 +189,10 @@ async function main() {
       document,
       profileService,
       onSaved: async (nextProfile) => {
+        profile = nextProfile;
         dashboard.updateProfile(nextProfile);
         await connectionController.load();
+        await trainingCalendarController.refresh();
       },
     });
     connectionIdentity = { profileId: profile.id, isCoach: Boolean(coachProfile) };
@@ -189,6 +202,15 @@ async function main() {
       i18n,
       identity: connectionIdentity,
       onAccessRevoked: async () => {},
+    });
+    trainingCalendarController = createTrainingCalendarView({
+      document,
+      service: trainingService,
+      i18n,
+      profile,
+      timezone: profile.timezone_override
+        || Intl.DateTimeFormat().resolvedOptions().timeZone
+        || 'UTC',
     });
   }
 
@@ -243,6 +265,7 @@ async function main() {
         if (nextSession) return;
         groupController.clearPrivate();
         connectionController.clear();
+        trainingCalendarController.clear();
         dashboard.clear();
         returnToSignIn();
       });
@@ -263,6 +286,7 @@ async function main() {
     i18n.setLocale(i18n.locale() === 'en' ? 'pt' : 'en');
     localeButton.textContent = i18n.locale() === 'en' ? 'PT' : 'EN';
     if (profile?.completed_at) await connectionController.load();
+    trainingCalendarController?.setLocale();
   });
 
   await initialize();

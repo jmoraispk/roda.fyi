@@ -4,6 +4,31 @@ const LOCALES = Object.freeze({ en: 'en-US', pt: 'pt-PT' });
 const STRINGS = Object.freeze({
   en: Object.freeze({
     'training.alone': 'Alone',
+    'training.group': 'Group',
+    'training.personalClass': 'Personal class',
+    'calendar.title': 'Training calendar',
+    'calendar.previousMonth': 'Previous month',
+    'calendar.nextMonth': 'Next month',
+    'calendar.recordAlone': 'Record Alone training',
+    'calendar.emptyDay': 'No training on this day.',
+    'calendar.loading': 'Loading training…',
+    'calendar.loadError': 'We could not load your training. Please try again.',
+    'calendar.upcoming': 'Upcoming',
+    'calendar.completed': 'Completed',
+    'alone.title': 'Record Alone training',
+    'alone.date': 'Training date',
+    'alone.duration': 'Duration in minutes',
+    'alone.notes': 'Personal notes',
+    'alone.addRound': 'Add round',
+    'alone.addMovement': 'Add movement',
+    'alone.round': 'Round {number}',
+    'alone.roundLabel': 'Round label',
+    'alone.movement': 'Movement',
+    'alone.repetitions': 'Repetitions',
+    'alone.save': 'Save training',
+    'alone.saving': 'Saving training…',
+    'alone.saveError': 'We could not save this training. Your entries are still here.',
+    'alone.close': 'Close Alone training',
     'connections.title': 'Coaches and students',
     'connections.findCoach': 'Find a coach',
     'connections.findStudent': 'Find a student',
@@ -28,6 +53,31 @@ const STRINGS = Object.freeze({
   }),
   pt: Object.freeze({
     'training.alone': 'Sozinho',
+    'training.group': 'Grupo',
+    'training.personalClass': 'Aula pessoal',
+    'calendar.title': 'Calendário de treinos',
+    'calendar.previousMonth': 'Mês anterior',
+    'calendar.nextMonth': 'Mês seguinte',
+    'calendar.recordAlone': 'Registar treino sozinho',
+    'calendar.emptyDay': 'Nenhum treino neste dia.',
+    'calendar.loading': 'A carregar treinos…',
+    'calendar.loadError': 'Não foi possível carregar os treinos. Tente novamente.',
+    'calendar.upcoming': 'Próximo',
+    'calendar.completed': 'Concluído',
+    'alone.title': 'Registar treino sozinho',
+    'alone.date': 'Data do treino',
+    'alone.duration': 'Duração em minutos',
+    'alone.notes': 'Notas pessoais',
+    'alone.addRound': 'Adicionar ronda',
+    'alone.addMovement': 'Adicionar movimento',
+    'alone.round': 'Ronda {number}',
+    'alone.roundLabel': 'Nome da ronda',
+    'alone.movement': 'Movimento',
+    'alone.repetitions': 'Repetições',
+    'alone.save': 'Guardar treino',
+    'alone.saving': 'A guardar treino…',
+    'alone.saveError': 'Não foi possível guardar este treino. Os dados continuam aqui.',
+    'alone.close': 'Fechar treino sozinho',
     'connections.title': 'Treinadores e alunos',
     'connections.findCoach': 'Encontrar treinador',
     'connections.findStudent': 'Encontrar aluno',
@@ -90,10 +140,9 @@ export function createDashboardI18n({ document, storage, navigator }) {
       return interpolate(template, variables);
     },
     formatDate(value, options = {}) {
-      return new Intl.DateTimeFormat(LOCALES[current], {
-        dateStyle: 'medium',
-        ...options,
-      }).format(new Date(value));
+      const hasExplicitStyle = Object.keys(options).some((key) => key !== 'timeZone');
+      const formatOptions = hasExplicitStyle ? options : { dateStyle: 'medium', ...options };
+      return new Intl.DateTimeFormat(LOCALES[current], formatOptions).format(new Date(value));
     },
     formatDuration(totalMinutes) {
       const minutes = Math.max(0, Math.round(Number(totalMinutes) || 0));

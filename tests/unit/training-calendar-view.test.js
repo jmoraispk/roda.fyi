@@ -1,0 +1,163 @@
+// @vitest-environment jsdom
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
+import { createTrainingCalendarView } from '../../src/app/ui/training-calendar-view.js';
+
+function fixture() {
+  document.body.innerHTML = `
+    <section id="trainingCalendarPanel">
+      <button id="calendarPreviousMonth" type="button"></button>
+      <h2 id="calendarMonthLabel"></h2>
+      <button id="calendarNextMonth" type="button"></button>
+      <div id="trainingCalendar"></div>
+      <p id="calendarStatus"></p>
+      <section id="trainingDayDetail"></section>
+      <button id="recordAloneTraining" type="button"></button>
+    </section>
+    <dialog id="aloneTrainingDialog">
+      <form id="aloneTrainingForm">
+        <button type="button" data-close-alone></button>
+        <h1 id="aloneTrainingTitle"></h1>
+        <label for="aloneDate" id="aloneDateLabel"></label>
+        <input id="aloneDate" type="date" required>
+        <label for="aloneDuration" id="aloneDurationLabel"></label>
+        <input id="aloneDuration" type="number" required>
+        <label for="aloneNotes" id="aloneNotesLabel"></label>
+        <textarea id="aloneNotes"></textarea>
+        <div id="aloneRounds"></div>
+        <button id="addAloneRound" type="button"></button>
+        <p id="aloneTrainingStatus"></p>
+        <button id="saveAloneTraining" type="submit"></button>
+      </form>
+    </dialog>`;
+  const dialog = document.querySelector('#aloneTrainingDialog');
+  dialog.showModal = vi.fn(() => { dialog.open = true; });
+  dialog.close = vi.fn(() => { dialog.open = false; });
+}
+
+function i18n(locale = 'en') {
+  const storage = { getItem: () => locale, setItem: vi.fn() };
+  return createDashboardI18n({
+    document, storage, navigator: { languages: [locale] },
+  });
+}
+
+function service(overrides = {}) {
+  return {
+    listCalendar: vi.fn().mockResolvedValue([
+      { item_id: 'a', local_date: '2026-09-22', kind: 'alone', status: 'completed' },
+      { item_id: 'g', local_date: '2026-09-22', kind: 'group', status: 'scheduled' },
+      { item_id: 'p', local_date: '2026-09-23', kind: 'personal_class', status: 'completed' },
+    ]),
+    getDay: vi.fn().mockResolvedValue([{ id: 'a', kind: 'alone', duration_minutes: 45 }]),
+    recordAloneTraining: vi.fn().mockResolvedValue({ status: 'completed' }),
+    createIdempotencyKey: vi.fn(() => 'request-1'),
+    ...overrides,
+  };
+}
+
+describe('training calendar view', () => {
+  beforeEach(fixture);
+
+  it('renders a semantic month grid with completed and upcoming markers', async () => {
+    const view = createTrainingCalendarView({
+      document, service: service(), i18n: i18n(),
+      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.loadMonth('2026-09');
+
+    expect(document.querySelector('#trainingCalendar').getAttribute('role')).toBe('grid');
+    expect(document.querySelectorAll('[role="gridcell"]')).toHaveLength(42);
+    expect(document.querySelector('[data-date="2026-09-22"] [data-kind="alone"]'))
+      .not.toBeNull();
+    expect(document.querySelector('[data-date="2026-09-22"] [data-kind="group"]')
+      .getAttribute('data-status')).toBe('scheduled');
+    expect(document.querySelector('[data-date="2026-09-23"] [data-kind="personal_class"]'))
+      .not.toBeNull();
+  });
+
+  it('loads selected-day detail and supports arrow-key navigation', async () => {
+    const api = service();
+    const view = createTrainingCalendarView({
+      document, service: api, i18n: i18n(),
+      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.loadMonth('2026-09');
+    const day = document.querySelector('[data-date="2026-09-22"]');
+    day.focus();
+    day.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(document.activeElement.dataset.date).toBe('2026-09-23');
+    await view.selectDay('2026-09-22');
+    expect(api.getDay).toHaveBeenCalledWith({
+      localDate: '2026-09-22', profileId: null,
+    });
+    expect(document.querySelector('#trainingDayDetail').textContent).toContain('45m');
+  });
+
+  it('keeps the Alone form intact after failure and reuses its request key', async () => {
+    const api = service({
+      recordAloneTraining: vi.fn()
+        .mockRejectedValueOnce(new TypeError('offline'))
+        .mockResolvedValueOnce({ status: 'completed' }),
+    });
+    const view = createTrainingCalendarView({
+      document, service: api, i18n: i18n(),
+      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.loadMonth('2026-09');
+    view.openAlone('2026-09-22');
+    document.querySelector('#aloneDuration').value = '45';
+    document.querySelector('#aloneNotes').value = 'Armada practice';
+    document.querySelector('#addAloneRound').click();
+    document.querySelector('[data-action="add-movement"]').click();
+    document.querySelector('[data-movement-key]').value = 'armada';
+
+    document.querySelector('#aloneTrainingForm').dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
+    await vi.waitFor(() => expect(api.recordAloneTraining).toHaveBeenCalledTimes(1));
+    expect(document.querySelector('#aloneNotes').value).toBe('Armada practice');
+    expect(document.querySelector('#aloneTrainingDialog').open).toBe(true);
+
+    document.querySelector('#aloneTrainingForm').dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
+    await vi.waitFor(() => expect(api.recordAloneTraining).toHaveBeenCalledTimes(2));
+    expect(api.recordAloneTraining.mock.calls[0][0].idempotencyKey).toBe('request-1');
+    expect(api.recordAloneTraining.mock.calls[1][0].idempotencyKey).toBe('request-1');
+    await vi.waitFor(() => expect(api.getDay).toHaveBeenCalledTimes(1));
+    expect(document.querySelector('#aloneTrainingDialog').open).toBe(false);
+    expect(api.listCalendar).toHaveBeenCalledTimes(2);
+    expect(api.getDay).toHaveBeenCalledWith({ localDate: '2026-09-22', profileId: null });
+  });
+
+  it('renders Portuguese copy and a useful empty-day state', async () => {
+    const view = createTrainingCalendarView({
+      document, service: service({ getDay: vi.fn().mockResolvedValue([]) }),
+      i18n: i18n('pt'), profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.loadMonth('2026-09');
+    await view.selectDay('2026-09-20');
+    expect(document.querySelector('#recordAloneTraining').textContent).toBe('Registar treino sozinho');
+    expect(document.querySelector('#trainingDayDetail').textContent)
+      .toContain('Nenhum treino neste dia');
+  });
+
+  it('clears private details without discarding the visible month', async () => {
+    const api = service();
+    const view = createTrainingCalendarView({
+      document, service: api, i18n: i18n(),
+      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.loadMonth('2026-09');
+    await view.selectDay('2026-09-22');
+    view.clear();
+    expect(document.querySelector('#trainingDayDetail').textContent).toBe('');
+    await view.refresh();
+    expect(api.listCalendar.mock.lastCall[0]).toMatchObject({
+      start: '2026-09-01', endExclusive: '2026-10-01',
+    });
+  });
+});

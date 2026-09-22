@@ -8,6 +8,8 @@
   <title>Dashboard · Roda</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/assets/dashboard.css">
+  <link rel="stylesheet" href="/assets/training-calendar.css">
+  <link rel="stylesheet" href="/assets/training-forms.css">
 </head>
 <body>
   <div class="dashboard-grain" aria-hidden="true"></div>
@@ -52,6 +54,33 @@
       </aside>
       <p class="dashboard-status" id="dashboardStatus" role="status" aria-label="Dashboard status" aria-live="polite"></p>
       <section class="dashboard-content" id="dashboardContent" aria-live="polite"></section>
+      <section class="training-workspace" id="trainingWorkspace" hidden>
+        <div class="dashboard-eyebrow">Practitioner mode</div>
+        <div class="training-heading-row">
+          <h1>My Training</h1>
+          <button class="primary-button training-record-button" id="recordAloneTraining" type="button">Record Alone training</button>
+        </div>
+        <div class="dashboard-tabs" id="trainingTabs" role="tablist" aria-label="My Training sections">
+          <button id="trainingCalendarTab" type="button" role="tab" data-dashboard-tab="calendar" aria-controls="trainingCalendarPanel" aria-selected="true">Calendar</button>
+          <button id="trainingUpcomingTab" type="button" role="tab" data-dashboard-tab="upcoming" aria-controls="trainingUpcomingPanel" aria-selected="false">Upcoming</button>
+          <button id="trainingStatisticsTab" type="button" role="tab" data-dashboard-tab="statistics" aria-controls="trainingStatisticsPanel" aria-selected="false">Statistics</button>
+        </div>
+
+        <section id="trainingCalendarPanel" role="tabpanel" aria-labelledby="trainingCalendarTab">
+          <div class="calendar-toolbar">
+            <button class="calendar-navigation" id="calendarPreviousMonth" type="button">←</button>
+            <h2 id="calendarMonthLabel"></h2>
+            <button class="calendar-navigation" id="calendarNextMonth" type="button">→</button>
+          </div>
+          <p class="calendar-status" id="calendarStatus" role="status" aria-live="polite"></p>
+          <div class="training-calendar" id="trainingCalendar"></div>
+          <section class="training-day-detail" id="trainingDayDetail" aria-live="polite"></section>
+        </section>
+        <section id="trainingUpcomingPanel" role="tabpanel" aria-labelledby="trainingUpcomingTab" hidden>
+          <p class="calendar-empty">Upcoming training will appear here.</p>
+        </section>
+        <section id="trainingStatisticsPanel" role="tabpanel" aria-labelledby="trainingStatisticsTab" hidden></section>
+      </section>
       <section class="connection-workspace" id="connectionWorkspace" hidden></section>
       <p class="connection-status" id="connectionStatus" role="status" aria-live="polite"></p>
       <section class="group-workspace" id="groupWorkspace" hidden>
@@ -199,6 +228,28 @@
       <input class="field-input" id="connectionSearchInput" type="search" autocomplete="off">
       <div class="connection-search-results" id="connectionSearchResults"></div>
     </div>
+  </dialog>
+
+  <dialog class="profile-dialog training-dialog" id="aloneTrainingDialog" aria-labelledby="aloneTrainingTitle">
+    <form id="aloneTrainingForm">
+      <button class="profile-close" data-close-alone type="button" aria-label="Close Alone training">×</button>
+      <div class="profile-kicker">My Training</div>
+      <h1 id="aloneTrainingTitle">Record Alone training</h1>
+      <p class="profile-intro">Capture what you practiced. You can add as many rounds and movements as you need.</p>
+
+      <div class="training-form-grid">
+        <label class="field-label" id="aloneDateLabel" for="aloneDate">Training date</label>
+        <input class="field-input" id="aloneDate" type="date" required>
+        <label class="field-label" id="aloneDurationLabel" for="aloneDuration">Duration in minutes</label>
+        <input class="field-input" id="aloneDuration" type="number" min="1" max="1440" required>
+      </div>
+      <label class="field-label" id="aloneNotesLabel" for="aloneNotes">Personal notes</label>
+      <textarea class="field-input field-textarea" id="aloneNotes" maxlength="4000"></textarea>
+      <div class="alone-rounds" id="aloneRounds"></div>
+      <button class="secondary-button" id="addAloneRound" type="button">Add round</button>
+      <p class="profile-status" id="aloneTrainingStatus" role="status" aria-live="polite"></p>
+      <button class="primary-button" id="saveAloneTraining" type="submit">Save training</button>
+    </form>
   </dialog>
 
   <script type="module" src="/assets/generated/dashboard.js"></script>

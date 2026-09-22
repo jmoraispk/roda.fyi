@@ -6,6 +6,7 @@ export function createDashboardState() {
     coachProfile: null,
     memberships: [],
     activeGroupId: null,
+    activeTabByMode: { training: 'calendar', coaching: 'schedule' },
     privateView: null,
   };
 }
@@ -64,6 +65,17 @@ export function reduceDashboardState(state, event) {
         privateView: null,
       };
     }
+    case 'TAB_CHOSEN': {
+      const allowed = event.mode === 'coaching'
+        ? ['schedule', 'students', 'groups']
+        : ['calendar', 'upcoming', 'statistics'];
+      if (event.mode !== state.mode || !allowed.includes(event.tab)) return state;
+      return {
+        ...state,
+        activeTabByMode: { ...state.activeTabByMode, [state.mode]: event.tab },
+        privateView: null,
+      };
+    }
     case 'GROUP_CHOSEN':
       return availableGroups(state).some((item) => item.group_id === event.groupId)
         ? { ...state, activeGroupId: event.groupId, privateView: null }
@@ -96,5 +108,6 @@ export function dashboardView(state) {
     availableGroups: availableGroups(state),
     needsCoachRegistration: state.mode === 'coaching' && !state.coachProfile,
     canRecordPersonalTraining: Boolean(state.profile),
+    activeTab: state.activeTabByMode[state.mode],
   };
 }

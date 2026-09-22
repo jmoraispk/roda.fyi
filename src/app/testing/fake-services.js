@@ -606,7 +606,9 @@ export function createE2ETrainingService({ window }) {
   return {
     createIdempotencyKey() {
       const state = readState();
-      return nextId(state, 'request');
+      const key = nextId(state, 'request');
+      writeState(state);
+      return key;
     },
 
     async createPlan(input) {

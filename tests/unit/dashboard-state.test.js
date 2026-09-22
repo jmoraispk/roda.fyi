@@ -33,7 +33,22 @@ describe('dashboard state', () => {
       mode: 'training',
       session: null,
       activeGroupId: null,
+      activeTabByMode: { training: 'calendar', coaching: 'schedule' },
     });
+  });
+
+  it('persists one selected tab per binary mode', () => {
+    let state = createDashboardState();
+    state = reduceDashboardState(state, {
+      type: 'TAB_CHOSEN', mode: 'training', tab: 'statistics',
+    });
+    state = reduceDashboardState(state, { type: 'MODE_CHOSEN', mode: 'coaching' });
+    state = reduceDashboardState(state, {
+      type: 'TAB_CHOSEN', mode: 'coaching', tab: 'students',
+    });
+    state = reduceDashboardState(state, { type: 'MODE_CHOSEN', mode: 'training' });
+    expect(dashboardView(state).activeTab).toBe('statistics');
+    expect(state.activeTabByMode).toEqual({ training: 'statistics', coaching: 'students' });
   });
 
   it('shows coach registration in Coaching mode without changing identity', () => {

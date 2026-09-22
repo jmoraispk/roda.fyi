@@ -1,0 +1,50 @@
+.training-dialog {
+  max-width: 52rem;
+}
+
+.training-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .7rem 1rem;
+}
+
+.alone-rounds {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.alone-round {
+  border: 1px solid var(--line, #4b3925);
+  border-radius: 1rem;
+  display: grid;
+  gap: .75rem;
+  margin: 0;
+  padding: 1rem;
+}
+
+.alone-round legend {
+  color: var(--accent, #f4a936);
+  font: 700 .78rem/1 var(--mono, monospace);
+  letter-spacing: .12em;
+  padding: 0 .4rem;
+  text-transform: uppercase;
+}
+
+.alone-movement-list {
+  display: grid;
+  gap: .55rem;
+}
+
+.alone-movement-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8rem;
+  gap: .65rem;
+}
+
+@media (max-width: 640px) {
+  .training-form-grid,
+  .alone-movement-row {
+    grid-template-columns: 1fr;
+  }
+}

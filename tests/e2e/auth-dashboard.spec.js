@@ -254,7 +254,8 @@ test('uses a binary mode switch and extends a practitioner through coach registr
   const mode = page.getByRole('group', { name: 'Dashboard mode' });
   await expect(mode.getByRole('button', { name: 'My Training' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('tablist', { name: 'Dashboard mode' })).toHaveCount(0);
-  await expect(page.getByText('Training history and plans are coming next.')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Calendar' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#trainingCalendar')).toBeVisible();
 
   await mode.getByRole('button', { name: 'Coaching' }).click();
   await expect(page.getByRole('button', { name: 'Register as a coach' })).toBeVisible();

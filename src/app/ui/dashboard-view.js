@@ -27,6 +27,8 @@ export function createDashboardView({
   const groupSelect = document.querySelector('#groupContext');
   const status = document.querySelector('#dashboardStatus');
   const content = document.querySelector('#dashboardContent');
+  const trainingWorkspace = document.querySelector('#trainingWorkspace');
+  const trainingTabs = document.querySelector('#trainingTabs');
   let state = createDashboardState();
   let registering = false;
 
@@ -71,12 +73,21 @@ export function createDashboardView({
     }
     renderGroups(view);
     content.replaceChildren();
+    trainingWorkspace.hidden = view.mode !== 'training';
+    content.hidden = view.mode === 'training';
+    for (const button of trainingTabs.querySelectorAll('[data-dashboard-tab]')) {
+      button.setAttribute('aria-selected', String(button.dataset.dashboardTab === view.activeTab));
+    }
+    for (const panel of trainingWorkspace.querySelectorAll('[role="tabpanel"]')) {
+      panel.hidden = panel.id !== {
+        calendar: 'trainingCalendarPanel',
+        upcoming: 'trainingUpcomingPanel',
+        statistics: 'trainingStatisticsPanel',
+      }[view.activeTab];
+    }
 
     if (view.mode === 'training') {
-      addTextElement('div', 'dashboard-eyebrow', 'Practitioner mode');
-      addTextElement('h1', '', 'My Training');
-      addTextElement('p', 'dashboard-lead', 'Training history and plans are coming next. For now, join a group so your coaching relationships are ready.');
-      addAction('Find a group', 'find-group');
+      // Feature workspaces own practitioner-mode content.
     } else if (view.needsCoachRegistration) {
       addTextElement('div', 'dashboard-eyebrow', 'Coaching mode');
       addTextElement('h1', '', 'Coaching');
@@ -96,6 +107,7 @@ export function createDashboardView({
       mode: view.mode,
       activeGroupId: view.activeGroupId,
       membership: view.memberships.find((item) => item.group_id === view.activeGroupId) ?? null,
+      activeTab: view.activeTab,
     });
   }
 
@@ -113,6 +125,15 @@ export function createDashboardView({
   groupSelect.addEventListener('change', () => {
     state = reduceDashboardState(state, { type: 'GROUP_CHOSEN', groupId: groupSelect.value });
     if (state.activeGroupId) storage.setItem(GROUP_KEY, state.activeGroupId);
+    render();
+  });
+
+  trainingTabs.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-dashboard-tab]');
+    if (!button) return;
+    state = reduceDashboardState(state, {
+      type: 'TAB_CHOSEN', mode: 'training', tab: button.dataset.dashboardTab,
+    });
     render();
   });
 
@@ -203,6 +224,7 @@ export function createDashboardView({
       storage.removeItem(GROUP_KEY);
       profileName.textContent = '';
       content.replaceChildren();
+      trainingWorkspace.hidden = true;
       app.hidden = true;
       loading.hidden = false;
     },
