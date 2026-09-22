@@ -4,6 +4,50 @@ The next major opportunity is to turn the movement library into guided training
 experiences. Pose detection is good enough for this direction; the current
 bottleneck is reviewing, labelling, and composing movements into useful drills.
 
+## Training coordination and tracking
+
+Build the calendar-centered training platform described in
+`docs/superpowers/specs/2026-09-22-training-calendar-statistics-design.md`.
+
+The first delivery includes:
+
+- one identity with My Training and Coaching modes,
+- direct and group-derived coach-student connections,
+- practitioner-recorded Alone training,
+- coach-arranged Group and Personal class training,
+- versioned plans, rounds, movement sequences, attendance, and feedback,
+- personal statistics and privacy-safe group member rankings,
+- This week, This month, This year, and All time ranking periods, and
+- Training time and Number of trainings ranking metrics.
+
+A later ranking enhancement may combine both metrics in one label, such as
+`3h 31m (4 sessions)`.
+
+## Group communication and richer profiles
+
+After the training core is reliable:
+
+- add a coach news feed with pinned announcements and lightweight reactions,
+- enrich profiles with capoeira-relevant details such as apelido, graduation,
+  group affiliations, country, and coaching role, and
+- redesign member/profile cards around the circular portrait references in
+  `Inspiration/`.
+
+Billing, tax identifiers, weight, subscriptions, and other fields visible in
+the reference application are not planned without a specific roda.fyi need.
+
+## Movement content and original artwork
+
+Continue improving the movement library in parallel:
+
+- add missing arm strikes including galopante, godeme, elbow strike, and escala,
+- review names, descriptions, safety notes, and movement phases with a qualified
+  capoeira practitioner,
+- explore original human-figure sequence illustrations inspired by the
+  references in `Inspiration/`, and
+- do not ship or reproduce the supplied reference artwork without confirmed
+  usage rights.
+
 ## Training modes
 
 ### Two-person training
