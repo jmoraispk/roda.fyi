@@ -45,7 +45,7 @@ select columns_are(
   array[
     'id', 'slug', 'owner_id', 'name', 'description', 'location',
     'picture_path', 'is_discoverable', 'archived_at', 'archived_by',
-    'created_at', 'updated_at'
+    'created_at', 'updated_at', 'timezone'
   ],
   'groups exposes only the contracted columns'
 );

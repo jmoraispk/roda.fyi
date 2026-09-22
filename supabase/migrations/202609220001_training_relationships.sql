@@ -280,7 +280,8 @@ begin
 end;
 $$;
 
-create function public.search_coaching_profiles(
+create function private.search_coaching_profiles(
+  actor_id uuid,
   search_text text default '',
   candidate_role text default 'coach',
   result_limit integer default 20
@@ -298,8 +299,8 @@ set search_path = ''
 as $$
   select profile.id, profile.display_name, profile.avatar_path, candidate_role
     from public.profiles profile
-   where auth.uid() is not null
-     and profile.id <> auth.uid()
+   where actor_id is not null
+     and profile.id <> actor_id
      and candidate_role in ('coach', 'student')
      and (candidate_role = 'student' or exists (
        select 1 from public.coach_profiles coach where coach.profile_id = profile.id
@@ -313,31 +314,48 @@ as $$
    limit least(greatest(coalesce(result_limit, 20), 1), 50);
 $$;
 
+create function public.search_coaching_profiles(
+  search_text text default '',
+  candidate_role text default 'coach',
+  result_limit integer default 20
+)
+returns table (
+  profile_id uuid,
+  display_name text,
+  avatar_path text,
+  candidate_role text
+)
+language sql
+stable
+set search_path = ''
+as $$
+  select * from private.search_coaching_profiles(
+    auth.uid(), search_text, candidate_role, result_limit
+  );
+$$;
+
 create function public.request_coach_connection(
   coach_profile_id uuid,
   student_profile_id uuid
 )
 returns jsonb
 language sql
-security definer
 set search_path = ''
 as $$ select private.request_coach_connection(auth.uid(), $1, $2); $$;
 
 create function public.decide_coach_connection(connection_id uuid, decision text)
 returns jsonb
 language sql
-security definer
 set search_path = ''
 as $$ select private.decide_coach_connection(auth.uid(), $1, $2); $$;
 
 create function public.end_coach_connection(connection_id uuid)
 returns jsonb
 language sql
-security definer
 set search_path = ''
 as $$ select private.end_coach_connection(auth.uid(), $1); $$;
 
-create function public.list_my_coach_connections()
+create function private.list_my_coach_connections(actor_id uuid)
 returns table (
   connection_id uuid,
   connection_kind text,
@@ -375,7 +393,7 @@ as $$
   from public.coach_student_connections connection
   join public.profiles coach on coach.id = connection.coach_profile_id
   join public.profiles student on student.id = connection.student_profile_id
-  where auth.uid() in (connection.coach_profile_id, connection.student_profile_id)
+  where actor_id in (connection.coach_profile_id, connection.student_profile_id)
   union all
   select
     null::uuid,
@@ -403,12 +421,30 @@ as $$
    and student_membership.state = 'active'
   join public.profiles student on student.id = student_membership.profile_id
   where target_group.archived_at is null
-    and auth.uid() in (coach.id, student.id)
+    and actor_id in (coach.id, student.id)
   order by 13 desc, 2, 4, 7;
 $$;
 
-drop function public.create_group(text, text, text, boolean);
-drop function private.create_group(uuid, text, text, text, boolean);
+create function public.list_my_coach_connections()
+returns table (
+  connection_id uuid,
+  connection_kind text,
+  coach_profile_id uuid,
+  coach_display_name text,
+  coach_avatar_path text,
+  student_profile_id uuid,
+  student_display_name text,
+  student_avatar_path text,
+  group_id uuid,
+  group_name text,
+  state text,
+  initiated_by uuid,
+  created_at timestamptz
+)
+language sql
+stable
+set search_path = ''
+as $$ select * from private.list_my_coach_connections(auth.uid()); $$;
 
 create function private.create_group(
   actor_id uuid,
@@ -461,12 +497,8 @@ create function public.create_group(
 )
 returns jsonb
 language sql
-security definer
 set search_path = ''
 as $$ select private.create_group(auth.uid(), $1, $2, $3, $4, $5); $$;
-
-drop function public.update_group(uuid, text, text, text, boolean);
-drop function private.update_group(uuid, uuid, text, text, text, boolean);
 
 create function private.update_group(
   actor_id uuid,
@@ -515,7 +547,6 @@ create function public.update_group(
 )
 returns jsonb
 language sql
-security definer
 set search_path = ''
 as $$ select private.update_group(auth.uid(), $1, $2, $3, $4, $5, $6); $$;
 
@@ -548,16 +579,35 @@ $$;
 create function public.set_group_timezone(group_id uuid, timezone text)
 returns jsonb
 language sql
-security definer
 set search_path = ''
 as $$ select private.set_group_timezone(auth.uid(), $1, $2); $$;
 
-revoke execute on all functions in schema private from public, anon, authenticated;
 grant usage on schema private to authenticated;
+revoke execute on function private.is_valid_timezone(text) from public, anon, authenticated;
+revoke execute on function private.validate_group_timezone() from public, anon, authenticated;
+revoke execute on function private.has_explicit_coaching_connection(uuid, uuid) from public, anon, authenticated;
+revoke execute on function private.has_group_coaching_connection(uuid, uuid, uuid) from public, anon, authenticated;
+revoke execute on function private.can_coach_practitioner(uuid, uuid, uuid) from public, anon, authenticated;
+revoke execute on function private.request_coach_connection(uuid, uuid, uuid) from public, anon, authenticated;
+revoke execute on function private.decide_coach_connection(uuid, uuid, text) from public, anon, authenticated;
+revoke execute on function private.end_coach_connection(uuid, uuid) from public, anon, authenticated;
+revoke execute on function private.search_coaching_profiles(uuid, text, text, integer) from public, anon, authenticated;
+revoke execute on function private.list_my_coach_connections(uuid) from public, anon, authenticated;
+revoke execute on function private.create_group(uuid, text, text, text, boolean, text) from public, anon, authenticated;
+revoke execute on function private.update_group(uuid, uuid, text, text, text, boolean, text) from public, anon, authenticated;
+revoke execute on function private.set_group_timezone(uuid, uuid, text) from public, anon, authenticated;
 grant execute on function private.has_explicit_coaching_connection(uuid, uuid) to authenticated;
 grant execute on function private.has_group_coaching_connection(uuid, uuid, uuid) to authenticated;
 grant execute on function private.can_coach_practitioner(uuid, uuid, uuid) to authenticated;
 grant execute on function private.is_direct_coach_of(uuid, uuid) to authenticated;
+grant execute on function private.request_coach_connection(uuid, uuid, uuid) to authenticated;
+grant execute on function private.decide_coach_connection(uuid, uuid, text) to authenticated;
+grant execute on function private.end_coach_connection(uuid, uuid) to authenticated;
+grant execute on function private.search_coaching_profiles(uuid, text, text, integer) to authenticated;
+grant execute on function private.list_my_coach_connections(uuid) to authenticated;
+grant execute on function private.create_group(uuid, text, text, text, boolean, text) to authenticated;
+grant execute on function private.update_group(uuid, uuid, text, text, text, boolean, text) to authenticated;
+grant execute on function private.set_group_timezone(uuid, uuid, text) to authenticated;
 
 revoke execute on function public.search_coaching_profiles(text, text, integer) from public, anon, authenticated;
 revoke execute on function public.request_coach_connection(uuid, uuid) from public, anon, authenticated;
