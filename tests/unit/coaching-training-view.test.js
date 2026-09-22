@@ -11,6 +11,7 @@ import {
 function fixture() {
   document.body.innerHTML = `
     <section id="coachingTrainingWorkspace"></section>
+    <section id="coachingStudentsPanel"></section>
     <p id="coachingTrainingStatus"></p>
     <dialog id="workoutPlanDialog"><form id="workoutPlanForm"></form></dialog>
     <dialog id="scheduleTrainingDialog"><form id="scheduleTrainingForm"></form></dialog>`;
@@ -36,6 +37,14 @@ function services(overrides = {}) {
     publishPlan: vi.fn().mockResolvedValue({ status: 'published', version_id: 'version-2' }),
     scheduleGroupTraining: vi.fn().mockResolvedValue({ status: 'scheduled' }),
     schedulePersonalClass: vi.fn().mockResolvedValue({ status: 'scheduled' }),
+    listCalendar: vi.fn().mockResolvedValue([{
+      item_id: 'schedule-1', item_type: 'scheduled', kind: 'group', status: 'scheduled',
+      local_date: '2026-09-25', starts_at: '2026-09-25T17:30:00Z',
+      duration_minutes: 60, group_id: 'group-1', plan_title: 'Kick flow',
+    }]),
+    completeGroupTraining: vi.fn().mockResolvedValue({ status: 'completed' }),
+    completePersonalClass: vi.fn().mockResolvedValue({ status: 'completed' }),
+    createIdempotencyKey: vi.fn(() => 'completion-request-1'),
     ...overrides.trainingService,
   };
   const connectionService = {
@@ -215,5 +224,77 @@ describe('coaching training view', () => {
     expect(document.body.textContent).not.toContain('Old private plan');
     expect(document.querySelector('#coachingTrainingWorkspace').textContent).toBe('');
     expect(onAccessRevoked).toHaveBeenCalledWith('group-2');
+  });
+
+  it('renders scheduled work without counting it and confirms selected attendance with overrides', async () => {
+    const { view, api } = createView();
+    view.setContext({ mode: 'coaching', activeTab: 'schedule', groupId: 'group-1', isCoach: true });
+    await view.load();
+
+    const schedule = document.querySelector('[data-schedule-id="schedule-1"]');
+    expect(schedule.textContent).toContain('Awaiting confirmation');
+    expect(schedule.textContent).not.toContain('Completed');
+    schedule.querySelector('[data-action="confirm-training"]').click();
+
+    const form = document.querySelector('[data-completion-form]');
+    expect(form.querySelectorAll('[name="attendee"]:checked')).toHaveLength(1);
+    form.querySelector('[name="completionDuration"]').value = '60';
+    form.querySelector('[data-attendee-duration="student-group"]').value = '45';
+    form.requestSubmit();
+
+    await vi.waitFor(() => expect(api.trainingService.completeGroupTraining).toHaveBeenCalledWith({
+      scheduleId: 'schedule-1', durationMinutes: 60,
+      attendees: [{ profileId: 'student-group', durationMinutes: 45 }],
+      idempotencyKey: 'completion-request-1',
+    }));
+  });
+
+  it('reuses a completion request key on retry and preserves attendance after membership changes', async () => {
+    const completion = vi.fn()
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockRejectedValueOnce(new AppError('validation', 'invalid_attendee'))
+      .mockResolvedValueOnce({ status: 'completed' });
+    const { view, api } = createView({
+      trainingService: { completeGroupTraining: completion },
+    });
+    view.setContext({ mode: 'coaching', activeTab: 'schedule', groupId: 'group-1', isCoach: true });
+    await view.load();
+    document.querySelector('[data-action="confirm-training"]').click();
+    const form = document.querySelector('[data-completion-form]');
+    form.querySelector('[data-attendee-duration="student-group"]').value = '35';
+
+    form.requestSubmit();
+    await vi.waitFor(() => expect(completion).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(form.querySelector('[role="status"]').textContent)
+      .toContain('offline'));
+    form.requestSubmit();
+    await vi.waitFor(() => expect(completion).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(form.querySelector('[role="status"]').textContent)
+      .toContain('membership changed'));
+
+    expect(completion.mock.calls[0][0].idempotencyKey).toBe('completion-request-1');
+    expect(completion.mock.calls[1][0].idempotencyKey).toBe('completion-request-1');
+    expect(form.querySelector('[name="attendee"]').checked).toBe(true);
+    expect(form.querySelector('[data-attendee-duration="student-group"]').value).toBe('35');
+    expect(api.trainingService.createIdempotencyKey).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears an open completion when authorization is revoked', async () => {
+    const { view, onAccessRevoked } = createView({
+      trainingService: {
+        completeGroupTraining: vi.fn().mockRejectedValue(
+          new AppError('authorization', 'not_authorized'),
+        ),
+      },
+    });
+    view.setContext({ mode: 'coaching', activeTab: 'schedule', groupId: 'group-1', isCoach: true });
+    await view.load();
+    document.querySelector('[data-action="confirm-training"]').click();
+    document.querySelector('[data-completion-form]').requestSubmit();
+
+    await vi.waitFor(() => expect(onAccessRevoked).toHaveBeenCalledWith('group-1'));
+    expect(document.querySelector('#coachingTrainingWorkspace').textContent).toBe('');
+    expect(document.querySelector('[data-completion-form]').textContent).toBe('');
+    expect(document.querySelector('[aria-label="Confirm training"]').open).toBe(false);
   });
 });

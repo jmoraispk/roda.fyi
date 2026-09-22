@@ -1267,6 +1267,42 @@ as $$
   where round.occurrence_id = target_occurrence_id;
 $$;
 
+create function private.feedback_contexts_json(
+  actor_id uuid,
+  target_participation_id uuid
+)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with target as (
+    select participation.profile_id, occurrence.group_id
+      from public.training_participations participation
+      join public.training_occurrences occurrence
+        on occurrence.id = participation.occurrence_id
+     where participation.id = target_participation_id
+  ), contexts as (
+    select 'connection'::text kind, connection.id,
+           'Direct coaching'::text label
+      from target
+      join public.coach_student_connections connection
+        on connection.coach_profile_id = actor_id
+       and connection.student_profile_id = target.profile_id
+       and connection.state = 'active'
+    union all
+    select 'group'::text, target_group.id, target_group.name
+      from target
+      join public.groups target_group on target_group.id = target.group_id
+     where private.is_group_coach(target_group.id, actor_id)
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'kind', contexts.kind, 'id', contexts.id, 'label', contexts.label
+  ) order by contexts.kind, contexts.label), '[]'::jsonb)
+    from contexts;
+$$;
+
 create function private.get_training_day(
   actor_id uuid,
   target_local_date date,
@@ -1302,7 +1338,8 @@ begin
         'rounds', private.occurrence_rounds_json(
           actor_id, occurrence.id, participation.id
         ),
-        'feedback', private.feedback_json(actor_id, participation.id)
+        'feedback', private.feedback_json(actor_id, participation.id),
+        'feedback_contexts', private.feedback_contexts_json(actor_id, participation.id)
       ) entry
       from public.training_participations participation
       join public.training_occurrences occurrence on occurrence.id = participation.occurrence_id
@@ -1344,6 +1381,7 @@ revoke execute on function private.add_training_feedback(uuid, uuid, uuid, uuid,
 revoke execute on function private.list_training_calendar(uuid, date, date, uuid) from public, anon, authenticated;
 revoke execute on function private.feedback_json(uuid, uuid) from public, anon, authenticated;
 revoke execute on function private.occurrence_rounds_json(uuid, uuid, uuid) from public, anon, authenticated;
+revoke execute on function private.feedback_contexts_json(uuid, uuid) from public, anon, authenticated;
 revoke execute on function private.get_training_day(uuid, date, uuid) from public, anon, authenticated;
 
 grant execute on function private.create_workout_plan(uuid, text, text, uuid, integer, text, jsonb) to authenticated;
@@ -1361,6 +1399,7 @@ grant execute on function private.save_training_assessment(uuid, uuid, uuid, pub
 grant execute on function private.add_training_feedback(uuid, uuid, uuid, uuid, text) to authenticated;
 grant execute on function private.list_training_calendar(uuid, date, date, uuid) to authenticated;
 grant execute on function private.get_training_day(uuid, date, uuid) to authenticated;
+grant execute on function private.feedback_contexts_json(uuid, uuid) to authenticated;
 
 revoke execute on function public.create_workout_plan(text, text, uuid, integer, text, jsonb) from public, anon, authenticated;
 revoke execute on function public.save_workout_plan_draft(uuid, text, text, integer, text, jsonb, timestamptz) from public, anon, authenticated;

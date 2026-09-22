@@ -29,6 +29,8 @@ async function seedCoach(page) {
       }],
       rosters: { [seededGroup.id]: [
         { profile_id: 'student-group', display_name: 'Group Bia', access_level: 'member', membership_state: 'active' },
+        { profile_id: 'student-late', display_name: 'Late Caio', access_level: 'member', membership_state: 'active' },
+        { profile_id: 'student-absent', display_name: 'Absent Duda', access_level: 'member', membership_state: 'active' },
       ] },
     }));
     localStorage.setItem('roda.e2e.connectionState', JSON.stringify({
@@ -145,4 +147,94 @@ test('does not expose coach scheduling controls to an unregistered practitioner'
   await expect(page.getByRole('button', { name: 'Register as a coach' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create workout plan' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Schedule group training' })).toHaveCount(0);
+});
+
+test('confirms only attendees, preserves a late-arrival duration, and retries without duplicates', async ({ page }) => {
+  await createAndPublishPlan(page);
+  const card = page.locator('[data-plan-id]').filter({ hasText: 'Armada ladder' });
+  await card.getByRole('button', { name: 'Schedule group training' }).click();
+  const schedule = page.getByRole('dialog', { name: 'Schedule training' });
+  await schedule.getByLabel('Training date').fill('2026-09-25');
+  await schedule.getByLabel('Start time').fill('18:30');
+  await schedule.getByRole('button', { name: 'Schedule training' }).click();
+  await expect(schedule).toBeHidden();
+
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
+    return [state.occurrences.length, state.participations.length];
+  })).toEqual([0, 0]);
+
+  await page.getByRole('button', { name: 'Confirm training' }).click();
+  const confirmation = page.getByRole('dialog', { name: 'Confirm training' });
+  await confirmation.getByRole('checkbox', { name: 'Absent Duda' }).uncheck();
+  await confirmation.getByLabel('Late Caio duration').fill('35');
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
+    state.failNext = 'completeGroupTraining';
+    localStorage.setItem('roda.e2e.trainingState', JSON.stringify(state));
+  });
+  await confirmation.getByRole('button', { name: 'Confirm and count training' }).click();
+  await expect(confirmation).toContainText('failed');
+  await confirmation.getByRole('button', { name: 'Confirm and count training' }).click();
+  await expect(confirmation).toBeHidden();
+
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
+    return {
+      occurrences: state.occurrences.length,
+      participants: state.participations
+        .map(({ profile_id, actual_duration_minutes }) => [profile_id, actual_duration_minutes])
+        .sort(),
+      schedule: state.schedules[0].state,
+    };
+  })).toEqual({
+    occurrences: 1,
+    participants: [['student-group', 50], ['student-late', 35]],
+    schedule: 'completed',
+  });
+});
+
+test('adds feedback in an authorized context and clears student detail after revocation', async ({ page }) => {
+  await page.evaluate(() => {
+    localStorage.setItem('roda.e2e.trainingState', JSON.stringify({
+      counter: 20, plans: [], schedules: [], assessments: [], failNext: null,
+      revokeReadsFor: [],
+      occurrences: [{
+        id: 'occurrence-1', kind: 'group', group_id: 'group-lua',
+        recorded_by: 'practitioner-1', occurred_at: '2026-09-22T18:00:00Z',
+        local_date: '2026-09-22', timezone: 'Europe/Lisbon',
+        default_duration_minutes: 60, idempotency_key: 'seed-1', rounds: [],
+      }],
+      participations: [{
+        id: 'participation-1', occurrence_id: 'occurrence-1',
+        profile_id: 'student-group', actual_duration_minutes: 60,
+        personal_notes: 'student-only note', confirmed_at: '2026-09-22T18:00:00Z',
+      }],
+      feedback: [{
+        id: 'unrelated-feedback', participation_id: 'participation-1',
+        coach_profile_id: 'other-coach', coach_name: 'Unrelated coach',
+        group_id: 'other-group', connection_id: null,
+        body: 'This must stay hidden.', created_at: '2026-09-22T18:05:00Z',
+      }],
+    }));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Coaching' }).click();
+  await page.getByRole('tab', { name: 'Students' }).click();
+  await page.getByRole('button', { name: "View Group Bia's training" }).click();
+  await page.getByRole('button', { name: 'Open training details' }).click();
+  await expect(page.locator('#coachingStudentsPanel')).not.toContainText('Unrelated coach');
+  await expect(page.locator('#coachingStudentsPanel')).not.toContainText('student-only note');
+
+  await page.getByLabel('Coach feedback').fill('Keep the base lower.');
+  await page.getByRole('button', { name: 'Add feedback' }).click();
+  await expect(page.locator('#coachingStudentsPanel')).toContainText('Keep the base lower.');
+
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
+    state.revokeReadsFor = ['practitioner-1'];
+    localStorage.setItem('roda.e2e.trainingState', JSON.stringify(state));
+  });
+  await page.getByRole('button', { name: 'Back to training history' }).click();
+  await expect(page.locator('#coachingStudentsPanel')).toHaveText('');
 });

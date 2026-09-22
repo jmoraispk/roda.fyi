@@ -15,11 +15,15 @@ function safeMessage(error, fallback) {
 }
 
 function showDialog(dialog) {
-  if (!dialog.open) dialog.showModal();
+  if (dialog.open) return;
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
 }
 
 function closeDialog(dialog) {
-  if (dialog.open) dialog.close();
+  if (!dialog.open) return;
+  if (typeof dialog.close === 'function') dialog.close();
+  else dialog.removeAttribute('open');
 }
 
 function element(document, tag, options = {}) {
@@ -114,20 +118,31 @@ export function createCoachingTrainingView({
   onAccessRevoked = async () => {},
 }) {
   const workspace = document.querySelector('#coachingTrainingWorkspace');
+  const studentWorkspace = document.querySelector('#coachingStudentsPanel');
   const status = document.querySelector('#coachingTrainingStatus');
   const planDialog = document.querySelector('#workoutPlanDialog');
   const planForm = document.querySelector('#workoutPlanForm');
   const scheduleDialog = document.querySelector('#scheduleTrainingDialog');
   const scheduleForm = document.querySelector('#scheduleTrainingForm');
+  const completionDialog = element(document, 'dialog', { className: 'profile-dialog group-dialog' });
+  completionDialog.setAttribute('aria-label', 'Confirm training');
+  const completionForm = element(document, 'form');
+  completionForm.dataset.completionForm = '';
+  completionDialog.append(completionForm);
+  document.body.append(completionDialog);
   let context = { mode: 'training', activeTab: null, groupId: null, isCoach: false };
   let plans = [];
   let connections = [];
   let roster = [];
+  let schedules = [];
   let editorState = null;
   let scheduleState = null;
   let loadToken = 0;
   let savingPlan = false;
   let scheduling = false;
+  let completing = false;
+  let completionState = null;
+  let selectedStudentId = null;
   let localCounter = 0;
 
   function nextId() {
@@ -137,6 +152,14 @@ export function createCoachingTrainingView({
 
   function active() {
     return context.mode === 'coaching' && context.activeTab === 'schedule' && context.isCoach;
+  }
+
+  function studentsActive() {
+    return context.mode === 'coaching' && context.activeTab === 'students' && context.isCoach;
+  }
+
+  function coachingActive() {
+    return active() || studentsActive();
   }
 
   function coachStudents() {
@@ -168,12 +191,17 @@ export function createCoachingTrainingView({
     plans = [];
     connections = [];
     roster = [];
+    schedules = [];
     editorState = null;
     scheduleState = null;
     workspace.replaceChildren();
+    studentWorkspace.replaceChildren();
     status.textContent = '';
     closeDialog(planDialog);
     closeDialog(scheduleDialog);
+    closeDialog(completionDialog);
+    completionForm.replaceChildren();
+    selectedStudentId = null;
   }
 
   async function revoke(groupId) {
@@ -227,6 +255,208 @@ export function createCoachingTrainingView({
       }));
     }
     workspace.append(planList);
+
+    const scheduledList = element(document, 'section', { className: 'scheduled-training-list' });
+    scheduledList.append(element(document, 'h2', { text: 'Awaiting confirmation' }));
+    for (const schedule of schedules) {
+      const card = element(document, 'article', { className: 'scheduled-training-card' });
+      card.dataset.scheduleId = schedule.item_id;
+      card.append(
+        element(document, 'h3', { text: schedule.plan_title || (schedule.kind === 'group' ? 'Group training' : 'Personal class') }),
+        element(document, 'p', { text: `${schedule.local_date} · ${schedule.duration_minutes ?? 0} minutes` }),
+        element(document, 'p', { text: 'Awaiting confirmation · not included in statistics' }),
+        actionButton('Confirm training', 'confirm-training', schedule.item_id),
+      );
+      scheduledList.append(card);
+    }
+    if (schedules.length === 0) {
+      scheduledList.append(element(document, 'p', {
+        className: 'calendar-empty', text: 'No scheduled training is awaiting confirmation.',
+      }));
+    }
+    workspace.append(scheduledList);
+  }
+
+  function renderStudents() {
+    studentWorkspace.replaceChildren();
+    if (!studentsActive()) return;
+    const heading = element(document, 'div', { className: 'coaching-training-header' });
+    heading.append(
+      element(document, 'div', { className: 'dashboard-eyebrow', text: 'Student training' }),
+      element(document, 'h2', { text: 'Students' }),
+    );
+    studentWorkspace.append(heading);
+    const list = element(document, 'div', { className: 'coaching-student-list' });
+    for (const student of coachStudents()) {
+      const card = element(document, 'article', { className: 'workout-plan-card' });
+      card.append(
+        element(document, 'h3', { text: student.name }),
+        actionButton(`View ${student.name}'s training`, 'view-student-training', student.profileId),
+      );
+      list.append(card);
+    }
+    if (coachStudents().length === 0) {
+      list.append(element(document, 'p', { className: 'calendar-empty', text: 'No connected students yet.' }));
+    }
+    studentWorkspace.append(list, element(document, 'section', { className: 'coaching-student-detail' }));
+  }
+
+  async function loadStudentTraining(studentId) {
+    const token = ++loadToken;
+    selectedStudentId = studentId;
+    const target = studentWorkspace.querySelector('.coaching-student-detail');
+    if (!target) return;
+    target.textContent = 'Loading student training…';
+    const year = new Date().getFullYear();
+    try {
+      const items = await trainingService.listCalendar({
+        start: `${year}-01-01`, endExclusive: `${year + 1}-01-01`, profileId: studentId,
+      });
+      if (token !== loadToken || selectedStudentId !== studentId || !studentsActive()) return;
+      target.replaceChildren();
+      const student = coachStudents().find(({ profileId: id }) => id === studentId);
+      target.append(element(document, 'h3', { text: `${student?.name ?? 'Student'} · completed training` }));
+      for (const item of items.filter(({ item_type: type }) => type === 'completed')) {
+        const card = element(document, 'article', { className: 'scheduled-training-card' });
+        card.append(
+          element(document, 'strong', { text: `${item.local_date} · ${item.duration_minutes} minutes` }),
+          actionButton('Open training details', 'open-student-day', item.local_date),
+        );
+        card.querySelector('[data-action="open-student-day"]').dataset.studentId = studentId;
+        target.append(card);
+      }
+      if (!items.some(({ item_type: type }) => type === 'completed')) {
+        target.append(element(document, 'p', { className: 'calendar-empty', text: 'No completed training yet.' }));
+      }
+    } catch (error) {
+      if (error?.kind === 'authorization' || error?.kind === 'authentication') await revoke(context.groupId);
+      else target.textContent = safeMessage(error, 'We could not load this student training.');
+    }
+  }
+
+  async function openStudentDay(studentId, localDate) {
+    const token = ++loadToken;
+    selectedStudentId = studentId;
+    const target = studentWorkspace.querySelector('.coaching-student-detail');
+    if (!target) return;
+    target.textContent = 'Loading training details…';
+    try {
+      const items = await trainingService.getDay({ localDate, profileId: studentId });
+      if (token !== loadToken || selectedStudentId !== studentId || !studentsActive()) return;
+      target.replaceChildren();
+      target.append(actionButton('Back to training history', 'view-student-training', studentId));
+      for (const item of items) {
+        const card = element(document, 'article', { className: 'training-day-card' });
+        card.dataset.localDate = localDate;
+        card.append(
+          element(document, 'h3', { text: `${item.kind === 'group' ? 'Group training' : 'Personal class'} · ${item.duration_minutes} minutes` }),
+        );
+        for (const feedback of item.feedback ?? []) {
+          card.append(element(document, 'p', {
+            text: `${feedback.coach_name ?? 'Coach'} · ${feedback.body}`,
+          }));
+        }
+        if ((item.feedback_contexts ?? []).length) {
+          const form = element(document, 'form');
+          form.dataset.studentFeedback = item.participation_id;
+          const contextSelect = element(document, 'select', { name: 'context', label: 'Feedback context' });
+          contextSelect.className = 'field-input';
+          for (const feedbackContext of item.feedback_contexts) {
+            contextSelect.append(element(document, 'option', {
+              value: `${feedbackContext.kind}:${feedbackContext.id}`, text: feedbackContext.label,
+            }));
+          }
+          const body = element(document, 'textarea', { name: 'body', required: true, label: 'Coach feedback' });
+          body.className = 'field-input field-textarea';
+          const submit = element(document, 'button', {
+            type: 'submit', className: 'secondary-button', text: 'Add feedback',
+          });
+          const feedbackStatus = element(document, 'p', { className: 'profile-status' });
+          feedbackStatus.setAttribute('role', 'status');
+          form.append(contextSelect, body, submit, feedbackStatus);
+          card.append(form);
+        }
+        target.append(card);
+      }
+    } catch (error) {
+      if (error?.kind === 'authorization' || error?.kind === 'authentication') await revoke(context.groupId);
+      else target.textContent = safeMessage(error, 'We could not load this training.');
+    }
+  }
+
+  function renderCompletionForm() {
+    completionForm.replaceChildren();
+    const schedule = completionState.schedule;
+    const close = actionButton('×', 'close-completion');
+    close.className = 'profile-close';
+    close.setAttribute('aria-label', 'Close training confirmation');
+    const duration = element(document, 'input', {
+      type: 'number', name: 'completionDuration', value: schedule.duration_minutes ?? 60,
+      required: true,
+    });
+    duration.className = 'field-input';
+    duration.min = '1';
+    duration.max = '1440';
+    completionForm.append(
+      close,
+      element(document, 'div', { className: 'profile-kicker', text: 'Coach confirmation' }),
+      element(document, 'h1', { text: 'Confirm completed training' }),
+      field(document, 'Actual duration in minutes', duration),
+    );
+    if (schedule.kind === 'group') {
+      const fieldset = element(document, 'fieldset', { className: 'attendance-list' });
+      fieldset.append(element(document, 'legend', { text: 'Attendance' }));
+      for (const member of roster.filter(({ access_level: level }) => level === 'member')) {
+        const row = element(document, 'div', { className: 'attendance-row' });
+        const checkbox = element(document, 'input', { type: 'checkbox', name: 'attendee', value: member.profile_id });
+        checkbox.checked = completionState.attendees.get(member.profile_id)?.selected ?? true;
+        const override = element(document, 'input', {
+          type: 'number', value: completionState.attendees.get(member.profile_id)?.duration ?? schedule.duration_minutes ?? 60,
+          label: `${member.display_name} duration`,
+        });
+        override.className = 'field-input';
+        override.min = '1';
+        override.max = '1440';
+        override.dataset.attendeeDuration = member.profile_id;
+        const name = element(document, 'label', { text: member.display_name });
+        name.prepend(checkbox);
+        row.append(name, override);
+        fieldset.append(row);
+      }
+      completionForm.append(fieldset);
+    }
+    completionForm.append(
+      element(document, 'p', { className: 'profile-status', action: null }),
+      Object.assign(element(document, 'button', {
+        type: 'submit', className: 'primary-button', text: 'Confirm and count training',
+      }), { disabled: completing }),
+    );
+    completionForm.querySelector('.profile-status').setAttribute('role', 'status');
+  }
+
+  function openCompletion(scheduleId) {
+    if (!active()) return;
+    const schedule = schedules.find(({ item_id: id }) => id === scheduleId);
+    if (!schedule) return;
+    completionState = {
+      schedule,
+      idempotencyKey: trainingService.createIdempotencyKey(),
+      attendees: new Map(roster
+        .filter(({ access_level: level }) => level === 'member')
+        .map((member) => [member.profile_id, {
+          selected: true, duration: schedule.duration_minutes ?? 60,
+        }])),
+    };
+    renderCompletionForm();
+    showDialog(completionDialog);
+  }
+
+  async function completeGroup(input) {
+    return trainingService.completeGroupTraining({
+      ...input,
+      idempotencyKey: input.idempotencyKey ?? completionState?.idempotencyKey
+        ?? trainingService.createIdempotencyKey(),
+    });
   }
 
   function syncEditor() {
@@ -421,7 +651,7 @@ export function createCoachingTrainingView({
 
   async function load() {
     const token = ++loadToken;
-    if (!active()) {
+    if (!coachingActive()) {
       clearPrivate();
       return;
     }
@@ -437,8 +667,31 @@ export function createCoachingTrainingView({
       plans = loadedPlans.map(normalizePlan);
       connections = loadedConnections;
       roster = loadedRoster;
+      const students = coachStudents();
+      const year = new Date().getFullYear();
+      const calendarRows = await Promise.all(students.map(async (student) => (
+        (await trainingService.listCalendar({
+          start: `${year}-01-01`, endExclusive: `${year + 1}-01-01`,
+          profileId: student.profileId,
+        })).map((item) => ({ ...item, student_profile_id: student.profileId }))
+      )));
+      if (token !== loadToken || groupId !== context.groupId) return;
+      const unique = new Map();
+      for (const item of calendarRows.flat()) {
+        if (item.item_type === 'scheduled' && item.status === 'scheduled'
+          && (!context.groupId || !item.group_id || item.group_id === context.groupId)) {
+          const prior = unique.get(item.item_id);
+          unique.set(item.item_id, prior?.student_profile_id === item.student_profile_id
+            ? prior : { ...item, student_profile_ids: [
+              ...(prior?.student_profile_ids ?? (prior ? [prior.student_profile_id] : [])),
+              item.student_profile_id,
+            ] });
+        }
+      }
+      schedules = [...unique.values()];
       status.textContent = '';
-      render();
+      if (active()) render();
+      else renderStudents();
     } catch (error) {
       if (token !== loadToken || groupId !== context.groupId) return;
       if (error?.kind === 'authorization' || error?.kind === 'authentication') {
@@ -452,7 +705,11 @@ export function createCoachingTrainingView({
   function setContext(nextContext) {
     loadToken += 1;
     context = { ...context, ...nextContext };
-    if (!active()) clearPrivate();
+    if (!coachingActive()) clearPrivate();
+    else {
+      workspace.replaceChildren();
+      studentWorkspace.replaceChildren();
+    }
   }
 
   workspace.addEventListener('click', (event) => {
@@ -463,6 +720,40 @@ export function createCoachingTrainingView({
     if (button.dataset.action === 'schedule-group') openGroupSchedule(button.dataset.value);
     if (button.dataset.action === 'schedule-personal') {
       openPersonalSchedule(button.dataset.value, button.dataset.studentId);
+    }
+    if (button.dataset.action === 'confirm-training') openCompletion(button.dataset.value);
+  });
+
+  studentWorkspace.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+    if (button.dataset.action === 'view-student-training') void loadStudentTraining(button.dataset.value);
+    if (button.dataset.action === 'open-student-day') {
+      void openStudentDay(button.dataset.studentId, button.dataset.value);
+    }
+  });
+
+  studentWorkspace.addEventListener('submit', async (event) => {
+    const form = event.target.closest('[data-student-feedback]');
+    if (!form) return;
+    event.preventDefault();
+    const message = form.querySelector('[role="status"]');
+    message.textContent = '';
+    const [kind, id] = form.elements.context.value.split(':');
+    try {
+      await trainingService.addFeedback({
+        participationId: form.dataset.studentFeedback,
+        groupId: kind === 'group' ? id : null,
+        connectionId: kind === 'connection' ? id : null,
+        body: form.elements.body.value,
+      });
+      const date = form.closest('.training-day-card')?.dataset.localDate;
+      message.textContent = 'Feedback saved.';
+      form.elements.body.value = '';
+      if (date) await openStudentDay(selectedStudentId, date);
+    } catch (error) {
+      if (error?.kind === 'authorization' || error?.kind === 'authentication') await revoke(context.groupId);
+      else message.textContent = safeMessage(error, 'We could not save this feedback.');
     }
   });
 
@@ -586,6 +877,7 @@ export function createCoachingTrainingView({
       }
       closeDialog(scheduleDialog);
       scheduleState = null;
+      void load();
     } catch (error) {
       if (error?.kind === 'authorization' || error?.kind === 'authentication') {
         await revoke(context.groupId);
@@ -597,12 +889,66 @@ export function createCoachingTrainingView({
     }
   });
 
+  completionForm.addEventListener('click', (event) => {
+    if (event.target.closest('[data-action="close-completion"]')) closeDialog(completionDialog);
+  });
+
+  completionForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (completing || !completionState) return;
+    completing = true;
+    const formStatus = completionForm.querySelector('[role="status"]');
+    formStatus.textContent = '';
+    const durationMinutes = Number(completionForm.elements.completionDuration.value);
+    const schedule = completionState.schedule;
+    try {
+      if (schedule.kind === 'group') {
+        const attendees = [...completionForm.querySelectorAll('[name="attendee"]')]
+          .map((checkbox) => {
+            const override = completionForm.querySelector(`[data-attendee-duration="${checkbox.value}"]`);
+            completionState.attendees.set(checkbox.value, {
+              selected: checkbox.checked, duration: Number(override.value),
+            });
+            return checkbox.checked ? {
+              profileId: checkbox.value, durationMinutes: Number(override.value),
+            } : null;
+          }).filter(Boolean);
+        await completeGroup({
+          scheduleId: schedule.item_id, attendees, durationMinutes,
+          idempotencyKey: completionState.idempotencyKey,
+        });
+      } else {
+        await trainingService.completePersonalClass({
+          scheduleId: schedule.item_id, durationMinutes,
+          idempotencyKey: completionState.idempotencyKey,
+        });
+      }
+      closeDialog(completionDialog);
+      completionState = null;
+      await load();
+    } catch (error) {
+      if (error?.kind === 'authorization' || error?.kind === 'authentication') {
+        await revoke(context.groupId);
+      } else if (error?.code === 'invalid_attendee' || error?.message === 'invalid_attendee') {
+        formStatus.textContent = 'The group membership changed. Review attendance and try again.';
+      } else {
+        formStatus.textContent = safeMessage(error, 'We could not confirm this training. Attendance is still selected.');
+      }
+    } finally {
+      completing = false;
+    }
+  });
+
   return {
     load,
     setContext,
     openPlanEditor,
     openGroupSchedule,
     openPersonalSchedule,
+    openCompletion,
+    completeGroup,
+    loadStudentTraining,
+    openStudentDay,
     clear() {
       loadToken += 1;
       clearPrivate();

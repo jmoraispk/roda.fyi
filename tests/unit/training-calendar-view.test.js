@@ -53,6 +53,9 @@ function service(overrides = {}) {
     ]),
     getDay: vi.fn().mockResolvedValue([{ id: 'a', kind: 'alone', duration_minutes: 45 }]),
     recordAloneTraining: vi.fn().mockResolvedValue({ status: 'completed' }),
+    saveNotes: vi.fn().mockResolvedValue({ status: 'saved' }),
+    saveAssessment: vi.fn().mockResolvedValue({ status: 'saved' }),
+    addFeedback: vi.fn().mockResolvedValue({ status: 'saved' }),
     createIdempotencyKey: vi.fn(() => 'request-1'),
     ...overrides,
   };
@@ -159,5 +162,109 @@ describe('training calendar view', () => {
     expect(api.listCalendar.mock.lastCall[0]).toMatchObject({
       start: '2026-09-01', endExclusive: '2026-10-01',
     });
+  });
+
+  it('saves personal notes separately and assesses each movement before refreshing the day', async () => {
+    const day = [{
+      id: 'occurrence-1', kind: 'group', duration_minutes: 60,
+      participation_id: 'participation-1', personal_notes: 'Initial note',
+      rounds: [{ id: 'round-1', label: 'Flow', movements: [{
+        id: 'movement-1', movement_name: 'Armada', assessment: null,
+      }] }], feedback: [], feedback_contexts: [],
+    }];
+    const api = service({ getDay: vi.fn().mockResolvedValue(day) });
+    const view = createTrainingCalendarView({
+      document, service: api, i18n: i18n(),
+      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.selectDay('2026-09-22');
+
+    const notes = document.querySelector('[data-notes-form]');
+    notes.querySelector('textarea').value = 'My own observation';
+    notes.requestSubmit();
+    await vi.waitFor(() => expect(api.saveNotes).toHaveBeenCalledWith({
+      participationId: 'participation-1', notes: 'My own observation',
+    }));
+
+    await vi.waitFor(() => expect(api.getDay).toHaveBeenCalledTimes(2));
+    const assessment = document.querySelector('[data-assessment-form="movement-1"]');
+    assessment.querySelector('[value="hard"]').checked = true;
+    assessment.querySelector('textarea').value = 'Balance needs work';
+    assessment.requestSubmit();
+    await vi.waitFor(() => expect(api.saveAssessment).toHaveBeenCalledWith({
+      participationId: 'participation-1', movementId: 'movement-1',
+      difficulty: 'hard', note: 'Balance needs work',
+    }));
+    expect(api.getDay).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps the selected day visible after a failed assessment', async () => {
+    const api = service({
+      getDay: vi.fn().mockResolvedValue([{
+        id: 'occurrence-1', kind: 'alone', duration_minutes: 30,
+        participation_id: 'participation-1', rounds: [{ movements: [{
+          id: 'movement-1', movement_name: 'Ginga', assessment: null,
+        }] }], feedback: [], feedback_contexts: [],
+      }]),
+      saveAssessment: vi.fn().mockRejectedValue(new TypeError('offline')),
+    });
+    const view = createTrainingCalendarView({
+      document, service: api, i18n: i18n(),
+      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.selectDay('2026-09-22');
+    const assessment = document.querySelector('[data-assessment-form="movement-1"]');
+    assessment.querySelector('[value="okay"]').checked = true;
+    assessment.requestSubmit();
+    await vi.waitFor(() => expect(assessment.querySelector('[role="status"]').textContent)
+      .toContain('offline'));
+    expect(document.querySelector('#trainingDayDetail').textContent).toContain('Ginga');
+    expect(api.getDay).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows scoped coach feedback and only renders authoring for server-returned contexts', async () => {
+    const api = service({ getDay: vi.fn().mockResolvedValue([{
+      id: 'occurrence-1', kind: 'personal_class', duration_minutes: 45,
+      participation_id: 'participation-1', rounds: [], personal_notes: null,
+      feedback: [{
+        id: 'feedback-1', coach_name: 'Mestre Lua', group_id: 'group-1',
+        body: 'Keep the base lower.', created_at: '2026-09-22T18:10:00Z',
+      }],
+      feedback_contexts: [{ kind: 'group', id: 'group-1', label: 'Grupo Lua' }],
+    }]) });
+    const view = createTrainingCalendarView({
+      document, service: api, i18n: i18n(),
+      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+      targetProfileId: 'student-1', canCoach: true,
+    });
+    await view.selectDay('2026-09-22');
+
+    expect(document.querySelector('#trainingDayDetail').textContent)
+      .toContain('Mestre Lua');
+    expect(document.querySelector('#trainingDayDetail').textContent)
+      .toContain('Grupo Lua');
+    const form = document.querySelector('[data-feedback-form]');
+    expect([...form.querySelector('select').options].map(({ textContent }) => textContent))
+      .toEqual(['Grupo Lua']);
+    form.querySelector('textarea').value = 'Better timing today.';
+    form.requestSubmit();
+    await vi.waitFor(() => expect(api.addFeedback).toHaveBeenCalledWith({
+      participationId: 'participation-1', groupId: 'group-1', connectionId: null,
+      body: 'Better timing today.',
+    }));
+  });
+
+  it('does not render coach feedback controls in personal training mode', async () => {
+    const api = service({ getDay: vi.fn().mockResolvedValue([{
+      id: 'occurrence-1', kind: 'group', duration_minutes: 45,
+      participation_id: 'participation-1', rounds: [], feedback: [],
+      feedback_contexts: [{ kind: 'group', id: 'group-1', label: 'Grupo Lua' }],
+    }]) });
+    const view = createTrainingCalendarView({
+      document, service: api, i18n: i18n(),
+      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon', canCoach: false,
+    });
+    await view.selectDay('2026-09-22');
+    expect(document.querySelector('[data-feedback-form]')).toBeNull();
   });
 });

@@ -83,3 +83,21 @@ test('keeps the calendar inside a mobile viewport', async ({ page }, testInfo) =
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 });
+
+test('records a personal movement assessment without losing the selected day', async ({ page }) => {
+  await page.goto('/dashboard');
+  const dialog = await fillAlone(page, { notes: 'Assessment day' });
+  await dialog.getByRole('button', { name: 'Save training' }).click();
+  await expect(dialog).toBeHidden();
+
+  const detail = page.locator('#trainingDayDetail');
+  await detail.getByRole('radio', { name: 'Hard' }).check();
+  await detail.getByLabel('Movement note').fill('The landing was unstable.');
+  await detail.getByRole('button', { name: 'Save assessment' }).click();
+  await expect(detail.getByRole('radio', { name: 'Hard' })).toBeChecked();
+  await expect(detail.getByLabel('Movement note')).toHaveValue('The landing was unstable.');
+  await expect.poll(() => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
+    return state.assessments.map(({ difficulty, note }) => ({ difficulty, note }));
+  })).toEqual([{ difficulty: 'hard', note: 'The landing was unstable.' }]);
+});

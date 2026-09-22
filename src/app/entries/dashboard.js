@@ -178,7 +178,8 @@ async function main() {
           groupId: membership?.group_id ?? null,
           isCoach: connectionIdentity.isCoach,
         });
-        if (mode === 'coaching' && activeTab === 'schedule' && connectionIdentity.isCoach) {
+        if (mode === 'coaching' && ['schedule', 'students'].includes(activeTab)
+          && connectionIdentity.isCoach) {
           coachingTrainingController.load();
         }
         if (mode === 'training' && activeTab === 'calendar' && profile.completed_at) {

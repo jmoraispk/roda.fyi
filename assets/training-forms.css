@@ -16,6 +16,9 @@
 
 .coaching-training-header,
 .workout-plan-list,
+.scheduled-training-list,
+.coaching-student-list,
+.coaching-student-detail,
 .plan-rounds,
 .plan-movement-list {
   display: grid;
@@ -37,10 +40,56 @@
 }
 
 .workout-plan-card,
+.scheduled-training-card,
+.training-day-card,
 .plan-round {
   border: 1px solid var(--line, #4b3925);
   border-radius: 1rem;
   padding: 1rem;
+}
+
+.scheduled-training-card,
+.training-day-card {
+  display: grid;
+  gap: .75rem;
+  margin-block: .75rem;
+}
+
+.scheduled-training-card > *,
+.training-day-card > * {
+  margin-block: 0;
+}
+
+.attendance-list,
+.training-round-detail,
+.training-movement-detail,
+.training-feedback-list {
+  border: 1px solid var(--line, #4b3925);
+  border-radius: .85rem;
+  display: grid;
+  gap: .75rem;
+  padding: .85rem;
+}
+
+.attendance-row {
+  align-items: center;
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: minmax(0, 1fr) 9rem;
+}
+
+.attendance-row label,
+.training-movement-detail fieldset {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+
+.training-movement-detail form,
+.training-day-card form {
+  display: grid;
+  gap: .65rem;
 }
 
 .workout-plan-card {
@@ -111,6 +160,10 @@
   .alone-movement-row,
   .plan-movement,
   .coaching-training-header {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-row {
     grid-template-columns: 1fr;
   }
 }

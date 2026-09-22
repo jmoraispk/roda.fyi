@@ -923,6 +923,34 @@ export function createE2ETrainingService({ window }) {
       const state = readState();
       guard(state, 'getDay', { read: true });
       const profileId = input.profileId ?? actorId();
+      const connectionState = JSON.parse(storage.getItem('roda.e2e.connectionState') ?? '{}');
+      const groupState = JSON.parse(storage.getItem('roda.e2e.groupState') ?? '{}');
+      const contextsFor = (occurrence) => {
+        if (profileId === actorId()) return [];
+        const contexts = [];
+        const direct = (connectionState.connections ?? []).find((connection) => (
+          connection.state === 'active'
+          && connection.connection_kind === 'direct'
+          && connection.connection_id
+          && connection.coach_profile_id === actorId()
+          && connection.student_profile_id === profileId
+        ));
+        if (direct) contexts.push({
+          kind: 'connection', id: direct.connection_id, label: 'Direct coaching',
+        });
+        const membership = (groupState.memberships ?? []).find((entry) => (
+          entry.group_id === occurrence.group_id
+          && entry.profile_id === actorId()
+          && entry.access_level === 'coach'
+          && entry.state === 'active'
+        ));
+        if (membership) contexts.push({
+          kind: 'group', id: occurrence.group_id,
+          label: (groupState.groups ?? []).find(({ id }) => id === occurrence.group_id)?.name
+            ?? 'Group coaching',
+        });
+        return contexts;
+      };
       return state.participations
         .filter(({ profile_id: id }) => id === profileId)
         .map((participation) => ({
@@ -930,16 +958,43 @@ export function createE2ETrainingService({ window }) {
           occurrence: state.occurrences.find(({ id }) => id === participation.occurrence_id),
         }))
         .filter(({ occurrence }) => occurrence.local_date === input.localDate)
-        .map(({ occurrence, participation }) => ({
-          id: occurrence.id, item_type: 'completed', kind: occurrence.kind,
-          status: 'completed', starts_at: occurrence.occurred_at,
-          duration_minutes: participation.actual_duration_minutes,
-          participation_id: participation.id,
-          personal_notes: participation.personal_notes,
-          rounds: structuredClone(occurrence.rounds),
-          assessments: state.assessments.filter(({ participation_id: id }) => id === participation.id),
-          feedback: state.feedback.filter(({ participation_id: id }) => id === participation.id),
-        }));
+        .map(({ occurrence, participation }) => {
+          const feedbackContexts = contextsFor(occurrence);
+          const allowedIds = new Set(feedbackContexts.map(({ id }) => id));
+          const rounds = structuredClone(occurrence.rounds).map((round, roundIndex) => ({
+            ...round,
+            id: round.id ?? `${occurrence.id}-round-${roundIndex + 1}`,
+            movements: (round.movements ?? []).map((movement, movementIndex) => {
+              const movementId = movement.id
+                ?? `${occurrence.id}-movement-${roundIndex + 1}-${movementIndex + 1}`;
+              const assessment = state.assessments.find((entry) => (
+                entry.participation_id === participation.id
+                && entry.movement_id === movementId
+              ));
+              return { ...movement, id: movementId, assessment: assessment ?? null };
+            }),
+          }));
+          return {
+            id: occurrence.id, item_type: 'completed', kind: occurrence.kind,
+            status: 'completed', starts_at: occurrence.occurred_at,
+            duration_minutes: participation.actual_duration_minutes,
+            group_id: occurrence.group_id,
+            participation_id: participation.id,
+            personal_notes: profileId === actorId() ? participation.personal_notes : null,
+            rounds,
+            feedback_contexts: feedbackContexts,
+            feedback: state.feedback
+              .filter(({ participation_id: id }) => id === participation.id)
+              .filter((entry) => profileId === actorId()
+                || allowedIds.has(entry.group_id ?? entry.connection_id))
+              .map((entry) => ({
+                ...entry,
+                coach_name: entry.coach_name
+                  ?? JSON.parse(storage.getItem('roda.e2e.profile') ?? '{}').display_name
+                  ?? 'Coach',
+              })),
+          };
+        });
     },
   };
 }

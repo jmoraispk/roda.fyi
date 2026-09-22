@@ -35,6 +35,9 @@ export function createTrainingCalendarView({
   i18n,
   profile,
   timezone,
+  targetProfileId = null,
+  canCoach = false,
+  onAccessRevoked = async () => {},
 }) {
   const calendar = document.querySelector('#trainingCalendar');
   const monthLabel = document.querySelector('#calendarMonthLabel');
@@ -56,6 +59,7 @@ export function createTrainingCalendarView({
   let requestToken = 0;
   let idempotencyKey = null;
   let submitting = false;
+  let viewedProfileId = targetProfileId;
 
   function localizedDate(localDate, options = {}) {
     return i18n.formatDate(`${localDate}T12:00:00`, options);
@@ -145,10 +149,144 @@ export function createTrainingCalendarView({
       const duration = document.createElement('p');
       duration.textContent = i18n.formatDuration(item.duration_minutes ?? 0);
       article.append(heading, duration);
-      if (item.personal_notes) {
+      const ownRecord = !viewedProfileId || viewedProfileId === profile.id;
+      if (ownRecord && item.participation_id) {
+        const notesForm = document.createElement('form');
+        notesForm.dataset.notesForm = item.participation_id;
+        const notesLabel = document.createElement('label');
+        notesLabel.textContent = i18n.t('training.personalNotes');
+        const notes = document.createElement('textarea');
+        notes.className = 'field-input field-textarea';
+        notes.name = 'notes';
+        notes.value = item.personal_notes ?? '';
+        notesLabel.append(notes);
+        const saveNotes = document.createElement('button');
+        saveNotes.type = 'submit';
+        saveNotes.className = 'secondary-button';
+        saveNotes.textContent = i18n.t('training.saveNotes');
+        const notesStatus = document.createElement('p');
+        notesStatus.setAttribute('role', 'status');
+        notesForm.append(notesLabel, saveNotes, notesStatus);
+        article.append(notesForm);
+        if (item.personal_notes) {
+          const savedNotes = document.createElement('p');
+          savedNotes.dataset.personalNotes = '';
+          savedNotes.textContent = item.personal_notes;
+          article.append(savedNotes);
+        }
+      } else if (item.personal_notes) {
         const notes = document.createElement('p');
         notes.textContent = item.personal_notes;
         article.append(notes);
+      }
+
+      for (const [roundIndex, round] of (item.rounds ?? []).entries()) {
+        const roundBox = document.createElement('section');
+        roundBox.className = 'training-round-detail';
+        const roundTitle = document.createElement('h4');
+        roundTitle.textContent = round.label || i18n.t('alone.round', { number: roundIndex + 1 });
+        roundBox.append(roundTitle);
+        for (const movement of round.movements ?? []) {
+          const movementBox = document.createElement('div');
+          movementBox.className = 'training-movement-detail';
+          const name = document.createElement('strong');
+          name.textContent = movement.movement_name ?? movement.movementName;
+          movementBox.append(name);
+          if (ownRecord && item.participation_id) {
+            const assessment = document.createElement('form');
+            assessment.dataset.assessmentForm = movement.id;
+            assessment.dataset.participationId = item.participation_id;
+            const choices = document.createElement('fieldset');
+            const legend = document.createElement('legend');
+            legend.textContent = i18n.t('training.difficulty');
+            choices.append(legend);
+            for (const difficulty of ['easy', 'okay', 'hard']) {
+              const label = document.createElement('label');
+              const radio = document.createElement('input');
+              radio.type = 'radio';
+              radio.name = 'difficulty';
+              radio.value = difficulty;
+              radio.required = true;
+              radio.checked = movement.assessment?.difficulty === difficulty;
+              label.append(radio, i18n.t(`training.${difficulty}`));
+              choices.append(label);
+            }
+            const note = document.createElement('textarea');
+            note.className = 'field-input field-textarea';
+            note.name = 'note';
+            note.value = movement.assessment?.note ?? '';
+            note.setAttribute('aria-label', i18n.t('training.movementNote'));
+            const save = document.createElement('button');
+            save.type = 'submit';
+            save.className = 'secondary-button';
+            save.textContent = i18n.t('training.saveAssessment');
+            const assessmentStatus = document.createElement('p');
+            assessmentStatus.setAttribute('role', 'status');
+            assessment.append(choices, note, save, assessmentStatus);
+            movementBox.append(assessment);
+          } else if (movement.assessment) {
+            const result = document.createElement('p');
+            result.textContent = `${i18n.t(`training.${movement.assessment.difficulty}`)}${
+              movement.assessment.note ? ` · ${movement.assessment.note}` : ''}`;
+            movementBox.append(result);
+          }
+          roundBox.append(movementBox);
+        }
+        article.append(roundBox);
+      }
+
+      if ((item.feedback ?? []).length) {
+        const feedbackList = document.createElement('section');
+        feedbackList.className = 'training-feedback-list';
+        const feedbackTitle = document.createElement('h4');
+        feedbackTitle.textContent = i18n.t('training.coachFeedback');
+        feedbackList.append(feedbackTitle);
+        for (const feedback of item.feedback) {
+          const entry = document.createElement('article');
+          const context = (item.feedback_contexts ?? []).find(({ id }) => (
+            id === (feedback.group_id ?? feedback.connection_id)
+          ));
+          const meta = document.createElement('p');
+          meta.textContent = [
+            feedback.coach_name,
+            context?.label ?? (feedback.group_id
+              ? i18n.t('training.groupContext') : i18n.t('training.directContext')),
+            feedback.created_at ? i18n.formatDate(feedback.created_at, { dateStyle: 'medium', timeStyle: 'short' }) : null,
+          ].filter(Boolean).join(' · ');
+          const body = document.createElement('p');
+          body.textContent = feedback.body;
+          entry.append(meta, body);
+          feedbackList.append(entry);
+        }
+        article.append(feedbackList);
+      }
+
+      if (canCoach && item.participation_id && (item.feedback_contexts ?? []).length) {
+        const feedbackForm = document.createElement('form');
+        feedbackForm.dataset.feedbackForm = item.participation_id;
+        const context = document.createElement('select');
+        context.name = 'context';
+        context.className = 'field-input';
+        context.setAttribute('aria-label', i18n.t('training.feedbackContext'));
+        for (const optionContext of item.feedback_contexts) {
+          const option = document.createElement('option');
+          option.value = `${optionContext.kind}:${optionContext.id}`;
+          option.textContent = optionContext.label;
+          context.append(option);
+        }
+        const body = document.createElement('textarea');
+        body.name = 'body';
+        body.required = true;
+        body.className = 'field-input field-textarea';
+        body.setAttribute('aria-label', i18n.t('training.feedbackBody'));
+        const submit = document.createElement('button');
+        submit.type = 'submit';
+        submit.className = 'secondary-button';
+        submit.textContent = i18n.t('training.addFeedback');
+        const feedbackStatus = document.createElement('p');
+        feedbackStatus.setAttribute('role', 'status');
+        feedbackForm.append(context, body, submit, feedbackStatus);
+        article.append(feedbackForm);
       }
       detail.append(article);
     }
@@ -166,7 +304,7 @@ export function createTrainingCalendarView({
       const items = await service.listCalendar({
         start: bounds.start,
         endExclusive: bounds.endExclusive,
-        profileId: null,
+        profileId: viewedProfileId,
       });
       state = reduceCalendarState(state, { type: 'MONTH_LOAD_SUCCEEDED', token, items });
       if (token === requestToken) status.textContent = '';
@@ -185,7 +323,7 @@ export function createTrainingCalendarView({
     renderCalendar();
     detail.textContent = i18n.t('calendar.loading');
     try {
-      const items = await service.getDay({ localDate: date, profileId: null });
+      const items = await service.getDay({ localDate: date, profileId: viewedProfileId });
       state = reduceCalendarState(state, {
         type: 'DAY_LOAD_SUCCEEDED', date, items,
       });
@@ -193,7 +331,12 @@ export function createTrainingCalendarView({
       return items;
     } catch (error) {
       state = reduceCalendarState(state, { type: 'DAY_LOAD_FAILED', date, error });
-      if (state.selectedDate === date) detail.textContent = error?.message || i18n.t('calendar.loadError');
+      if (error?.kind === 'authorization' || error?.kind === 'authentication') {
+        detail.replaceChildren();
+        await onAccessRevoked(viewedProfileId);
+      } else if (state.selectedDate === date) {
+        detail.textContent = error?.message || i18n.t('calendar.loadError');
+      }
       return [];
     }
   }
@@ -333,6 +476,49 @@ export function createTrainingCalendarView({
   });
   document.querySelector('[data-close-alone]').addEventListener('click', () => closeDialog(dialog));
 
+  detail.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submittedDate = state.selectedDate;
+    const notesForm = event.target.closest('[data-notes-form]');
+    const assessmentForm = event.target.closest('[data-assessment-form]');
+    const feedbackForm = event.target.closest('[data-feedback-form]');
+    const activeForm = notesForm ?? assessmentForm ?? feedbackForm;
+    if (!activeForm) return;
+    const formMessage = activeForm.querySelector('[role="status"]');
+    formMessage.textContent = '';
+    try {
+      if (notesForm) {
+        await service.saveNotes({
+          participationId: notesForm.dataset.notesForm,
+          notes: notesForm.elements.notes.value,
+        });
+      } else if (assessmentForm) {
+        await service.saveAssessment({
+          participationId: assessmentForm.dataset.participationId,
+          movementId: assessmentForm.dataset.assessmentForm,
+          difficulty: new FormData(assessmentForm).get('difficulty'),
+          note: assessmentForm.elements.note.value,
+        });
+      } else {
+        const [kind, id] = feedbackForm.elements.context.value.split(':');
+        await service.addFeedback({
+          participationId: feedbackForm.dataset.feedbackForm,
+          groupId: kind === 'group' ? id : null,
+          connectionId: kind === 'connection' ? id : null,
+          body: feedbackForm.elements.body.value,
+        });
+      }
+      if (state.selectedDate === submittedDate) await selectDay(submittedDate);
+    } catch (error) {
+      if (error?.kind === 'authorization' || error?.kind === 'authentication') {
+        detail.replaceChildren();
+        await onAccessRevoked(viewedProfileId);
+      } else {
+        formMessage.textContent = error?.message || i18n.t('training.saveError');
+      }
+    }
+  });
+
   return {
     loadMonth,
     selectDay,
@@ -343,6 +529,14 @@ export function createTrainingCalendarView({
     setLocale() {
       renderCalendar();
       if (state.dayDetail) renderDetail(state.dayDetail);
+    },
+    async setProfile(profileId, coachMode = false) {
+      requestToken += 1;
+      viewedProfileId = profileId;
+      canCoach = coachMode;
+      state = reduceCalendarState(state, { type: 'CLEAR_PRIVATE' });
+      detail.replaceChildren();
+      return loadMonth(state.visibleMonth);
     },
     clear() {
       requestToken += 1;
