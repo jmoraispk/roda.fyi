@@ -998,3 +998,164 @@ export function createE2ETrainingService({ window }) {
     },
   };
 }
+
+export function createE2EStatisticsService({ window }) {
+  const { localStorage: storage } = window;
+
+  function trainingState() {
+    return {
+      occurrences: [], participations: [], assessments: [],
+      ...JSON.parse(storage.getItem('roda.e2e.trainingState') ?? '{}'),
+    };
+  }
+
+  function groupState() {
+    return {
+      memberships: [], rosters: {},
+      ...JSON.parse(storage.getItem('roda.e2e.groupState') ?? '{}'),
+    };
+  }
+
+  function actorId() {
+    return readSession(storage)?.user?.id ?? 'practitioner-1';
+  }
+
+  function profileFor(profileId, roster = []) {
+    if (profileId === actorId()) {
+      const profile = JSON.parse(storage.getItem('roda.e2e.profile') ?? '{}');
+      return {
+        profile_id: profileId,
+        display_name: profile.display_name ?? 'Capoeirista',
+        avatar_path: profile.avatar_path ?? null,
+        leaderboard_visible: profile.leaderboard_visible !== false,
+        graduation: profile.graduation ?? null,
+      };
+    }
+    const entry = roster.find(({ profile_id: id }) => id === profileId) ?? {};
+    return {
+      profile_id: profileId,
+      display_name: entry.display_name ?? 'Group member',
+      avatar_path: entry.avatar_path ?? null,
+      leaderboard_visible: entry.leaderboard_visible !== false,
+      graduation: entry.graduation ?? null,
+    };
+  }
+
+  function inRange(date, start, endExclusive) {
+    return date >= start && date < endExclusive;
+  }
+
+  function activityFor(profileId, start, endExclusive) {
+    const state = trainingState();
+    return state.participations.flatMap((participation) => {
+      if (participation.profile_id !== profileId) return [];
+      const occurrence = state.occurrences.find(({ id }) => id === participation.occurrence_id);
+      if (!occurrence || !inRange(occurrence.local_date, start, endExclusive)) return [];
+      return [{ participation, occurrence }];
+    });
+  }
+
+  return {
+    async getPersonal({ start, endExclusive, timezone }) {
+      const activity = activityFor(actorId(), start, endExclusive);
+      const totalMinutes = activity.reduce((sum, { participation }) => (
+        sum + Number(participation.actual_duration_minutes ?? 0)
+      ), 0);
+      const days = [...new Set(activity.map(({ occurrence }) => occurrence.local_date))].sort();
+      let currentStreak = 0;
+      for (let index = days.length - 1; index >= 0; index -= 1) {
+        if (index === days.length - 1) currentStreak = 1;
+        else {
+          const later = new Date(`${days[index + 1]}T00:00:00Z`);
+          const earlier = new Date(`${days[index]}T00:00:00Z`);
+          if ((later - earlier) / 86400000 !== 1) break;
+          currentStreak += 1;
+        }
+      }
+      const contexts = new Map();
+      const movements = new Map();
+      activity.forEach(({ participation, occurrence }) => {
+        const context = contexts.get(occurrence.kind) ?? { kind: occurrence.kind, session_count: 0, total_minutes: 0 };
+        context.session_count += 1;
+        context.total_minutes += Number(participation.actual_duration_minutes ?? 0);
+        contexts.set(occurrence.kind, context);
+        (occurrence.rounds ?? []).flatMap(({ movements: items = [] }) => items).forEach((movement) => {
+          const key = movement.movement_key ?? movement.movementKey;
+          const current = movements.get(key) ?? {
+            movement_key: key,
+            movement_name: movement.movement_name_snapshot ?? movement.movementName ?? key,
+            session_count: 0,
+          };
+          current.session_count += 1;
+          movements.set(key, current);
+        });
+      });
+      const highest = Math.max(0, ...[...movements.values()].map(({ session_count: count }) => count));
+      const rangeDays = Math.max(1, (new Date(`${endExclusive}T00:00:00Z`) - new Date(`${start}T00:00:00Z`)) / 86400000);
+      return {
+        range_start: start, range_end_exclusive: endExclusive, timezone,
+        session_count: activity.length, total_minutes: totalMinutes, current_streak: currentStreak,
+        average_trainings_per_week: Number((activity.length / Math.max(1, rangeDays / 7)).toFixed(2)),
+        average_hours_per_month: Number(((totalMinutes / 60) / Math.max(1, rangeDays / 30.4375)).toFixed(2)),
+        context_distribution: [...contexts.values()],
+        favorite_movements: [...movements.values()].filter(({ session_count: count }) => count === highest && highest),
+        difficulty_trends: [],
+      };
+    },
+
+    async getGroup({ groupId, start, endExclusive, metric }) {
+      const groups = groupState();
+      const roster = (groups.rosters[groupId] ?? []).filter((member) => (
+        member.membership_state !== 'ended' && member.state !== 'ended'
+        && (member.access_level ?? 'member') === 'member'
+      ));
+      const members = roster.map((member) => profileFor(member.profile_id, roster));
+      const rows = members.map((member) => {
+        const activity = activityFor(member.profile_id, start, endExclusive);
+        const totalMinutes = activity.reduce((sum, { participation }) => (
+          sum + Number(participation.actual_duration_minutes ?? 0)
+        ), 0);
+        return {
+          ...member,
+          total_minutes: totalMinutes,
+          session_count: activity.length,
+          selected_value: metric === 'sessions' ? activity.length : totalMinutes,
+        };
+      });
+      const anonymous = rows.filter(({ leaderboard_visible: visible }) => !visible);
+      const named = rows.filter(({ leaderboard_visible: visible }) => visible)
+        .sort((left, right) => right.selected_value - left.selected_value
+          || left.display_name.localeCompare(right.display_name));
+      let lastValue;
+      let rank = 0;
+      named.forEach((row, index) => {
+        if (row.selected_value !== lastValue) rank = index + 1;
+        row.rank_position = rank;
+        lastValue = row.selected_value;
+      });
+      const aggregates = {
+        anonymous_member_count: anonymous.length,
+        anonymous_minutes: anonymous.reduce((sum, row) => sum + row.total_minutes, 0),
+        anonymous_sessions: anonymous.reduce((sum, row) => sum + row.session_count, 0),
+      };
+      return (named.length ? named : [{
+        profile_id: null, display_name: null, avatar_path: null,
+        rank_position: null, total_minutes: 0, session_count: 0, selected_value: null,
+      }]).map((row) => ({ ...row, ...aggregates }));
+    },
+
+    async searchMembers({ groupId, search = '', limit = 20, offset = 0 }) {
+      const roster = groupState().rosters[groupId] ?? [];
+      const query = search.trim().toLocaleLowerCase();
+      return roster
+        .filter((member) => (member.access_level ?? 'member') === 'member')
+        .map((member) => profileFor(member.profile_id, roster))
+        .filter(({ display_name: name }) => !query || name.toLocaleLowerCase().includes(query))
+        .sort((left, right) => left.display_name.localeCompare(right.display_name))
+        .slice(offset, offset + limit)
+        .map(({ profile_id, display_name, avatar_path, graduation }) => ({
+          profile_id, display_name, avatar_path, graduation,
+        }));
+    },
+  };
+}
