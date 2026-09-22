@@ -68,13 +68,19 @@ describe('createGroupService RPC contract', () => {
     ['listRelationships', ['group-1'], 'list_group_relationships', { group_id: 'group-1' }],
     ['createGroup', [{
       name: '  Grupo Sol  ', description: '  Local class  ', location: '  Lisboa  ', discoverable: true,
+      timezone: '  Europe/Lisbon  ',
     }], 'create_group', {
       name: 'Grupo Sol', description: 'Local class', location: 'Lisboa', is_discoverable: true,
+      timezone: 'Europe/Lisbon',
     }],
     ['updateGroup', ['group-1', {
-      name: 'Grupo Lua', description: '', location: '', discoverable: false,
+      name: 'Grupo Lua', description: '', location: '', discoverable: false, timezone: 'UTC',
     }], 'update_group', {
-      group_id: 'group-1', name: 'Grupo Lua', description: null, location: null, is_discoverable: false,
+      group_id: 'group-1', name: 'Grupo Lua', description: null, location: null,
+      is_discoverable: false, timezone: 'UTC',
+    }],
+    ['setGroupTimezone', ['group-1', ' America/Sao_Paulo '], 'set_group_timezone', {
+      group_id: 'group-1', timezone: 'America/Sao_Paulo',
     }],
     ['setGroupPicture', ['group-1', 'group-1/picture.webp'], 'set_group_picture', {
       group_id: 'group-1', picture_path: 'group-1/picture.webp',
@@ -138,7 +144,7 @@ describe('createGroupService RPC contract', () => {
 
     expect(await service.listMyMemberships()).toEqual(data.group_memberships);
     expect(calls).toEqual([
-      ['select', 'group_memberships', 'group_id, profile_id, access_level, state, joined_at, ended_at, group:groups(id, slug, owner_id, name, picture_path, location, is_discoverable, archived_at)'],
+      ['select', 'group_memberships', 'group_id, profile_id, access_level, state, joined_at, ended_at, group:groups(id, slug, owner_id, name, picture_path, location, timezone, is_discoverable, archived_at)'],
       ['order', 'joined_at', { ascending: true }],
     ]);
   });

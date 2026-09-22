@@ -10,7 +10,22 @@ function fixture() {
     <p id="groupStatus" role="status"></p>
     <section id="groupDiscovery"></section>
     <section id="groupManagement"></section>
+    <dialog id="createGroupDialog">
+      <form id="createGroupForm">
+        <h1>Create a group</h1>
+        <input name="name" required>
+        <textarea name="description"></textarea>
+        <input name="location">
+        <input id="groupTimezone" name="timezone" required>
+        <input name="discoverable" type="checkbox">
+        <p data-dialog-status></p>
+        <button type="submit">Create group</button>
+      </form>
+    </dialog>
   `;
+  const dialog = document.querySelector('#createGroupDialog');
+  dialog.showModal = () => dialog.setAttribute('open', '');
+  dialog.close = () => dialog.removeAttribute('open');
 }
 
 const group = {
@@ -20,6 +35,7 @@ const group = {
   slug: 'grupo-lua',
   description: 'Tuesday training',
   location: 'Lisbon',
+  timezone: 'Europe/Lisbon',
 };
 
 const roster = [
@@ -145,6 +161,7 @@ describe('group management actions', () => {
     expect(document.querySelector('[data-request-id="request-coach"][data-decision="approved"]')).toBeNull();
     expect(document.querySelector('[data-action="transfer-ownership"]')).toBeNull();
     expect(document.querySelector('[data-action="archive-group"]')).toBeNull();
+    expect(document.querySelector('[data-action="change-timezone"]')).toBeNull();
   });
 
   it('adds owner-only coach, transfer, archive, child, and sharing controls without leave', () => {
@@ -168,11 +185,45 @@ describe('group management actions', () => {
     expect(document.querySelector('[data-request-id="request-coach"][data-decision="approved"]')).not.toBeNull();
     expect(document.querySelector('[data-profile-id="coach-2"][data-action="remove-member"]')).not.toBeNull();
     expect(document.querySelector('[data-action="transfer-ownership"]')).not.toBeNull();
+    expect(document.querySelector('[data-action="change-timezone"]')).not.toBeNull();
     expect(document.querySelector('[data-action="archive-group"]')).not.toBeNull();
     expect(document.querySelector('[data-action="invite-child-group"]')).not.toBeNull();
     expect(document.querySelector('[data-action="relationship-settings"]')).not.toBeNull();
     expect(document.querySelector('[data-action="revoke-relationship"]')).not.toBeNull();
     expect(document.querySelector('[data-action="leave-group"]')).toBeNull();
+  });
+
+  it('lets only the owner submit a new group timezone', async () => {
+    const calls = [];
+    const view = createGroupView({
+      document,
+      groupService: service({
+        setGroupTimezone: async (...args) => {
+          calls.push(args);
+          return { status: 'updated' };
+        },
+      }),
+      identity: { profileId: 'owner-1', isCoach: true },
+    });
+    view.renderManagement({
+      group,
+      membership: { access_level: 'coach', state: 'active' },
+      roster,
+      requests: [],
+      relationships: [],
+    });
+
+    document.querySelector('[data-action="change-timezone"]').click();
+    document.querySelector('#groupTimezone').value = 'America/Sao_Paulo';
+    document.querySelector('#createGroupForm').dispatchEvent(new Event('submit', {
+      bubbles: true,
+      cancelable: true,
+    }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(calls).toEqual([['group-1', 'America/Sao_Paulo']]);
+    expect(document.querySelector('#groupStatus').textContent).toBe('Group timezone updated.');
   });
 
   it('does not let a parent owner change child sharing but can revoke the relationship', () => {

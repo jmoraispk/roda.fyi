@@ -9,7 +9,7 @@ function optional(value) {
   return normalized || null;
 }
 
-const MEMBERSHIP_COLUMNS = 'group_id, profile_id, access_level, state, joined_at, ended_at, group:groups(id, slug, owner_id, name, picture_path, location, is_discoverable, archived_at)';
+const MEMBERSHIP_COLUMNS = 'group_id, profile_id, access_level, state, joined_at, ended_at, group:groups(id, slug, owner_id, name, picture_path, location, timezone, is_discoverable, archived_at)';
 const REQUEST_COLUMNS = 'id, group_id, profile_id, requested_access, state, expires_at, decided_at, created_at, group:groups(id, slug, name, picture_path, location)';
 const PICTURE_EXTENSIONS = Object.freeze({
   'image/jpeg': 'jpg',
@@ -99,21 +99,29 @@ export function createGroupService(client, options = {}) {
     listRelationships(groupId) {
       return call('list_group_relationships', { group_id: groupId });
     },
-    createGroup({ name, description, location, discoverable }) {
+    createGroup({ name, description, location, discoverable, timezone }) {
       return call('create_group', {
         name: clean(name),
         description: optional(description),
         location: optional(location),
         is_discoverable: Boolean(discoverable),
+        timezone: clean(timezone) || 'UTC',
       });
     },
-    updateGroup(groupId, { name, description, location, discoverable }) {
+    updateGroup(groupId, { name, description, location, discoverable, timezone }) {
       return call('update_group', {
         group_id: groupId,
         name: clean(name),
         description: optional(description),
         location: optional(location),
         is_discoverable: Boolean(discoverable),
+        timezone: clean(timezone) || 'UTC',
+      });
+    },
+    setGroupTimezone(groupId, timezone) {
+      return call('set_group_timezone', {
+        group_id: groupId,
+        timezone: clean(timezone),
       });
     },
     setGroupPicture(groupId, picturePath) {

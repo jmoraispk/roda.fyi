@@ -52,6 +52,10 @@ export function createGroupView({
   let managementLoad = 0;
   let discoveryLoad = 0;
 
+  function detectedTimezone() {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  }
+
   function reveal() {
     if (workspace) workspace.hidden = false;
     if (dashboardContent) dashboardContent.hidden = true;
@@ -261,6 +265,7 @@ export function createGroupView({
     if (isOwner) {
       settings.append(
         actionButton(document, 'Edit group', { action: 'edit-group' }),
+        actionButton(document, 'Change group timezone', { action: 'change-timezone' }),
         actionButton(document, 'Transfer ownership', { action: 'transfer-ownership' }),
         actionButton(document, 'Archive group', { action: 'archive-group' }),
         actionButton(document, 'Invite child group', { action: 'invite-child-group' }),
@@ -351,19 +356,22 @@ export function createGroupView({
     createForm.dataset.mode = 'create';
     createForm.querySelector('h1').textContent = 'Create a group';
     createForm.querySelector('[type="submit"]').textContent = 'Create group';
+    createForm.elements.timezone.value = detectedTimezone();
     createDialog?.showModal();
   }
 
-  function openEditGroup() {
+  function openEditGroup(timezoneOnly = false) {
     if (!current) return;
-    createForm.dataset.mode = 'edit';
-    createForm.querySelector('h1').textContent = 'Edit group';
-    createForm.querySelector('[type="submit"]').textContent = 'Save group';
+    createForm.dataset.mode = timezoneOnly ? 'timezone' : 'edit';
+    createForm.querySelector('h1').textContent = timezoneOnly ? 'Change group timezone' : 'Edit group';
+    createForm.querySelector('[type="submit"]').textContent = timezoneOnly ? 'Save timezone' : 'Save group';
     createForm.elements.name.value = current.group.name ?? '';
     createForm.elements.description.value = current.group.description ?? '';
     createForm.elements.location.value = current.group.location ?? '';
+    createForm.elements.timezone.value = current.group.timezone ?? detectedTimezone();
     createForm.elements.discoverable.checked = Boolean(current.group.is_discoverable);
     createDialog.showModal();
+    if (timezoneOnly) createForm.elements.timezone.focus();
   }
 
   discovery.addEventListener('input', (event) => {
@@ -451,6 +459,8 @@ export function createGroupView({
         transferDialog.showModal();
       } else if (target.dataset.action === 'edit-group') {
         openEditGroup();
+      } else if (target.dataset.action === 'change-timezone') {
+        openEditGroup(true);
       } else if (target.dataset.action === 'archive-group') {
         archiveDialog.showModal();
       } else if (target.dataset.action === 'invite-child-group') {
@@ -481,18 +491,24 @@ export function createGroupView({
         name: data.get('name'),
         description: data.get('description'),
         location: data.get('location'),
+        timezone: data.get('timezone'),
         discoverable: data.get('discoverable') === 'on',
       };
-      const editing = createForm.dataset.mode === 'edit';
-      const result = editing
-        ? await groupService.updateGroup(current.group.id, values)
-        : await groupService.createGroup(values);
+      const mode = createForm.dataset.mode;
+      const editing = mode === 'edit' || mode === 'timezone';
+      const result = mode === 'timezone'
+        ? await groupService.setGroupTimezone(current.group.id, values.timezone)
+        : editing
+          ? await groupService.updateGroup(current.group.id, values)
+          : await groupService.createGroup(values);
       closeDialog(createDialog);
       const groupId = editing ? current.group.id : (result.group_id ?? result.id);
       const memberships = await onMembershipsChanged(groupId);
       const membership = memberships?.find((item) => item.group_id === groupId);
       if (membership) await loadManagement(membership.group, membership);
-      status.textContent = editing ? 'Group updated.' : 'Group created.';
+      status.textContent = mode === 'timezone'
+        ? 'Group timezone updated.'
+        : editing ? 'Group updated.' : 'Group created.';
     } catch (error) {
       showError(error, dialogStatus);
     } finally {
