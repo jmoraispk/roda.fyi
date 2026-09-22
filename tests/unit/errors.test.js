@@ -25,4 +25,18 @@ describe('toAppError', () => {
     const error = new AppError('validation', 'invalid_email', 'Enter a valid email.');
     expect(toAppError(error)).toBe(error);
   });
+
+  it.each(Object.entries({
+    cancelled_training: 'This training was cancelled.',
+    connection_ended: 'This coaching connection has ended.',
+    duplicate_completion: 'This training was already completed.',
+    edit_conflict: 'This plan changed elsewhere. Reload it before saving again.',
+    invalid_attendee: 'One or more attendees are not active group members.',
+    published_plan_immutable: 'Published plans cannot be changed.',
+  }))('uses safe training copy for %s', (code, message) => {
+    expect(toAppError({ code: 'P0001', message: code })).toMatchObject({
+      code,
+      message,
+    });
+  });
 });

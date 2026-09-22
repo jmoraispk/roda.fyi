@@ -7,7 +7,12 @@ const EXPIRED_CODES = new Set([
 ]);
 
 const SAFE_MESSAGES = Object.freeze({
+  cancelled_training: 'This training was cancelled.',
+  connection_ended: 'This coaching connection has ended.',
+  duplicate_completion: 'This training was already completed.',
+  edit_conflict: 'This plan changed elsewhere. Reload it before saving again.',
   invalid_email: 'Enter a valid email address.',
+  invalid_attendee: 'One or more attendees are not active group members.',
   invitation_expired: 'This invitation has expired.',
   missing_code: 'The sign-in response did not include a code.',
   missing_session: 'The sign-in response did not create a session.',
@@ -15,6 +20,7 @@ const SAFE_MESSAGES = Object.freeze({
   not_authenticated: 'Please sign in to continue.',
   not_authorized: 'You do not have permission to do that.',
   otp_expired: 'This sign-in link has expired.',
+  published_plan_immutable: 'Published plans cannot be changed.',
   request_expired: 'This request has expired.',
   relationship_expired: 'This group invitation has expired.',
 });
