@@ -530,3 +530,414 @@ export function createE2EConnectionService({ window }) {
     },
   };
 }
+
+export function createE2ETrainingService({ window }) {
+  const { localStorage: storage } = window;
+  const stateKey = 'roda.e2e.trainingState';
+
+  function readState() {
+    return {
+      plans: [],
+      schedules: [],
+      occurrences: [],
+      participations: [],
+      assessments: [],
+      feedback: [],
+      counter: 0,
+      failNext: null,
+      revokeReadsFor: [],
+      ...JSON.parse(storage.getItem(stateKey) ?? '{}'),
+    };
+  }
+
+  function writeState(state) {
+    storage.setItem(stateKey, JSON.stringify(state));
+  }
+
+  function actorId() {
+    return readSession(storage)?.user?.id ?? 'practitioner-1';
+  }
+
+  function record(event) {
+    window.__RODA_E2E_EVENTS__?.push(event);
+  }
+
+  function nextId(state, prefix) {
+    state.counter += 1;
+    return `${prefix}-${state.counter}`;
+  }
+
+  function guard(state, operation, { read = false } = {}) {
+    if (state.failNext === operation) {
+      state.failNext = null;
+      writeState(state);
+      throw new AppError('network', 'network_failure', 'The training request failed.', {
+        retryable: true,
+      });
+    }
+    if (read && state.revokeReadsFor?.includes(actorId())) {
+      throw new AppError('authorization', 'not_authorized');
+    }
+  }
+
+  function isCoach() {
+    return Boolean(JSON.parse(storage.getItem('roda.e2e.coachProfile') ?? 'null'));
+  }
+
+  function groupRoster(groupId) {
+    const groupState = JSON.parse(storage.getItem('roda.e2e.groupState') ?? '{}');
+    return groupState.rosters?.[groupId] ?? [];
+  }
+
+  function completion(state, occurrence) {
+    return {
+      status: 'completed',
+      occurrence_id: occurrence.id,
+      participation_ids: state.participations
+        .filter(({ occurrence_id: occurrenceId }) => occurrenceId === occurrence.id)
+        .map(({ id }) => id),
+    };
+  }
+
+  function roundsFor(plan, override) {
+    return structuredClone(override ?? plan?.rounds ?? []);
+  }
+
+  return {
+    createIdempotencyKey() {
+      const state = readState();
+      return nextId(state, 'request');
+    },
+
+    async createPlan(input) {
+      const state = readState();
+      guard(state, 'createPlan');
+      if (!isCoach()) throw new AppError('authorization', 'not_authorized');
+      const plan = {
+        plan_id: nextId(state, 'plan'),
+        version_id: nextId(state, 'version'),
+        version_number: 1,
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        source_group_id: input.groupId ?? null,
+        state: 'draft',
+        expected_duration_minutes: input.durationMinutes,
+        instructions: input.instructions?.trim() || null,
+        published_at: null,
+        updated_at: '2026-09-22T18:00:00Z',
+        rounds: structuredClone(input.rounds),
+      };
+      state.plans.push(plan);
+      writeState(state);
+      record({ type: 'create-workout-plan', planId: plan.plan_id });
+      return {
+        status: 'created', plan_id: plan.plan_id,
+        version_id: plan.version_id, updated_at: plan.updated_at,
+      };
+    },
+
+    async savePlanDraft(input) {
+      const state = readState();
+      guard(state, 'savePlanDraft');
+      const plan = state.plans.find(({ plan_id: id }) => id === input.planId);
+      if (!plan || plan.expected_updated_at !== undefined
+        && input.expectedUpdatedAt !== plan.updated_at) {
+        throw new AppError('validation', 'edit_conflict');
+      }
+      Object.assign(plan, {
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        expected_duration_minutes: input.durationMinutes,
+        instructions: input.instructions?.trim() || null,
+        rounds: structuredClone(input.rounds),
+        state: 'draft',
+        updated_at: '2026-09-22T18:01:00Z',
+      });
+      writeState(state);
+      return {
+        status: 'saved', plan_id: plan.plan_id,
+        version_id: plan.version_id, updated_at: plan.updated_at,
+      };
+    },
+
+    async publishPlan(planId) {
+      const state = readState();
+      guard(state, 'publishPlan');
+      const plan = state.plans.find(({ plan_id: id }) => id === planId);
+      if (!plan || !isCoach()) throw new AppError('authorization', 'not_authorized');
+      plan.state = 'published';
+      plan.published_at = '2026-09-22T18:02:00Z';
+      writeState(state);
+      return { status: 'published', plan_id: planId, version_id: plan.version_id };
+    },
+
+    async listPlans(groupId = null) {
+      const state = readState();
+      guard(state, 'listPlans', { read: true });
+      return state.plans.filter((plan) => !groupId || plan.source_group_id === groupId);
+    },
+
+    async scheduleGroupTraining(input) {
+      const state = readState();
+      guard(state, 'scheduleGroupTraining');
+      if (!isCoach()) throw new AppError('authorization', 'not_authorized');
+      const plan = state.plans.find(({ version_id: id }) => id === input.planVersionId);
+      if (!plan || plan.state !== 'published') {
+        throw new AppError('validation', 'plan_not_published');
+      }
+      const schedule = {
+        id: nextId(state, 'schedule'), kind: 'group', state: 'scheduled',
+        plan_version_id: input.planVersionId, group_id: input.groupId,
+        student_profile_id: null, connection_id: null,
+        arranged_by: actorId(), starts_at: input.startsAt,
+        local_date: input.localDate, timezone: input.timezone,
+        duration_minutes: plan.expected_duration_minutes,
+        visible_in_advance: input.visibleInAdvance !== false,
+      };
+      state.schedules.push(schedule);
+      writeState(state);
+      return { status: 'scheduled', schedule_id: schedule.id };
+    },
+
+    async schedulePersonalClass(input) {
+      const state = readState();
+      guard(state, 'schedulePersonalClass');
+      if (!isCoach()) throw new AppError('authorization', 'not_authorized');
+      const plan = state.plans.find(({ version_id: id }) => id === input.planVersionId);
+      if (!plan || plan.state !== 'published') {
+        throw new AppError('validation', 'plan_not_published');
+      }
+      const schedule = {
+        id: nextId(state, 'schedule'), kind: 'personal_class', state: 'scheduled',
+        plan_version_id: input.planVersionId, group_id: input.groupId ?? null,
+        student_profile_id: input.studentProfileId,
+        connection_id: input.connectionId ?? null,
+        arranged_by: actorId(), starts_at: input.startsAt,
+        local_date: input.localDate, timezone: input.timezone,
+        duration_minutes: plan.expected_duration_minutes,
+        visible_in_advance: input.visibleInAdvance !== false,
+      };
+      state.schedules.push(schedule);
+      writeState(state);
+      return { status: 'scheduled', schedule_id: schedule.id };
+    },
+
+    async cancelScheduledTraining(scheduleId, reason = null) {
+      const state = readState();
+      guard(state, 'cancelScheduledTraining');
+      const schedule = state.schedules.find(({ id }) => id === scheduleId);
+      if (!schedule || schedule.arranged_by !== actorId()) {
+        throw new AppError('authorization', 'not_authorized');
+      }
+      schedule.state = 'cancelled';
+      schedule.cancellation_reason = reason?.trim() || null;
+      writeState(state);
+      return { status: 'cancelled', schedule_id: scheduleId };
+    },
+
+    async recordAloneTraining(input) {
+      const state = readState();
+      guard(state, 'recordAloneTraining');
+      const existing = state.occurrences.find(({ idempotency_key: key }) => (
+        key === input.idempotencyKey
+      ));
+      if (existing) return completion(state, existing);
+      const occurrence = {
+        id: nextId(state, 'occurrence'), kind: 'alone', group_id: null,
+        recorded_by: actorId(), occurred_at: input.occurredAt ?? `${input.localDate}T12:00:00Z`,
+        local_date: input.localDate, timezone: input.timezone,
+        default_duration_minutes: input.durationMinutes,
+        idempotency_key: input.idempotencyKey,
+        rounds: structuredClone(input.rounds),
+      };
+      const participation = {
+        id: nextId(state, 'participation'), occurrence_id: occurrence.id,
+        profile_id: actorId(), actual_duration_minutes: input.durationMinutes,
+        personal_notes: input.notes?.trim() || null,
+        confirmed_at: occurrence.occurred_at,
+      };
+      state.occurrences.push(occurrence);
+      state.participations.push(participation);
+      writeState(state);
+      record({ type: 'record-alone-training', occurrenceId: occurrence.id });
+      return { ...completion(state, occurrence), participation_id: participation.id };
+    },
+
+    async completeGroupTraining(input) {
+      const state = readState();
+      guard(state, 'completeGroupTraining');
+      const existing = state.occurrences.find(({ idempotency_key: key }) => (
+        key === input.idempotencyKey
+      ));
+      if (existing) return completion(state, existing);
+      const schedule = state.schedules.find(({ id }) => id === input.scheduleId);
+      if (!schedule || schedule.arranged_by !== actorId()) {
+        throw new AppError('authorization', 'not_authorized');
+      }
+      if (schedule.state === 'cancelled') throw new AppError('validation', 'cancelled_training');
+      const rosterIds = new Set(groupRoster(schedule.group_id).map(({ profile_id: id }) => id));
+      if (input.attendees.some(({ profileId }) => !rosterIds.has(profileId))) {
+        throw new AppError('validation', 'invalid_attendee');
+      }
+      const plan = state.plans.find(({ version_id: id }) => id === schedule.plan_version_id);
+      const occurrence = {
+        id: nextId(state, 'occurrence'), schedule_id: schedule.id,
+        kind: 'group', group_id: schedule.group_id, recorded_by: actorId(),
+        occurred_at: input.occurredAt ?? schedule.starts_at,
+        local_date: schedule.local_date, timezone: schedule.timezone,
+        default_duration_minutes: input.durationMinutes,
+        idempotency_key: input.idempotencyKey,
+        rounds: roundsFor(plan, input.rounds),
+      };
+      state.occurrences.push(occurrence);
+      input.attendees.forEach((attendee) => state.participations.push({
+        id: nextId(state, 'participation'), occurrence_id: occurrence.id,
+        profile_id: attendee.profileId,
+        actual_duration_minutes: attendee.durationMinutes,
+        personal_notes: null, confirmed_at: occurrence.occurred_at,
+      }));
+      schedule.state = 'completed';
+      writeState(state);
+      return completion(state, occurrence);
+    },
+
+    async completePersonalClass(input) {
+      const state = readState();
+      guard(state, 'completePersonalClass');
+      const existing = state.occurrences.find(({ idempotency_key: key }) => (
+        key === input.idempotencyKey
+      ));
+      if (existing) return completion(state, existing);
+      const schedule = state.schedules.find(({ id }) => id === input.scheduleId);
+      if (!schedule || schedule.arranged_by !== actorId()) {
+        throw new AppError('authorization', 'not_authorized');
+      }
+      const plan = state.plans.find(({ version_id: id }) => id === schedule.plan_version_id);
+      const occurrence = {
+        id: nextId(state, 'occurrence'), schedule_id: schedule.id,
+        kind: 'personal_class', group_id: schedule.group_id,
+        recorded_by: actorId(), occurred_at: input.occurredAt ?? schedule.starts_at,
+        local_date: schedule.local_date, timezone: schedule.timezone,
+        default_duration_minutes: input.durationMinutes,
+        idempotency_key: input.idempotencyKey,
+        rounds: roundsFor(plan, input.rounds),
+      };
+      state.occurrences.push(occurrence);
+      state.participations.push({
+        id: nextId(state, 'participation'), occurrence_id: occurrence.id,
+        profile_id: schedule.student_profile_id,
+        actual_duration_minutes: input.durationMinutes,
+        personal_notes: null, confirmed_at: occurrence.occurred_at,
+      });
+      schedule.state = 'completed';
+      writeState(state);
+      return completion(state, occurrence);
+    },
+
+    async saveNotes(input) {
+      const state = readState();
+      guard(state, 'saveNotes');
+      const participation = state.participations.find(({ id }) => id === input.participationId);
+      if (!participation || participation.profile_id !== actorId()) {
+        throw new AppError('authorization', 'not_authorized');
+      }
+      participation.personal_notes = input.notes?.trim() || null;
+      writeState(state);
+      return { status: 'saved', participation_id: participation.id };
+    },
+
+    async saveAssessment(input) {
+      const state = readState();
+      guard(state, 'saveAssessment');
+      const participation = state.participations.find(({ id }) => id === input.participationId);
+      if (!participation || participation.profile_id !== actorId()) {
+        throw new AppError('authorization', 'not_authorized');
+      }
+      const existing = state.assessments.find((assessment) => (
+        assessment.participation_id === input.participationId
+        && assessment.movement_id === input.movementId
+      ));
+      const assessment = existing ?? {
+        id: nextId(state, 'assessment'),
+        participation_id: input.participationId,
+        movement_id: input.movementId,
+      };
+      Object.assign(assessment, { difficulty: input.difficulty, note: input.note?.trim() || null });
+      if (!existing) state.assessments.push(assessment);
+      writeState(state);
+      return { status: 'saved', assessment_id: assessment.id };
+    },
+
+    async addFeedback(input) {
+      const state = readState();
+      guard(state, 'addFeedback');
+      if (!isCoach()) throw new AppError('authorization', 'not_authorized');
+      const feedback = {
+        id: nextId(state, 'feedback'), participation_id: input.participationId,
+        coach_profile_id: actorId(), group_id: input.groupId ?? null,
+        connection_id: input.connectionId ?? null,
+        body: input.body.trim(), created_at: '2026-09-22T18:10:00Z',
+      };
+      state.feedback.push(feedback);
+      writeState(state);
+      return { status: 'saved', feedback_id: feedback.id };
+    },
+
+    async listCalendar(input) {
+      const state = readState();
+      guard(state, 'listCalendar', { read: true });
+      const profileId = input.profileId ?? actorId();
+      const completed = state.participations
+        .filter(({ profile_id: id }) => id === profileId)
+        .map((participation) => {
+          const occurrence = state.occurrences.find(({ id }) => id === participation.occurrence_id);
+          return {
+            item_id: occurrence.id, item_type: 'completed',
+            local_date: occurrence.local_date, kind: occurrence.kind,
+            status: 'completed', starts_at: occurrence.occurred_at,
+            duration_minutes: participation.actual_duration_minutes,
+            group_id: occurrence.group_id,
+          };
+        });
+      const upcoming = state.schedules
+        .filter(({ state: status }) => status === 'scheduled')
+        .filter((schedule) => schedule.student_profile_id === profileId
+          || (schedule.kind === 'group' && groupRoster(schedule.group_id)
+            .some(({ profile_id: id }) => id === profileId)))
+        .map((schedule) => ({
+          item_id: schedule.id, item_type: 'scheduled',
+          local_date: schedule.local_date, kind: schedule.kind,
+          status: schedule.state, starts_at: schedule.starts_at,
+          duration_minutes: schedule.duration_minutes,
+          group_id: schedule.group_id,
+          visible_in_advance: schedule.visible_in_advance,
+        }));
+      return [...completed, ...upcoming]
+        .filter(({ local_date: date }) => date >= input.start && date < input.endExclusive)
+        .sort((left, right) => left.starts_at.localeCompare(right.starts_at));
+    },
+
+    async getDay(input) {
+      const state = readState();
+      guard(state, 'getDay', { read: true });
+      const profileId = input.profileId ?? actorId();
+      return state.participations
+        .filter(({ profile_id: id }) => id === profileId)
+        .map((participation) => ({
+          participation,
+          occurrence: state.occurrences.find(({ id }) => id === participation.occurrence_id),
+        }))
+        .filter(({ occurrence }) => occurrence.local_date === input.localDate)
+        .map(({ occurrence, participation }) => ({
+          id: occurrence.id, item_type: 'completed', kind: occurrence.kind,
+          status: 'completed', starts_at: occurrence.occurred_at,
+          duration_minutes: participation.actual_duration_minutes,
+          participation_id: participation.id,
+          personal_notes: participation.personal_notes,
+          rounds: structuredClone(occurrence.rounds),
+          assessments: state.assessments.filter(({ participation_id: id }) => id === participation.id),
+          feedback: state.feedback.filter(({ participation_id: id }) => id === participation.id),
+        }));
+    },
+  };
+}

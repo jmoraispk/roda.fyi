@@ -1,0 +1,169 @@
+import { describe, expect, it } from 'vitest';
+
+import { createTrainingService } from '../../src/app/training-service.js';
+import { createE2ETrainingService } from '../../src/app/testing/fake-services.js';
+
+const ROUND = Object.freeze({
+  label: 'Round one',
+  movements: [{ movement_key: 'armada', movement_name: 'Armada' }],
+});
+
+function harness(results = {}) {
+  const calls = [];
+  return {
+    calls,
+    client: {
+      rpc: async (name, params = {}) => {
+        calls.push([name, params]);
+        return results[name] ?? { data: { status: 'ok' }, error: null };
+      },
+    },
+  };
+}
+
+describe('training service', () => {
+  it('normalizes an Alone record and creates one stable request key', async () => {
+    const { client, calls } = harness();
+    const service = createTrainingService(client, { randomUUID: () => 'request-uuid' });
+
+    await service.recordAloneTraining({
+      localDate: '2026-09-22', timezone: 'Europe/Lisbon',
+      durationMinutes: 45, notes: '  Armada practice  ', rounds: [ROUND],
+    });
+
+    expect(calls).toEqual([['record_alone_training', {
+      local_date: '2026-09-22', timezone: 'Europe/Lisbon',
+      duration_minutes: 45, personal_notes: 'Armada practice', rounds: [ROUND],
+      idempotency_key: 'request-uuid', occurred_at: null,
+    }]]);
+  });
+
+  it('reuses a caller-owned idempotency key on completion retry', async () => {
+    const { client, calls } = harness();
+    const service = createTrainingService(client, { randomUUID: () => 'unused' });
+    const action = {
+      scheduleId: 'schedule-1', durationMinutes: 60,
+      attendees: [{ profileId: 'student-1', durationMinutes: 45 }],
+      idempotencyKey: 'retry-key',
+    };
+    await service.completeGroupTraining(action);
+    await service.completeGroupTraining(action);
+    expect(calls).toEqual([
+      ['complete_group_training', {
+        schedule_id: 'schedule-1',
+        attendees: [{ profile_id: 'student-1', duration_minutes: 45 }],
+        duration_minutes: 60, idempotency_key: 'retry-key',
+        rounds: null, occurred_at: null,
+      }],
+      ['complete_group_training', {
+        schedule_id: 'schedule-1',
+        attendees: [{ profile_id: 'student-1', duration_minutes: 45 }],
+        duration_minutes: 60, idempotency_key: 'retry-key',
+        rounds: null, occurred_at: null,
+      }],
+    ]);
+  });
+
+  it.each([
+    ['createPlan', [{ title: ' ', durationMinutes: 60, rounds: [ROUND] }], 'invalid_plan_title'],
+    ['createPlan', [{ title: 'Plan', durationMinutes: 60, rounds: [] }], 'invalid_rounds'],
+    ['recordAloneTraining', [{ localDate: '2026-02-30', timezone: 'UTC', durationMinutes: 30, rounds: [ROUND] }], 'invalid_local_date'],
+    ['recordAloneTraining', [{ localDate: '2026-09-22', timezone: 'UTC', durationMinutes: 0, rounds: [ROUND] }], 'invalid_duration'],
+    ['saveAssessment', [{ participationId: 'p-1', movementId: 'm-1', difficulty: 'impossible' }], 'invalid_difficulty'],
+  ])('%s validates before calling Supabase', async (method, args, code) => {
+    const { client, calls } = harness();
+    await expect(createTrainingService(client)[method](...args))
+      .rejects.toMatchObject({ kind: 'validation', code });
+    expect(calls).toEqual([]);
+  });
+
+  it('uses stable plan, schedule, calendar, notes, assessment, and feedback contracts', async () => {
+    const { client, calls } = harness();
+    const service = createTrainingService(client, { randomUUID: () => 'generated-key' });
+    await service.createPlan({
+      title: '  Plan  ', description: '  Desc  ', groupId: 'group-1',
+      durationMinutes: 60, instructions: '  Slow  ', rounds: [ROUND],
+    });
+    await service.schedulePersonalClass({
+      planVersionId: 'version-1', studentProfileId: 'student-1',
+      groupId: null, connectionId: 'connection-1',
+      startsAt: '2026-09-25T18:00:00Z', localDate: '2026-09-25',
+      timezone: 'Europe/Lisbon', visibleInAdvance: false,
+    });
+    await service.listCalendar({ start: '2026-09-01', endExclusive: '2026-10-01' });
+    await service.saveNotes({ participationId: 'p-1', notes: '  Smooth  ' });
+    await service.saveAssessment({
+      participationId: 'p-1', movementId: 'm-1', difficulty: 'easy', note: '  Better  ',
+    });
+    await service.addFeedback({
+      participationId: 'p-1', groupId: 'group-1', body: '  Stable base  ',
+    });
+    expect(calls).toEqual([
+      ['create_workout_plan', {
+        title: 'Plan', description: 'Desc', source_group_id: 'group-1',
+        expected_duration_minutes: 60, instructions: 'Slow', rounds: [ROUND],
+      }],
+      ['schedule_personal_class', {
+        plan_version_id: 'version-1', student_profile_id: 'student-1',
+        group_id: null, connection_id: 'connection-1',
+        starts_at: '2026-09-25T18:00:00Z', local_date: '2026-09-25',
+        timezone: 'Europe/Lisbon', visible_in_advance: false,
+      }],
+      ['list_training_calendar', {
+        month_start: '2026-09-01', month_end: '2026-10-01', profile_id: null,
+      }],
+      ['save_training_notes', { participation_id: 'p-1', personal_notes: 'Smooth' }],
+      ['save_training_assessment', {
+        participation_id: 'p-1', occurrence_movement_id: 'm-1',
+        difficulty: 'easy', note: 'Better',
+      }],
+      ['add_training_feedback', {
+        participation_id: 'p-1', group_id: 'group-1',
+        connection_id: null, body: 'Stable base',
+      }],
+    ]);
+  });
+
+  it('maps Supabase failures to application errors', async () => {
+    const { client } = harness({
+      list_training_calendar: {
+        data: null, error: { code: 'PT403', message: 'not_authorized' },
+      },
+    });
+    await expect(createTrainingService(client).listCalendar({
+      start: '2026-09-01', endExclusive: '2026-10-01',
+    })).rejects.toMatchObject({ kind: 'authorization', code: 'not_authorized' });
+  });
+
+  it('derives fake calendar summaries from persisted participation without duplicates', async () => {
+    const values = new Map([
+      ['roda.e2e.session', JSON.stringify({ user: { id: 'practitioner-1' } })],
+    ]);
+    const window = {
+      __RODA_E2E_EVENTS__: [],
+      localStorage: {
+        getItem: (key) => values.get(key) ?? null,
+        setItem: (key, value) => values.set(key, value),
+      },
+    };
+    const service = createE2ETrainingService({ window });
+    const input = {
+      localDate: '2026-09-22', timezone: 'Europe/Lisbon',
+      durationMinutes: 45, notes: 'Armada practice', rounds: [ROUND],
+      idempotencyKey: 'same-request',
+    };
+    const first = await service.recordAloneTraining(input);
+    const retry = await service.recordAloneTraining(input);
+
+    expect(retry.occurrence_id).toBe(first.occurrence_id);
+    expect(await service.listCalendar({
+      start: '2026-09-01', endExclusive: '2026-10-01',
+    })).toHaveLength(1);
+    const persisted = JSON.parse(values.get('roda.e2e.trainingState'));
+    expect(persisted).toMatchObject({
+      occurrences: [{ idempotency_key: 'same-request' }],
+      participations: [{ actual_duration_minutes: 45 }],
+    });
+    expect(persisted).not.toHaveProperty('totals');
+  });
+});
