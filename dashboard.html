@@ -27,6 +27,7 @@
     <header class="dashboard-header">
       <a class="dashboard-brand" href="/"><span></span><b>RODA</b></a>
       <div class="dashboard-account">
+        <button class="quiet-button" id="dashboardLocale" type="button" aria-label="Change language">PT</button>
         <button class="quiet-button" id="editProfile" type="button"><span id="profileName"></span> · Profile</button>
         <button class="quiet-button" id="signOut" type="button">Sign out</button>
       </div>
@@ -51,6 +52,8 @@
       </aside>
       <p class="dashboard-status" id="dashboardStatus" role="status" aria-label="Dashboard status" aria-live="polite"></p>
       <section class="dashboard-content" id="dashboardContent" aria-live="polite"></section>
+      <section class="connection-workspace" id="connectionWorkspace" hidden></section>
+      <p class="connection-status" id="connectionStatus" role="status" aria-live="polite"></p>
       <section class="group-workspace" id="groupWorkspace" hidden>
         <p class="group-status" id="groupStatus" role="status" aria-label="Group status" aria-live="polite"></p>
         <section id="groupDiscovery"></section>
@@ -185,6 +188,17 @@
       <p class="profile-status" data-dialog-status role="status"></p>
       <button class="primary-button" type="submit">Confirm archive</button>
     </form>
+  </dialog>
+
+  <dialog class="profile-dialog connection-dialog" id="connectionSearchDialog" aria-labelledby="connectionSearchTitle">
+    <div class="connection-dialog-body">
+      <button class="profile-close" data-close-connection-search type="button" aria-label="Close coaching search">×</button>
+      <div class="profile-kicker">Coaching</div>
+      <h1 id="connectionSearchTitle">Find a coaching connection</h1>
+      <label class="field-label" for="connectionSearchInput">Search by name</label>
+      <input class="field-input" id="connectionSearchInput" type="search" autocomplete="off">
+      <div class="connection-search-results" id="connectionSearchResults"></div>
+    </div>
   </dialog>
 
   <script type="module" src="/assets/generated/dashboard.js"></script>

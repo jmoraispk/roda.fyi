@@ -1,14 +1,18 @@
 import { createAuthService } from '../auth-service.js';
+import { createConnectionService } from '../connection-service.js';
 import { publicConfig } from '../config.js';
+import { createDashboardI18n } from '../dashboard-i18n.js';
 import { createGroupService } from '../group-service.js';
 import { createProfileService } from '../profile-service.js';
 import { createRodaClient } from '../supabase-client.js';
 import {
   createE2EAuthService,
+  createE2EConnectionService,
   createE2EGroupService,
   createE2EProfileService,
 } from '../testing/fake-services.js';
 import { createDashboardView } from '../ui/dashboard-view.js';
+import { createConnectionView } from '../ui/connection-view.js';
 import { createGroupView } from '../ui/group-view.js';
 import { createProfileView } from '../ui/profile-view.js';
 
@@ -72,11 +76,18 @@ async function main() {
   const groupService = __RODA_E2E__
     ? createE2EGroupService({ window })
     : createGroupService(client);
+  const connectionService = __RODA_E2E__
+    ? createE2EConnectionService({ window })
+    : createConnectionService(client);
+  const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
+  const localeButton = document.querySelector('#dashboardLocale');
   let session;
   let profile;
   let dashboard;
   let profileController;
   let groupController;
+  let connectionController;
+  let connectionIdentity;
   let initializing = false;
   let initialized = false;
 
@@ -130,6 +141,7 @@ async function main() {
       }),
       onSignOut: async () => {
         groupController.clearPrivate();
+        connectionController.clear();
         dashboard.clear();
         await authService.signOut();
         returnToSignIn();
@@ -145,10 +157,11 @@ async function main() {
           groupController.hide();
         }
       },
-      onCoachRegistration: () => groupController.setIdentity({
-        profileId: profile.id,
-        isCoach: true,
-      }),
+      onCoachRegistration: () => {
+        groupController.setIdentity({ profileId: profile.id, isCoach: true });
+        connectionIdentity.isCoach = true;
+        connectionController.load();
+      },
     });
     groupController = createGroupView({
       document,
@@ -164,7 +177,18 @@ async function main() {
     profileController = createProfileView({
       document,
       profileService,
-      onSaved: async (nextProfile) => dashboard.updateProfile(nextProfile),
+      onSaved: async (nextProfile) => {
+        dashboard.updateProfile(nextProfile);
+        await connectionController.load();
+      },
+    });
+    connectionIdentity = { profileId: profile.id, isCoach: Boolean(coachProfile) };
+    connectionController = createConnectionView({
+      document,
+      service: connectionService,
+      i18n,
+      identity: connectionIdentity,
+      onAccessRevoked: async () => {},
     });
   }
 
@@ -187,6 +211,8 @@ async function main() {
         coachProfile: startup.coachProfile,
         memberships: startup.memberships,
       });
+      localeButton.textContent = i18n.locale() === 'en' ? 'PT' : 'EN';
+      if (profile.completed_at) await connectionController.load();
       setSupplementalWarning(startup.supplementalFailed);
       initialized = true;
 
@@ -216,6 +242,7 @@ async function main() {
       authService.onAuthStateChange((_event, nextSession) => {
         if (nextSession) return;
         groupController.clearPrivate();
+        connectionController.clear();
         dashboard.clear();
         returnToSignIn();
       });
@@ -231,6 +258,11 @@ async function main() {
   startupSignOut.addEventListener('click', async () => {
     await authService.signOut();
     returnToSignIn();
+  });
+  localeButton.addEventListener('click', async () => {
+    i18n.setLocale(i18n.locale() === 'en' ? 'pt' : 'en');
+    localeButton.textContent = i18n.locale() === 'en' ? 'PT' : 'EN';
+    if (profile?.completed_at) await connectionController.load();
   });
 
   await initialize();

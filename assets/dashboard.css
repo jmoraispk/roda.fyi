@@ -111,6 +111,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .sharing-fieldset label { display: flex; align-items: center; gap: 9px; color: var(--sand); }
 .group-dialog select { appearance: auto; }
 
+.connection-workspace { max-width: 920px; margin-top: 42px; border-top: 1px solid var(--line); padding-top: 28px; }
+.connection-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.connection-header h2 { margin: 0; font: 800 clamp(1.7rem, 4vw, 2.5rem)/1 var(--display); letter-spacing: -.03em; }
+.connection-actions, .connection-row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.connection-list { display: grid; gap: 10px; margin-top: 18px; }
+.connection-row, .connection-candidate { display: flex; align-items: center; justify-content: space-between; gap: 18px; border: 1px solid var(--line); border-radius: 15px; padding: 15px 17px; background: var(--card); }
+.connection-row h3 { margin: 0 0 4px; font: 800 1rem/1.2 var(--display); }
+.connection-row p { margin: 0 0 7px; color: var(--muted); }
+.connection-state { color: var(--gold); font: 700 .62rem/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.connection-empty { color: var(--muted); }
+.connection-status { min-height: 1.5em; color: var(--gold); }
+.connection-dialog-body { position: relative; padding: 34px; }
+.connection-search-results { display: grid; gap: 9px; margin-top: 16px; }
+.connection-candidate span { color: var(--sand); font-weight: 600; }
+
 @media (max-width: 620px) {
   .dashboard-header { align-items: flex-start; padding: 13px 15px; }
   .dashboard-account { flex-direction: column; align-items: flex-end; gap: 1px; }
@@ -126,6 +141,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   .group-workspace { padding-top: 28px; }
   .group-discovery-head { align-items: stretch; flex-direction: column; }
   .group-row { align-items: flex-start; flex-direction: column; }
+  .connection-header, .connection-row, .connection-candidate { align-items: flex-start; flex-direction: column; }
   .group-row-actions { justify-content: flex-start; }
   .invite-form { grid-template-columns: 1fr; }
   .profile-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); border-radius: 18px; }

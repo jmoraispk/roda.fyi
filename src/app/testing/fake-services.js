@@ -209,7 +209,7 @@ export function createE2EGroupService({ window }) {
       return { status: 'pending', request_id: request.id };
     },
 
-    async createGroup({ name, description, location, discoverable }) {
+    async createGroup({ name, description, location, discoverable, timezone }) {
       const state = readState();
       const id = `group-${state.groups.length + 1}`;
       const group = {
@@ -219,6 +219,7 @@ export function createE2EGroupService({ window }) {
         name: name.trim(),
         description: description?.trim() || null,
         location: location?.trim() || null,
+        timezone: timezone?.trim() || 'UTC',
         picture_path: null,
         is_discoverable: Boolean(discoverable),
         archived_at: null,
@@ -243,18 +244,29 @@ export function createE2EGroupService({ window }) {
       return { status: 'created', group_id: id };
     },
 
-    async updateGroup(groupId, { name, description, location, discoverable }) {
+    async updateGroup(groupId, { name, description, location, discoverable, timezone }) {
       const state = readState();
       const values = {
         name: name.trim(),
         description: description?.trim() || null,
         location: location?.trim() || null,
+        timezone: timezone?.trim() || 'UTC',
         is_discoverable: Boolean(discoverable),
       };
       const group = state.groups.find((item) => item.id === groupId);
       if (group) Object.assign(group, values);
       const membership = state.memberships.find((item) => item.group_id === groupId);
       if (membership?.group) Object.assign(membership.group, values);
+      writeState(state);
+      return { status: 'updated', group_id: groupId };
+    },
+
+    async setGroupTimezone(groupId, timezone) {
+      const state = readState();
+      const group = state.groups.find((item) => item.id === groupId);
+      if (group) group.timezone = timezone.trim();
+      const membership = state.memberships.find((item) => item.group_id === groupId);
+      if (membership?.group) membership.group.timezone = timezone.trim();
       writeState(state);
       return { status: 'updated', group_id: groupId };
     },
@@ -419,6 +431,102 @@ export function createE2EGroupService({ window }) {
       }
       writeState(state);
       return { status: 'revoked' };
+    },
+  };
+}
+
+export function createE2EConnectionService({ window }) {
+  const { localStorage: storage } = window;
+
+  function readState() {
+    return {
+      candidates: [],
+      connections: [],
+      counter: 0,
+      ...(JSON.parse(storage.getItem('roda.e2e.connectionState') ?? '{}')),
+    };
+  }
+
+  function writeState(state) {
+    storage.setItem('roda.e2e.connectionState', JSON.stringify(state));
+  }
+
+  function actorId() {
+    return readSession(storage)?.user?.id ?? 'practitioner-1';
+  }
+
+  function record(event) {
+    window.__RODA_E2E_EVENTS__?.push(event);
+  }
+
+  return {
+    async searchCandidates(searchText = '', candidateRole = 'coach', resultLimit = 20) {
+      const query = searchText.trim().toLocaleLowerCase();
+      return readState().candidates
+        .filter((candidate) => candidate.candidate_role === candidateRole)
+        .filter((candidate) => !query || candidate.display_name.toLocaleLowerCase().includes(query))
+        .slice(0, resultLimit);
+    },
+
+    async listMine() {
+      const state = readState();
+      if (state.revokeReadsFor?.includes(actorId())) {
+        throw new AppError('authorization', 'not_authorized');
+      }
+      return state.connections.filter((connection) => (
+        connection.coach_profile_id === actorId()
+        || connection.student_profile_id === actorId()
+      ));
+    },
+
+    async request(coachProfileId, studentProfileId) {
+      const state = readState();
+      const existing = state.connections.find((connection) => (
+        connection.coach_profile_id === coachProfileId
+        && connection.student_profile_id === studentProfileId
+        && ['pending', 'active'].includes(connection.state)
+      ));
+      if (existing) return { status: existing.state, connection_id: existing.connection_id };
+      state.counter += 1;
+      const coach = state.candidates.find((candidate) => candidate.profile_id === coachProfileId);
+      const student = state.candidates.find((candidate) => candidate.profile_id === studentProfileId);
+      const connection = {
+        connection_id: `connection-${state.counter}`,
+        connection_kind: 'direct',
+        coach_profile_id: coachProfileId,
+        coach_display_name: coach?.display_name ?? state.people?.[coachProfileId] ?? 'Coach',
+        coach_avatar_path: coach?.avatar_path ?? null,
+        student_profile_id: studentProfileId,
+        student_display_name: student?.display_name ?? state.people?.[studentProfileId] ?? 'Student',
+        student_avatar_path: student?.avatar_path ?? null,
+        state: 'pending',
+        initiated_by: actorId(),
+        created_at: '2026-09-22T12:00:00Z',
+      };
+      state.connections.push(connection);
+      writeState(state);
+      record({ type: 'request-coach-connection', coachProfileId, studentProfileId });
+      return { status: 'pending', connection_id: connection.connection_id };
+    },
+
+    async decide(connectionId, decision) {
+      const state = readState();
+      const connection = state.connections.find((item) => item.connection_id === connectionId);
+      if (!connection) throw new Error('That coaching request is no longer available.');
+      connection.state = decision === 'accepted' ? 'active' : 'declined';
+      writeState(state);
+      record({ type: 'decide-coach-connection', connectionId, decision });
+      return { status: connection.state, connection_id: connectionId };
+    },
+
+    async end(connectionId) {
+      const state = readState();
+      const connection = state.connections.find((item) => item.connection_id === connectionId);
+      if (!connection) throw new Error('That coaching connection is no longer available.');
+      connection.state = 'ended';
+      writeState(state);
+      record({ type: 'end-coach-connection', connectionId });
+      return { status: 'ended', connection_id: connectionId };
     },
   };
 }
