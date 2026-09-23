@@ -51,6 +51,14 @@ describe('dashboard state', () => {
     expect(state.activeTabByMode).toEqual({ training: 'statistics', coaching: 'students' });
   });
 
+  it('ignores the removed Upcoming training tab', () => {
+    const state = reduceDashboardState(createDashboardState(), {
+      type: 'TAB_CHOSEN', mode: 'training', tab: 'upcoming',
+    });
+
+    expect(state.activeTabByMode.training).toBe('calendar');
+  });
+
   it('shows coach registration in Coaching mode without changing identity', () => {
     let state = createDashboardState();
     state = reduceDashboardState(state, {

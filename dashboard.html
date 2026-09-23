@@ -30,6 +30,7 @@
     <header class="dashboard-header">
       <a class="dashboard-brand" href="/"><span></span><b>RODA</b></a>
       <div class="dashboard-account">
+        <span class="demo-badge" id="demoBadge" hidden>Demo · browser only</span>
         <button class="quiet-button" id="dashboardLocale" type="button" aria-label="Change language">PT</button>
         <button class="quiet-button" id="editProfile" type="button"><span id="profileName"></span> · Profile</button>
         <button class="quiet-button" id="signOut" type="button">Sign out</button>
@@ -67,22 +68,26 @@
         </div>
         <div class="dashboard-tabs" id="trainingTabs" role="tablist" aria-label="My Training sections">
           <button id="trainingCalendarTab" type="button" role="tab" data-dashboard-tab="calendar" aria-controls="trainingCalendarPanel" aria-selected="true">Calendar</button>
-          <button id="trainingUpcomingTab" type="button" role="tab" data-dashboard-tab="upcoming" aria-controls="trainingUpcomingPanel" aria-selected="false">Upcoming</button>
           <button id="trainingStatisticsTab" type="button" role="tab" data-dashboard-tab="statistics" aria-controls="trainingStatisticsPanel" aria-selected="false">Statistics</button>
         </div>
 
         <section id="trainingCalendarPanel" role="tabpanel" aria-labelledby="trainingCalendarTab">
-          <div class="calendar-toolbar">
-            <button class="calendar-navigation" id="calendarPreviousMonth" type="button">←</button>
-            <h2 id="calendarMonthLabel"></h2>
-            <button class="calendar-navigation" id="calendarNextMonth" type="button">→</button>
+          <div class="calendar-layout">
+            <div class="calendar-month-pane">
+              <div class="calendar-toolbar">
+                <button class="calendar-navigation" id="calendarPreviousMonth" type="button">←</button>
+                <h2 id="calendarMonthLabel"></h2>
+                <button class="calendar-navigation" id="calendarNextMonth" type="button">→</button>
+              </div>
+              <p class="calendar-status" id="calendarStatus" role="status" aria-live="polite"></p>
+              <div class="training-calendar" id="trainingCalendar"></div>
+            </div>
+            <aside class="calendar-sidebar">
+              <section class="calendar-month-summary" id="calendarMonthSummary"></section>
+              <div class="calendar-legend" id="calendarLegend"></div>
+              <section class="training-day-detail" id="trainingDayDetail" aria-live="polite"></section>
+            </aside>
           </div>
-          <p class="calendar-status" id="calendarStatus" role="status" aria-live="polite"></p>
-          <div class="training-calendar" id="trainingCalendar"></div>
-          <section class="training-day-detail" id="trainingDayDetail" aria-live="polite"></section>
-        </section>
-        <section id="trainingUpcomingPanel" role="tabpanel" aria-labelledby="trainingUpcomingTab" hidden>
-          <p class="calendar-empty">Upcoming training will appear here.</p>
         </section>
         <section id="trainingStatisticsPanel" role="tabpanel" aria-labelledby="trainingStatisticsTab" hidden></section>
       </section>

@@ -87,7 +87,8 @@ export function calendarGrid(monthValue, { weekStartsOn = 1 } = {}) {
   const first = { year, month, day: 1 };
   const offset = (weekday(first) - weekStartsOn + 7) % 7;
   const start = addDays(first, -offset);
-  return Array.from({ length: 42 }, (_, index) => {
+  const cellCount = Math.ceil((offset + daysInMonth(year, month)) / 7) * 7;
+  return Array.from({ length: cellCount }, (_, index) => {
     const value = addDays(start, index);
     return {
       date: formatDate(value),

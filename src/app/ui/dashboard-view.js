@@ -49,10 +49,8 @@ export function createDashboardView({
     document.querySelector('#trainingWorkspace > .dashboard-eyebrow').textContent = i18n.t('dashboard.practitionerMode');
     document.querySelector('#trainingWorkspace h1').textContent = i18n.t('dashboard.myTraining');
     document.querySelector('#trainingCalendarTab').textContent = i18n.t('dashboard.calendar');
-    document.querySelector('#trainingUpcomingTab').textContent = i18n.t('dashboard.upcoming');
     document.querySelector('#trainingStatisticsTab').textContent = i18n.t('dashboard.statistics');
     trainingTabs.setAttribute('aria-label', i18n.t('dashboard.trainingSections'));
-    document.querySelector('#trainingUpcomingPanel .calendar-empty').textContent = i18n.t('dashboard.upcomingEmpty');
     document.querySelector('#coachingWorkspace > .dashboard-eyebrow').textContent = i18n.t('dashboard.coachMode');
     document.querySelector('#coachingWorkspace > h1').textContent = i18n.t('dashboard.coaching');
     document.querySelector('#coachingScheduleTab').textContent = i18n.t('dashboard.schedule');
@@ -134,7 +132,6 @@ export function createDashboardView({
     for (const panel of trainingWorkspace.querySelectorAll('[role="tabpanel"]')) {
       panel.hidden = panel.id !== {
         calendar: 'trainingCalendarPanel',
-        upcoming: 'trainingUpcomingPanel',
         statistics: 'trainingStatisticsPanel',
       }[view.activeTab];
     }

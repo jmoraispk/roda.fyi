@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAuthDialog } from '../../src/app/ui/auth-dialog.js';
 
@@ -27,6 +27,7 @@ function fixture() {
         <button id="googleSignIn" class="auth-method" type="button">
           Continue with Google <span>Recommended</span>
         </button>
+        <button id="tryDemo" class="auth-method" type="button">Try demo</button>
         <div role="separator">or</div>
         <form id="emailSignIn">
           <label>Email <input id="authEmail" type="email" required></label>
@@ -102,6 +103,17 @@ describe('createAuthDialog', () => {
     await Promise.resolve();
 
     expect(calls).toEqual([['google', '/dashboard?group_link=group-token']]);
+  });
+
+  it('opens a browser-only demo without calling an authentication provider', () => {
+    const { service, calls } = fakeAuth();
+    const navigate = vi.fn();
+    createAuthDialog({ document, authService: service, navigate });
+
+    document.querySelector('#tryDemo').click();
+
+    expect(navigate).toHaveBeenCalledWith('/dashboard?demo=1');
+    expect(calls).toEqual([]);
   });
 
   it('keeps both sign-in methods disabled while Google redirect starts', async () => {

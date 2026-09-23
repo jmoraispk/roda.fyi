@@ -150,6 +150,20 @@
 .auth-email { border: 1px solid var(--line, #3a2c1e); background: var(--card-2, #2c2117); color: var(--cream, #f3e9d6); }
 .auth-email:hover:not(:disabled) { border-color: var(--gold, #eba63c); }
 
+.auth-demo {
+  background: transparent;
+  border: 1px solid var(--gold, #eba63c);
+  color: var(--gold, #eba63c);
+  margin-top: 1rem;
+}
+
+.auth-demo-note {
+  color: var(--muted, #a9977d);
+  font-size: .78rem;
+  margin: .55rem 0 0;
+  text-align: center;
+}
+
 .auth-message {
   min-height: 1.5em;
   margin: 18px 0 0;

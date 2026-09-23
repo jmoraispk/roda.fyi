@@ -13,6 +13,8 @@ function fixture() {
       <button id="calendarNextMonth" type="button"></button>
       <div id="trainingCalendar"></div>
       <p id="calendarStatus"></p>
+      <section id="calendarMonthSummary"></section>
+      <div id="calendarLegend"></div>
       <section id="trainingDayDetail"></section>
       <button id="recordAloneTraining" type="button"></button>
     </section>
@@ -47,9 +49,9 @@ function i18n(locale = 'en') {
 function service(overrides = {}) {
   return {
     listCalendar: vi.fn().mockResolvedValue([
-      { item_id: 'a', local_date: '2026-09-22', kind: 'alone', status: 'completed' },
-      { item_id: 'g', local_date: '2026-09-22', kind: 'group', status: 'scheduled' },
-      { item_id: 'p', local_date: '2026-09-23', kind: 'personal_class', status: 'completed' },
+      { item_id: 'a', local_date: '2026-09-22', kind: 'alone', status: 'completed', duration_minutes: 45 },
+      { item_id: 'g', local_date: '2026-09-22', kind: 'group', status: 'scheduled', duration_minutes: 60 },
+      { item_id: 'p', local_date: '2026-09-23', kind: 'personal_class', status: 'completed', duration_minutes: 30 },
     ]),
     getDay: vi.fn().mockResolvedValue([{ id: 'a', kind: 'alone', duration_minutes: 45 }]),
     recordAloneTraining: vi.fn().mockResolvedValue({ status: 'completed' }),
@@ -72,13 +74,19 @@ describe('training calendar view', () => {
     await view.loadMonth('2026-09');
 
     expect(document.querySelector('#trainingCalendar').getAttribute('role')).toBe('grid');
-    expect(document.querySelectorAll('[role="gridcell"]')).toHaveLength(42);
+    expect(document.querySelectorAll('[role="gridcell"]')).toHaveLength(35);
     expect(document.querySelector('[data-date="2026-09-22"] [data-kind="alone"]'))
       .not.toBeNull();
     expect(document.querySelector('[data-date="2026-09-22"] [data-kind="group"]')
       .getAttribute('data-status')).toBe('scheduled');
     expect(document.querySelector('[data-date="2026-09-23"] [data-kind="personal_class"]'))
       .not.toBeNull();
+    expect(document.querySelector('#calendarMonthSummary').textContent)
+      .toContain('2 trainings');
+    expect(document.querySelector('#calendarMonthSummary').textContent)
+      .toContain('1h 15m');
+    expect(document.querySelector('#calendarLegend').textContent)
+      .toContain('Alone');
   });
 
   it('loads selected-day detail and supports arrow-key navigation', async () => {

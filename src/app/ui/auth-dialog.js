@@ -11,6 +11,7 @@ export function createAuthDialog({
   const close = document.querySelector('#authClose');
   const actions = document.querySelector('#authActions');
   const google = document.querySelector('#googleSignIn');
+  const demo = document.querySelector('#tryDemo');
   const emailForm = document.querySelector('#emailSignIn');
   const emailInput = document.querySelector('#authEmail');
   const emailButton = document.querySelector('#emailSignInButton');
@@ -21,6 +22,7 @@ export function createAuthDialog({
   function setBusy(value) {
     busy = value;
     google.disabled = value;
+    demo.disabled = value;
     emailButton.disabled = value;
     emailInput.disabled = value;
   }
@@ -55,6 +57,11 @@ export function createAuthDialog({
     } catch (error) {
       showError(error);
     }
+  });
+
+  demo.addEventListener('click', () => {
+    if (busy) return;
+    navigate('/dashboard?demo=1');
   });
 
   emailForm.addEventListener('submit', async (event) => {

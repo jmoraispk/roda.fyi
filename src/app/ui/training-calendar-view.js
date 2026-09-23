@@ -44,6 +44,8 @@ export function createTrainingCalendarView({
   const previousMonth = document.querySelector('#calendarPreviousMonth');
   const nextMonth = document.querySelector('#calendarNextMonth');
   const status = document.querySelector('#calendarStatus');
+  const monthSummary = document.querySelector('#calendarMonthSummary');
+  const legend = document.querySelector('#calendarLegend');
   const detail = document.querySelector('#trainingDayDetail');
   const recordAlone = document.querySelector('#recordAloneTraining');
   const dialog = document.querySelector('#aloneTrainingDialog');
@@ -79,8 +81,39 @@ export function createTrainingCalendarView({
       .setAttribute('aria-label', i18n.t('alone.close'));
   }
 
+  function renderSidebar() {
+    const items = [...state.summaryByDate.values()].flat();
+    const completed = items.filter((item) => item.status === 'completed');
+    const minutes = completed.reduce((sum, item) => sum + (item.duration_minutes ?? 0), 0);
+    monthSummary.replaceChildren();
+    const heading = document.createElement('h3');
+    heading.textContent = i18n.t('calendar.monthSummary');
+    const count = document.createElement('strong');
+    count.textContent = i18n.t('calendar.trainingCount', { count: completed.length });
+    const duration = document.createElement('span');
+    duration.textContent = i18n.t('calendar.trainingTime', {
+      duration: i18n.formatDuration(minutes),
+    });
+    monthSummary.append(heading, count, duration);
+
+    legend.replaceChildren();
+    const legendTitle = document.createElement('h3');
+    legendTitle.textContent = i18n.t('calendar.legend');
+    const list = document.createElement('div');
+    list.className = 'calendar-legend-list';
+    for (const kind of ['alone', 'group', 'personal_class']) {
+      const item = document.createElement('span');
+      const marker = document.createElement('span');
+      marker.className = `calendar-marker calendar-marker-${kind}`;
+      item.append(marker, i18n.t(kindKey(kind)));
+      list.append(item);
+    }
+    legend.append(legendTitle, list);
+  }
+
   function renderCalendar() {
     applyCopy();
+    renderSidebar();
     monthLabel.textContent = localizedDate(`${state.visibleMonth}-15`, {
       month: 'long', year: 'numeric',
     });
@@ -130,6 +163,14 @@ export function createTrainingCalendarView({
       button.append(markers);
       calendar.append(button);
     }
+  }
+
+  function renderSelectDayPrompt() {
+    detail.replaceChildren();
+    const prompt = document.createElement('p');
+    prompt.className = 'calendar-empty';
+    prompt.textContent = i18n.t('calendar.selectDay');
+    detail.append(prompt);
   }
 
   function renderDetail(items) {
@@ -519,6 +560,8 @@ export function createTrainingCalendarView({
     }
   });
 
+  renderSelectDayPrompt();
+
   return {
     loadMonth,
     selectDay,
@@ -529,6 +572,7 @@ export function createTrainingCalendarView({
     setLocale() {
       renderCalendar();
       if (state.dayDetail) renderDetail(state.dayDetail);
+      else renderSelectDayPrompt();
     },
     async setProfile(profileId, coachMode = false) {
       requestToken += 1;

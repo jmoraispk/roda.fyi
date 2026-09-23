@@ -34,6 +34,7 @@ button, input, select, textarea { font: inherit; }
 .dashboard-brand { display: flex; align-items: center; gap: 12px; color: var(--cream); font: 800 1.05rem/1 var(--display); letter-spacing: .02em; text-decoration: none; }
 .dashboard-brand span { width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(235, 166, 60, .18); }
 .dashboard-account { display: flex; align-items: center; gap: 8px; }
+.demo-badge { border: 1px solid rgba(235, 166, 60, .55); border-radius: 999px; padding: 7px 10px; color: var(--gold); font: 700 .62rem/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
 .quiet-button { border: 1px solid transparent; border-radius: 999px; padding: 8px 11px; background: transparent; color: var(--muted); font: 700 .68rem/1 var(--mono); letter-spacing: .04em; cursor: pointer; }
 .quiet-button:hover { border-color: var(--line); color: var(--cream); }
 

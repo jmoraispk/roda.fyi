@@ -2,6 +2,7 @@ import { createAuthService } from '../auth-service.js';
 import { createConnectionService } from '../connection-service.js';
 import { publicConfig } from '../config.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
+import { seedDemoData } from '../demo-data.js';
 import { createGroupService } from '../group-service.js';
 import { createProfileService } from '../profile-service.js';
 import { createTrainingService } from '../training-service.js';
@@ -64,6 +65,9 @@ async function loadStartupData(profileService, groupService) {
 
 async function main() {
   const entryParams = new URLSearchParams(location.search);
+  const demoMode = entryParams.get('demo') === '1';
+  if (demoMode) seedDemoData(localStorage);
+  const localMode = __RODA_E2E__ || demoMode;
   const discoveryToken = entryParams.get('group_link');
   const memberInvitationToken = entryParams.get('member_invite');
   const loading = document.querySelector('#dashboardLoading');
@@ -73,27 +77,30 @@ async function main() {
   const startupSignOut = document.querySelector('#startupSignOut');
   const warning = document.querySelector('#dashboardWarning');
   const retryGroups = document.querySelector('#retryGroups');
-  const client = __RODA_E2E__ ? null : createRodaClient(publicConfig);
-  const authService = __RODA_E2E__
+  const client = localMode ? null : createRodaClient(publicConfig);
+  const authService = localMode
     ? createE2EAuthService({ window })
     : createAuthService({ client, origin: location.origin, storage: localStorage });
-  const profileService = __RODA_E2E__
+  const profileService = localMode
     ? createE2EProfileService({ window })
     : createProfileService(client);
-  const groupService = __RODA_E2E__
+  const groupService = localMode
     ? createE2EGroupService({ window })
     : createGroupService(client);
-  const connectionService = __RODA_E2E__
+  const connectionService = localMode
     ? createE2EConnectionService({ window })
     : createConnectionService(client);
-  const trainingService = __RODA_E2E__
+  const trainingService = localMode
     ? createE2ETrainingService({ window })
     : createTrainingService(client);
-  const statisticsService = __RODA_E2E__
+  const statisticsService = localMode
     ? createE2EStatisticsService({ window })
     : createStatisticsService(client);
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
   const localeButton = document.querySelector('#dashboardLocale');
+  const demoBadge = document.querySelector('#demoBadge');
+  demoBadge.hidden = !demoMode;
+  if (demoMode) demoBadge.textContent = i18n.t('dashboard.demoBadge');
   let session;
   let profile;
   let dashboard;
@@ -164,7 +171,8 @@ async function main() {
         statisticsController.clear();
         dashboard.clear();
         await authService.signOut();
-        returnToSignIn();
+        if (demoMode) location.replace('/');
+        else returnToSignIn();
       },
       onGroupAction: (action) => {
         if (action === 'find-group') groupController.showDiscovery();
@@ -343,6 +351,7 @@ async function main() {
   localeButton.addEventListener('click', async () => {
     i18n.setLocale(i18n.locale() === 'en' ? 'pt' : 'en');
     localeButton.textContent = i18n.locale() === 'en' ? 'PT' : 'EN';
+    if (demoMode) demoBadge.textContent = i18n.t('dashboard.demoBadge');
     dashboard?.setLocale();
     if (profile?.completed_at) await connectionController.load();
     trainingCalendarController?.setLocale();

@@ -82,6 +82,38 @@ test('offers passwordless email as the secondary sign-in method', async ({ page 
   ]);
 });
 
+test('opens a seeded browser-only demo without an account', async ({ page }) => {
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Try demo' }).click();
+
+  await expect(page).toHaveURL('/dashboard?demo=1');
+  await expect(page.getByText('Demo · browser only')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'My Training' })).toBeVisible();
+  await expect(page.locator('#trainingCalendar [data-kind]')).toHaveCount(5);
+  await expect(page.locator('#calendarMonthSummary')).toContainText('4 trainings');
+  await expect(page.getByRole('tab', { name: 'Upcoming' })).toHaveCount(0);
+
+  await page.getByRole('tab', { name: 'Statistics' }).click();
+  await expect(page.locator('#trainingStatisticsPanel')).toContainText('3h 11m');
+  await page.getByRole('button', { name: 'Coaching' }).click();
+  await expect(page.getByRole('heading', { name: 'Coaching' })).toBeVisible();
+});
+
+test('uses a compact calendar beside details on desktop and stacked on mobile', async ({ page }, testInfo) => {
+  await page.goto('/dashboard?demo=1');
+  await expect(page.locator('#calendarMonthSummary')).toContainText('4 trainings');
+  await expect(page.getByRole('gridcell')).toHaveCount(35);
+  await expect(page.locator('[data-date="2026-10-05"]')).toHaveCount(0);
+
+  const month = await page.locator('.calendar-month-pane').boundingBox();
+  const sidebar = await page.locator('.calendar-sidebar').boundingBox();
+  if (testInfo.project.name.includes('mobile')) {
+    expect(sidebar.y).toBeGreaterThanOrEqual(month.y + month.height - 1);
+  } else {
+    expect(sidebar.x).toBeGreaterThan(month.x + month.width - 1);
+  }
+});
+
 test('shows Entrar only while Portuguese is selected', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
 
@@ -258,7 +290,7 @@ test('uses a binary mode switch and extends a practitioner through coach registr
   await expect(page.locator('#trainingCalendar')).toBeVisible();
   await page.getByRole('tab', { name: 'Calendar' }).focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('tab', { name: 'Upcoming' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Statistics' })).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('tab', { name: 'Calendar' }).click();
 
   await mode.getByRole('button', { name: 'Coaching' }).click();

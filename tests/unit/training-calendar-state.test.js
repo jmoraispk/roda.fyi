@@ -11,7 +11,17 @@ import {
 } from '../../src/app/training-calendar-state.js';
 
 describe('training calendar state', () => {
-  it('builds Monday-first six-week grids, including leap day', () => {
+  it('builds only the Monday-first weeks required by each month', () => {
+    const february = calendarGrid('2027-02', { weekStartsOn: 1 });
+    expect(february).toHaveLength(28);
+    expect(february[0]).toMatchObject({ date: '2027-02-01', inMonth: true });
+    expect(february[27]).toMatchObject({ date: '2027-02-28', inMonth: true });
+
+    const september = calendarGrid('2026-09', { weekStartsOn: 1 });
+    expect(september).toHaveLength(35);
+    expect(september[0]).toMatchObject({ date: '2026-08-31', inMonth: false });
+    expect(september[34]).toMatchObject({ date: '2026-10-04', inMonth: false });
+
     const march = calendarGrid('2026-03', { weekStartsOn: 1 });
     expect(march).toHaveLength(42);
     expect(march[0]).toMatchObject({ date: '2026-02-23', inMonth: false });
