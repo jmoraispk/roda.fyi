@@ -577,6 +577,8 @@ The subsystem is complete when:
 ## Inspiration Assets
 
 The user-supplied interface and movement-art references are stored in the
-top-level `Inspiration/` folder with descriptive names. They are internal design
+top-level `Inspiration/` folder with descriptive names: interface references in
+`Inspiration/dashboard-ui/` and movement-art references in
+`Inspiration/movement-art/`. They are internal design
 references, not production assets. No referenced image may ship or be reproduced
 without confirmed usage rights; future artwork should be original.
