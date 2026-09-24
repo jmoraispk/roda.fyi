@@ -31,7 +31,7 @@ After the training core is reliable:
 - enrich profiles with capoeira-relevant details such as apelido, graduation,
   group affiliations, country, and coaching role, and
 - redesign member/profile cards around the circular portrait references in
-  `Inspiration/`.
+  `Inspiration/dashboard-ui/`.
 
 Billing, tax identifiers, weight, subscriptions, and other fields visible in
 the reference application are not planned without a specific roda.fyi need.
@@ -44,7 +44,7 @@ Continue improving the movement library in parallel:
 - review names, descriptions, safety notes, and movement phases with a qualified
   capoeira practitioner,
 - explore original human-figure sequence illustrations inspired by the
-  references in `Inspiration/`, and
+  references in `Inspiration/movement-art/`, and
 - do not ship or reproduce the supplied reference artwork without confirmed
   usage rights.
 
