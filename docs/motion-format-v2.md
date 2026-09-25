@@ -142,7 +142,9 @@ unknown keys. Any change to joint order, axes, units or required fields bumps
 2. Run the existing `retarget.normalize_sequence` (constant 40-unit torso,
    x centred on 60, per-frame grounding at y = 20). Axes already match.
 3. Variants: the v2 file whose key is `default.default.default` (or else the
-   first) becomes v1 `default`; every v2 variant is also exposed under its
-   `variantKey`.
+   first) becomes v1 `default`; every v2 variant is also exposed under a
+   readable label built from its non-default parts — `from <start>`,
+   `<middle>`, `to <end>` joined by ` · ` (e.g. `from ginga-left-back · to
+   negativa-left`) — since the site shows variant names on its variant button.
 
 Slugs without a v2 file keep their existing v1 file untouched.

@@ -93,3 +93,5 @@ tools/mocap/out/*.track.json
 tools/mocap/out/qa_sap2/
 # Transient frame extracts from exploration.
 _explore/
+# Capture sessions (uploaded videos, proxies, pose tracks, marks, fused output).
+tools/mocap/captures/
