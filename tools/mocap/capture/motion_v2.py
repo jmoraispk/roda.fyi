@@ -99,30 +99,36 @@ def observed_to_v2(obs):
     return out
 
 
-def rigidify_observed(obs):
-    """Constant bone lengths over time for the observed landmarks (keeps each bone's
-    per-frame direction, sets its median length), rooted at the hip mid-point."""
+RIGID_BONES = [   # near-rigid segments between observed landmarks (head points stay free)
+    ("left_hip", "right_hip"), ("left_shoulder", "right_shoulder"),
+    ("left_shoulder", "left_hip"), ("right_shoulder", "right_hip"),
+    ("left_shoulder", "left_elbow"), ("left_elbow", "left_wrist"), ("left_wrist", "left_hand_tip"),
+    ("right_shoulder", "right_elbow"), ("right_elbow", "right_wrist"), ("right_wrist", "right_hand_tip"),
+    ("left_hip", "left_knee"), ("left_knee", "left_ankle"), ("left_ankle", "left_heel"), ("left_ankle", "left_foot"),
+    ("right_hip", "right_knee"), ("right_knee", "right_ankle"), ("right_ankle", "right_heel"), ("right_ankle", "right_foot"),
+]
+
+
+def rigidify_observed(obs, iters=4):
+    """Pull every limb/torso segment toward its median length over the clip by
+    iterative constraint projection: each pass moves BOTH endpoints of a bone
+    symmetrically along it. Corrections stay local (no error accumulating down a
+    chain, unlike re-building limbs from the pelvis) and the head points are free.
+
+    Two takes are two performances, so fused 3D lengths wobble (~20% CV raw on real
+    captures). 4 passes bring that to ~2% for ~5 px extra re-projection error at
+    1080p; full rigidity (12+ passes) costs ~1 px more for little visible gain."""
     a = np.asarray(obs, float).copy()
-    tree = [("root", "left_hip"), ("root", "right_hip"),
-            ("root", "left_shoulder"), ("root", "right_shoulder"),
-            ("left_shoulder", "left_ear"), ("right_shoulder", "right_ear"),
-            ("left_shoulder", "nose"),
-            ("left_shoulder", "left_elbow"), ("left_elbow", "left_wrist"), ("left_wrist", "left_hand_tip"),
-            ("right_shoulder", "right_elbow"), ("right_elbow", "right_wrist"), ("right_wrist", "right_hand_tip"),
-            ("left_hip", "left_knee"), ("left_knee", "left_ankle"),
-            ("left_ankle", "left_heel"), ("left_ankle", "left_foot"),
-            ("right_hip", "right_knee"), ("right_knee", "right_ankle"),
-            ("right_ankle", "right_heel"), ("right_ankle", "right_foot")]
-    root = (a[:, OBS["left_hip"]] + a[:, OBS["right_hip"]]) / 2
-    get = lambda src, n: root if n == "root" else src[:, OBS[n]]  # noqa: E731
-    out = np.zeros_like(a)
-    for par, ch in tree:
-        vec = get(a, ch) - get(a, par)
-        L = float(np.median(np.linalg.norm(vec, axis=1)))
-        nrm = np.linalg.norm(vec, axis=1, keepdims=True)
-        nrm[nrm < 1e-9] = 1e-9
-        out[:, OBS[ch]] = get(out, par) + vec / nrm * L
-    return out
+    idx = [(OBS[p], OBS[c]) for p, c in RIGID_BONES]
+    L0 = [float(np.median(np.linalg.norm(a[:, c] - a[:, p], axis=1))) for p, c in idx]
+    for _ in range(iters):
+        for (p, c), L in zip(idx, L0):
+            d = a[:, c] - a[:, p]
+            n = np.linalg.norm(d, axis=1, keepdims=True)
+            corr = d * ((n - L) / np.maximum(n, 1e-9)) * 0.5
+            a[:, p] += corr
+            a[:, c] -= corr
+    return a
 
 
 def ground(frames):
@@ -307,4 +313,6 @@ def test_rigidify_observed_constant_lengths():
     o = _standing_obs(20) + rs.randn(20, 21, 3) * 0.01
     r = rigidify_observed(o)
     L = np.linalg.norm(r[:, OBS["left_knee"]] - r[:, OBS["left_ankle"]], axis=1)
-    assert L.std() < 1e-9
+    L_in = np.linalg.norm(o[:, OBS["left_knee"]] - o[:, OBS["left_ankle"]], axis=1)
+    assert L.std() < 0.1 * L_in.std(), (L.std(), L_in.std())   # bone length ~constant
+    assert np.abs(r - o).max() < 0.05                            # small, local corrections
