@@ -18,6 +18,8 @@ function titleFor(i18n, resource) {
   return resource.title || i18n.t(`resources.${resource.kind}`);
 }
 
+// The queue lives in memory and is mirrored to browser storage when possible,
+// so unsynced resources survive a reload but saving never depends on storage.
 function pendingStore(document, occurrenceId) {
   const key = `roda.pendingResources:${occurrenceId}`;
   let storage = null;
@@ -26,21 +28,24 @@ function pendingStore(document, occurrenceId) {
   } catch {
     storage = null;
   }
+  let items = [];
+  try {
+    const value = JSON.parse(storage?.getItem(key) ?? '[]');
+    items = Array.isArray(value) ? value : [];
+  } catch {
+    items = [];
+  }
   return {
     read() {
-      try {
-        const value = JSON.parse(storage?.getItem(key) ?? '[]');
-        return Array.isArray(value) ? value : [];
-      } catch {
-        return [];
-      }
+      return [...items];
     },
-    write(items) {
+    write(next) {
+      items = [...next];
       try {
         if (items.length) storage?.setItem(key, JSON.stringify(items));
         else storage?.removeItem(key);
       } catch {
-        // Browser storage is a convenience; saving still proceeds without it.
+        // Storage full or blocked: the in-memory queue still holds the items.
       }
     },
   };
