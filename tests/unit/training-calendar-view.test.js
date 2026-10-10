@@ -59,6 +59,7 @@ function service(overrides = {}) {
     saveAssessment: vi.fn().mockResolvedValue({ status: 'saved' }),
     addFeedback: vi.fn().mockResolvedValue({ status: 'saved' }),
     saveRoundAssessments: vi.fn().mockResolvedValue({ status: 'saved' }),
+    listResourceKinds: vi.fn().mockResolvedValue([{ occurrence_id: 'a', kinds: ['summary', 'video'] }]),
     createIdempotencyKey: vi.fn(() => 'request-1'),
     ...overrides,
   };
@@ -277,5 +278,14 @@ describe('training calendar view', () => {
     });
     await view.selectDay('2026-09-22');
     expect(document.querySelector('[data-feedback-form]')).toBeNull();
+  });
+
+  it('marks days that have class resources', async () => {
+    const view = createTrainingCalendarView({
+      document, service: service(), i18n: i18n(), profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.loadMonth('2026-09');
+    await vi.waitFor(() => expect(document.querySelector('[data-date="2026-09-22"] .resource-icons').textContent).toBe('🎥📄'));
+    expect(document.querySelector('[data-date="2026-09-22"]').getAttribute('aria-label')).toContain('Video, Summary');
   });
 });

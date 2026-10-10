@@ -7318,7 +7318,7 @@ test('adds a video link and a summary file to Alone training', async ({ page }) 
   await detail.getByRole('button', { name: 'Add resources' }).click();
   await detail.getByLabel('Resource type').selectOption('video');
   await detail.getByLabel('Title').fill('Zoom recording');
-  await detail.getByLabel('Link').fill('https://www.youtube.com/watch?v=oMmctHNRyBg');
+  await detail.getByLabel('Link', { exact: true }).fill('https://www.youtube.com/watch?v=oMmctHNRyBg');
   await detail.getByLabel('Text files (.txt, .md)').setInputFiles({
     name: 'summary.md', mimeType: 'text/markdown', buffer: Buffer.from('# Class 1\n\n- ginga\n- armada'),
   });

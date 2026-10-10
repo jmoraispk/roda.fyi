@@ -228,3 +228,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.resource-icons { display: block; font-size: .7rem; line-height: 1; }
+.training-resources { display: grid; gap: .4rem; margin-top: .6rem; }
+.resource { display: flex; gap: .4rem; align-items: flex-start; }
+.resource-transcript { white-space: pre-wrap; max-height: 320px; overflow: auto; }
+.resource-markdown { max-height: 420px; overflow: auto; }
