@@ -53,4 +53,13 @@ describe('training sequence', () => {
     expect(sequenceToText(steps('10x (armada, au, 3x ginga), negativa 30s')))
       .toBe('10x (Armada, Aú, 3x Ginga), Negativa 30s');
   });
+
+  it('caps long unrecognized text so it fits the stored name and note limits', () => {
+    const sentence = `today I focused on ${'keeping my knees bent '.repeat(12)}`;
+    const [row] = toMovementRows(steps(sentence));
+    expect(row.catalogued).toBe(false);
+    expect(row.movement_name.length).toBeLessThanOrEqual(200);
+    const [noted] = toMovementRows(steps(`ginga (${'x'.repeat(2100)})`));
+    expect(noted.instructions.length).toBeLessThanOrEqual(2000);
+  });
 });
