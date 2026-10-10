@@ -95,4 +95,25 @@ describe('resource view', () => {
     await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
     expect(localStorage.getItem('roda.pendingResources:o9')).toBeNull();
   });
+
+  it('still saves resources when browser storage is unavailable', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    try {
+      const service = { addResource: vi.fn().mockResolvedValue({ status: 'saved' }) };
+      const onChanged = vi.fn();
+      const item = { occurrence_id: 'o5', can_add_resources: true, resources: [] };
+      document.body.replaceChildren(createResourceSection({ document, i18n, item, service, onChanged }));
+      document.querySelector('button[data-action="open-resources"]').click();
+      const form = document.querySelector('form[data-resource-form]');
+      form.querySelector('select[name="kind"]').value = 'summary';
+      form.querySelector('textarea[name="body"]').value = '# Notes';
+      form.requestSubmit();
+      await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
+      expect(service.addResource).toHaveBeenCalledWith(expect.objectContaining({ kind: 'summary', body: '# Notes' }));
+    } finally {
+      setItem.mockRestore();
+    }
+  });
 });
