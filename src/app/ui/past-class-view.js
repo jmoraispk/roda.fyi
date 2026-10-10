@@ -1,6 +1,7 @@
 // src/app/ui/past-class-view.js
 import { scheduledInstant } from '../time-zones.js';
 import { createRoundEditor } from './round-editor.js';
+import { normalizeResource } from '../training-service.js';
 
 function labelled(document, text, control) {
   const label = document.createElement('label');
@@ -21,6 +22,8 @@ export function createPastClassView({
   document.body.append(dialog);
   const rounds = createRoundEditor({ document, i18n, mode: 'record', getTermMappings, ratings: false });
   let idempotencyKey = null;
+  // Resources already saved for this class, so a retry does not add them twice.
+  let addedResources = new Set();
   let saving = false;
 
   function input(type, name, extra = {}) {
@@ -91,6 +94,12 @@ export function createPastClassView({
     save.disabled = true;
     save.textContent = i18n.t('pastClass.saving');
     try {
+      const resources = [
+        ['video', elements.videoLink.value, null],
+        ['summary', null, elements.summary.value],
+        ['voice', null, elements.transcript.value],
+      ].filter(([, url, body]) => (url ?? body ?? '').trim());
+      resources.forEach(([resourceKind, url, body]) => normalizeResource({ kind: resourceKind, url, body }));
       const occurredAt = scheduledInstant(elements.date.value, elements.time.value, timezone);
       const student = getStudents().find(({ profileId }) => profileId === elements.student.value);
       const result = await trainingService.recordPastClass({
@@ -105,14 +114,12 @@ export function createPastClassView({
         rounds: rounds.getRounds(),
         idempotencyKey,
       });
-      const resources = [
-        ['video', elements.videoLink.value, null],
-        ['summary', null, elements.summary.value],
-        ['voice', null, elements.transcript.value],
-      ].filter(([, url, body]) => (url ?? body ?? '').trim());
       try {
         for (const [resourceKind, url, body] of resources) {
+          const signature = JSON.stringify([result.occurrence_id, resourceKind, url, body]);
+          if (addedResources.has(signature)) continue;
           await trainingService.addResource({ occurrenceId: result.occurrence_id, kind: resourceKind, title: '', url, body });
+          addedResources.add(signature);
         }
       } catch {
         status.textContent = i18n.t('pastClass.resourceError');
@@ -142,6 +149,7 @@ export function createPastClassView({
   return {
     open() {
       idempotencyKey = trainingService.createIdempotencyKey();
+      addedResources = new Set();
       render();
       rounds.setRounds([{ sourceText: '' }]);
       if (typeof dialog.showModal === 'function') dialog.showModal();

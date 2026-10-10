@@ -95,4 +95,39 @@ describe('past class view', () => {
     await vi.waitFor(() => expect(trainingService.recordPastClass).toHaveBeenCalledTimes(2));
     expect(trainingService.recordPastClass.mock.calls.map(([input]) => input.idempotencyKey)).toEqual(['past-key', 'past-key']);
   });
+
+  it('does not re-add resources that already saved when retrying', async () => {
+    const { view, trainingService } = setup({
+      addResource: vi.fn()
+        .mockResolvedValueOnce({ status: 'saved' })
+        .mockRejectedValueOnce(new Error('offline'))
+        .mockResolvedValue({ status: 'saved' }),
+    });
+    view.open();
+    fill('Class date', '2026-09-11');
+    fill('Start time', '14:14');
+    fill('Duration in minutes', '60');
+    fill('Video link', 'https://youtu.be/x');
+    fill('Summary', '# Notes');
+    const form = document.querySelector('form[data-past-class-form]');
+    form.requestSubmit();
+    await vi.waitFor(() => expect(trainingService.addResource).toHaveBeenCalledTimes(2));
+    form.requestSubmit();
+    await vi.waitFor(() => expect(trainingService.addResource).toHaveBeenCalledTimes(3));
+    expect(trainingService.addResource.mock.calls.map(([input]) => input.kind)).toEqual(['video', 'summary', 'summary']);
+  });
+
+  it('checks resource links before recording the class', async () => {
+    const { view, trainingService } = setup();
+    view.open();
+    fill('Class date', '2026-09-11');
+    fill('Start time', '14:14');
+    fill('Duration in minutes', '60');
+    fill('Video link', 'http://not-secure');
+    const form = document.querySelector('form[data-past-class-form]');
+    form.requestSubmit();
+    await vi.waitFor(() => expect(form.querySelector('[role="status"]').textContent)
+      .toBe('Paste a link that starts with https://.'));
+    expect(trainingService.recordPastClass).not.toHaveBeenCalled();
+  });
 });
