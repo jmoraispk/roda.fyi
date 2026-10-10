@@ -269,6 +269,8 @@ async function main() {
     coachingTrainingController = createCoachingTrainingView({
       document,
       trainingService,
+      getTermMappings,
+      repertoire: repertoireService,
       connectionService,
       groupService,
       i18n,
