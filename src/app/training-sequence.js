@@ -59,16 +59,26 @@ export function buildSegments(steps) {
   return segments;
 }
 
+// Stored limits: movement names 200 characters, notes 2000. Unrecognized text
+// can be longer, so it is trimmed here rather than blocking the save.
+function clip(text, limit) {
+  return typeof text === 'string' && text.length > limit ? text.slice(0, limit).trim() : text;
+}
+
+function clipKey(slug) {
+  return slug.length > 80 ? slug.slice(0, 80).replace(/-+$/, '') : slug;
+}
+
 export function toMovementRows(steps) {
   return leaves(steps).map((step) => ({
-    movement_key: step.slug,
-    movement_name: step.name,
+    movement_key: clipKey(step.slug),
+    movement_name: clip(step.name, 200),
     catalogued: step.catalogued,
     segment_key: `m:${step.path}`,
     side: step.side,
     repetitions: step.reps,
     duration_seconds: step.durationSeconds,
-    instructions: step.note,
+    instructions: clip(step.note, 2000),
   }));
 }
 
