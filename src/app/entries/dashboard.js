@@ -29,6 +29,7 @@ import { createTrainingCalendarView } from '../ui/training-calendar-view.js';
 import { createCoachingTrainingView } from '../ui/coaching-training-view.js';
 import { createStatisticsView } from '../ui/statistics-view.js';
 import { createRepertoireView } from '../ui/repertoire-view.js';
+import { createCatalogView } from '../ui/catalog-view.js';
 
 function currentRoute() {
   return `${location.pathname}${location.search}${location.hash}`;
@@ -110,7 +111,10 @@ async function main() {
     : createRepertoireService(client);
   let termMappings = [];
   const getTermMappings = () => termMappings;
-  catalogService.listTermMappings().then((rows) => { termMappings = rows; }).catch(() => {});
+  async function refreshTermMappings() {
+    try { termMappings = await catalogService.listTermMappings(); } catch { /* keep previous mappings */ }
+  }
+  refreshTermMappings();
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
   const localeButton = document.querySelector('#dashboardLocale');
   const demoBadge = document.querySelector('#demoBadge');
@@ -126,6 +130,7 @@ async function main() {
   let coachingTrainingController;
   let statisticsController;
   let repertoireController;
+  let catalogController;
   let repertoireImport = Promise.resolve();
   let connectionIdentity;
   let initializing = false;
@@ -187,6 +192,7 @@ async function main() {
         coachingTrainingController.clear();
         statisticsController.clear();
         repertoireController.clear();
+        catalogController.clear();
         dashboard.clear();
         await authService.signOut();
         if (demoMode) location.replace('/');
@@ -220,6 +226,7 @@ async function main() {
         if (mode === 'training' && activeTab === 'calendar' && profile.completed_at) {
           trainingCalendarController.refresh();
         }
+        if (mode === 'training' && activeTab === 'catalog') catalogController.load();
         if (mode === 'training' && activeTab === 'repertoire') {
           repertoireImport.then(() => repertoireController.load());
         }
@@ -280,6 +287,9 @@ async function main() {
         rounds: [{ sourceText: item.source_text }],
       }),
     });
+    catalogController = createCatalogView({
+      document, i18n, catalog: catalogService, onMappingsChanged: refreshTermMappings,
+    });
     coachingTrainingController = createCoachingTrainingView({
       document,
       trainingService,
@@ -335,6 +345,9 @@ async function main() {
       localeButton.textContent = i18n.locale() === 'en' ? 'PT' : 'EN';
       setSupplementalWarning(startup.supplementalFailed);
       initialized = true;
+      catalogService.amICurator()
+        .then((curator) => { document.querySelector('#trainingCatalogTab').hidden = !curator; })
+        .catch(() => {});
 
       if (memberInvitationToken) {
         history.replaceState({}, '', '/dashboard');
@@ -367,6 +380,7 @@ async function main() {
         coachingTrainingController.clear();
         statisticsController.clear();
         repertoireController.clear();
+        catalogController.clear();
         dashboard.clear();
         returnToSignIn();
       });
