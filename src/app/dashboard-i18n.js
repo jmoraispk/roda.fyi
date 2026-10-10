@@ -331,6 +331,9 @@ const STRINGS = Object.freeze({
     'pastClass.noStudents': 'Connect with a student or choose a group first.',
     'pastClass.saved': 'Past class saved.',
     'pastClass.resourceError': 'The class was saved, but some resources were not. Add them from the calendar.',
+    'statistics.hardestTransitions': 'Hardest transitions',
+    'statistics.transitionLine': '{from} → {to} · {hard} of {total} hard',
+    'statistics.noTransitions': 'Rate transitions in your rounds to see which ones are hardest.',
   }),
   pt: Object.freeze({
     'dashboard.changeLanguage': 'Mudar idioma',
@@ -661,6 +664,9 @@ const STRINGS = Object.freeze({
     'pastClass.noStudents': 'Liga-te primeiro a um aluno ou escolhe um grupo.',
     'pastClass.saved': 'Aula passada guardada.',
     'pastClass.resourceError': 'A aula foi guardada, mas alguns recursos não. Adiciona-os a partir do calendário.',
+    'statistics.hardestTransitions': 'Transições mais difíceis',
+    'statistics.transitionLine': '{from} → {to} · {hard} de {total} difíceis',
+    'statistics.noTransitions': 'Avalia as transições nas tuas rondas para veres as mais difíceis.',
   }),
 });
 

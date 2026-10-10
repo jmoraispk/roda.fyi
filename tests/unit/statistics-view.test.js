@@ -174,4 +174,27 @@ describe('statistics view', () => {
     await vi.waitFor(() => expect(api.getPersonal).toHaveBeenCalledTimes(2));
     expect(document.querySelector('[data-personal-statistics]').textContent).toContain('No training');
   });
+
+  it('lists the hardest transitions', async () => {
+    const api = service({
+      getPersonal: vi.fn().mockResolvedValue({
+        ...personal(),
+        hardest_transitions: [{
+          from_movement_key: 'armada', to_movement_key: 'au', from_name: 'Armada', to_name: 'Aú',
+          hard_count: 3, rating_count: 4,
+        }],
+      }),
+    });
+    await view(api).loadPersonal();
+    const section = document.querySelector('[data-hardest-transitions]');
+    expect(section.querySelector('h3').textContent).toBe('Hardest transitions');
+    expect(section.querySelector('li').textContent).toBe('Armada → Aú · 3 of 4 hard');
+  });
+
+  it('explains how to fill the hardest transitions list', async () => {
+    const api = service({ getPersonal: vi.fn().mockResolvedValue({ ...personal(), hardest_transitions: [] }) });
+    await view(api).loadPersonal();
+    expect(document.querySelector('[data-hardest-transitions]').textContent)
+      .toContain('Rate transitions in your rounds to see which ones are hardest.');
+  });
 });
