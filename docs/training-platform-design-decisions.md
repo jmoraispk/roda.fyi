@@ -97,3 +97,16 @@ Timezone is an optional profile setting whose default value is **Automatic**.
 The browser supplies the initial IANA timezone. Timestamps are stored in UTC,
 while practice records preserve their local date and timezone so later travel
 does not move historical activity between calendar days.
+
+## Decision 4: Text-first training input
+
+Training content is written as free text, one round at a time. The original
+text is always stored next to its parsed result. One movement catalog keyed by
+the capture slugs backs every picker and recognized move; unrecognized words
+are kept in place and later curated. A round carries at most one overall
+rating, and individual parts (setup, moves, transitions, loops) may be rated
+separately; a round's rating never counts as the rating of the moves inside it.
+Parsing is deterministic and runs in the browser; AI parsing is a later
+upgrade. Class resources are links and text only. See
+`docs/superpowers/specs/2026-10-10-training-input-catalog-design.md`.
+

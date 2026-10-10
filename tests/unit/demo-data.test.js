@@ -48,4 +48,25 @@ describe('demo data', () => {
     expect(JSON.parse(localStorage.getItem('roda.e2e.trainingState')).occurrences)
       .toContainEqual({ id: 'user-added' });
   });
+
+  it('seeds text rounds, ratings, a class resource, and a saved sequence', () => {
+    const localStorage = storage();
+    seedDemoData(localStorage, new Date('2026-09-22T12:00:00Z'));
+    const training = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
+    const alone = training.occurrences.find(({ id }) => id === 'demo-alone-1');
+    expect(alone.rounds[0]).toMatchObject({
+      source_text: '8x Ginga, 8x Armada',
+      movements: [
+        expect.objectContaining({ movement_key: 'ginga', segment_key: 'm:1', catalogued: true }),
+        expect.objectContaining({ movement_key: 'armada', segment_key: 'm:2', catalogued: true }),
+      ],
+    });
+    expect(training.roundRatings['participation-demo-alone-1']['demo-alone-1-round-1'])
+      .toContainEqual(expect.objectContaining({ segment_key: 't:1>2', difficulty: 'hard' }));
+    expect(training.resources).toContainEqual(expect.objectContaining({ kind: 'video', occurrence_id: 'demo-group-1' }));
+    const repertoire = JSON.parse(localStorage.getItem('roda.e2e.repertoireState'));
+    expect(repertoire.items).toContainEqual(expect.objectContaining({
+      profile_id: 'practitioner-1', source_text: '10x (armada, aú)',
+    }));
+  });
 });

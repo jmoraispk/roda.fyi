@@ -1,5 +1,5 @@
 const DEMO_VERSION_KEY = 'roda.demo.version';
-const DEMO_VERSION = '1';
+const DEMO_VERSION = '2';
 
 function monthContext(now) {
   const year = now.getFullYear();
@@ -12,12 +12,16 @@ function monthContext(now) {
 
 function rounds(...movements) {
   return [{
-    label: 'Flow',
+    label: null,
+    source_text: movements.map(([, name]) => `8x ${name}`).join(', '),
+    sequence: [],
     movements: movements.map(([key, name], index) => ({
       id: `movement-${key}-${index + 1}`,
       movement_key: key,
       movement_name: name,
       movement_name_snapshot: name,
+      catalogued: true,
+      segment_key: `m:${index + 1}`,
       repetitions: 8,
     })),
   }];
@@ -138,7 +142,29 @@ export function seedDemoData(storage, now = new Date()) {
       coach_name: 'Professora Lua', body: 'Good rhythm. Let the shoulders stay loose.',
       created_at: `${date(8)}T20:00:00Z`,
     }],
+    roundRatings: {
+      'participation-demo-alone-1': {
+        'demo-alone-1-round-1': [
+          { segment_key: 'r', segment_kind: 'round', difficulty: 'okay', note: null, from_movement_key: null, to_movement_key: null },
+          {
+            segment_key: 't:1>2', segment_kind: 'transition', difficulty: 'hard',
+            note: 'Turn the hips before the kick.', from_movement_key: 'ginga', to_movement_key: 'armada',
+          },
+        ],
+      },
+    },
+    resources: [{
+      id: 'demo-resource-1', occurrence_id: 'demo-group-1', kind: 'video', title: 'Class recording',
+      url: 'https://www.youtube.com/', body: null, added_by: 'practitioner-1',
+    }],
     counter: 50, failNext: null, revokeReadsFor: [],
+  });
+  write(storage, 'roda.e2e.repertoireState', {
+    counter: 1,
+    items: [{
+      id: 'sequence-1', profile_id: 'practitioner-1', import_ref: null, title: 'Armada into aú',
+      source_text: '10x (armada, aú)', sequence: null, updated_at: now.toISOString(),
+    }],
   });
   storage.setItem(DEMO_VERSION_KEY, DEMO_VERSION);
 }
