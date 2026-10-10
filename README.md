@@ -7,6 +7,30 @@ hierarchies.
 
 Production: [https://roda.fyi](https://roda.fyi)
 
+## Training input
+
+Practitioners and coaches write what they trained in their own words, one
+round at a time, for example `10x (armada, aú, 3x ginga)`. A rules-based parser
+recognizes moves from the shared movement catalog, keeps unknown words in place,
+and shows the result as chips under each round. The move picker and saved
+sequences only insert text.
+
+Each round can be rated Easy, Okay, or Hard; coaches set a planned difficulty
+and practitioners record how it felt. "Rate parts" rates the setup, single
+moves, transitions, and loops of a round, which feeds the "Hardest
+transitions" statistic.
+
+Saved sequences live in the account. The public Sequences page saves to the
+account when signed in and imports sequences previously saved in the browser
+once.
+
+Trainings can carry text resources: a video link, a voice transcript, and a
+markdown summary. Coaches can record a class that already happened, including
+its attendees and resources.
+
+Catalog curators see a Catalog tab listing uncatalogued words with totals only
+and can map, merge, or ignore them.
+
 ## Local browser development
 
 Use Node.js 22.22.2 from `.nvmrc`:
@@ -52,4 +76,5 @@ npm run test:db
 - [Approved authentication/group design](docs/superpowers/specs/2026-09-11-auth-group-foundation-design.md)
 - [Implementation plan](docs/superpowers/plans/2026-09-11-auth-group-foundation.md)
 - [Training-platform design decisions](docs/training-platform-design-decisions.md)
+- [Training input and catalog design](docs/superpowers/specs/2026-10-10-training-input-catalog-design.md)
 - [Roadmap](ROADMAP.md)

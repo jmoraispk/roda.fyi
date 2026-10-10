@@ -23,6 +23,28 @@ The first delivery includes:
 A later ranking enhancement may combine both metrics in one label, such as
 `3h 31m (4 sessions)`.
 
+Delivered in the training-input increment
+(`docs/superpowers/specs/2026-10-10-training-input-catalog-design.md`):
+
+- one movement catalog keyed by capture slug, used by every picker,
+- free-text round cards with a rules-based parser and repeat groups,
+- planned and felt round difficulty plus per-part ratings,
+- an account repertoire with a one-time browser import,
+- a curator Catalog tab for uncatalogued moves,
+- text class resources (video link, voice transcript, summary), and
+- recording past classes.
+
+Next:
+
+- **Locations and class map** (spec pending): coaches' teaching addresses and
+  online classes, weekly class times, students' training places, optional home
+  location, an address deduplicator, and an OpenStreetMap-based map on the
+  public site and in the dashboard.
+- **Coach scheduling redesign.**
+- **Curator role management in the app.** The role is currently granted only
+  from the Supabase SQL editor.
+- **AI parsing** of training text, transcripts, and summaries.
+
 ## Group communication and richer profiles
 
 After the training core is reliable:

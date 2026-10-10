@@ -68,6 +68,8 @@ richer profiles follow later.
 - Practitioner self-scheduling and the coach scheduling redesign.
 - New movement artwork and video capture for uncatalogued moves.
 - Bulk import tooling beyond the manual flows in this document.
+- In-app management of the catalog curator role (granted from the SQL editor
+  for now).
 
 ## Movement Catalog
 

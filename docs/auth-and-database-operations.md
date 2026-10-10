@@ -256,6 +256,25 @@ Rollback means a new forward migration that safely reverses the faulty change.
 Do not reset production or delete membership, invitation, relationship, or
 ownership history during an ordinary rollback.
 
+## Catalog curators
+
+Catalog curators see the dashboard Catalog tab and may map, merge, or ignore
+uncatalogued move terms. The role is granted only from the Supabase SQL editor;
+there is no in-app management yet.
+
+Grant:
+
+```sql
+insert into public.catalog_curators (profile_id)
+select id from auth.users where email = '<owner email>';
+```
+
+Revoke:
+
+```sql
+delete from public.catalog_curators where profile_id = '<profile id>';
+```
+
 ## Invitations and discovery links
 
 - A member invitation is random, stored only as a hash, valid once, and expires
