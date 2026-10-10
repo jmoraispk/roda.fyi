@@ -2289,15 +2289,31 @@ function seqRenderStrip(){
 function seqLoadSaved(){ try{ return JSON.parse(localStorage.getItem('roda.seqs')||'[]'); }catch(e){ return []; } }
 function seqPersist(a){ try{ localStorage.setItem('roda.seqs', JSON.stringify(a.slice(0,40))); }catch(e){} }
 function seqFindMove(catId,name){ const c=DATA.find(c=>c.id===catId); return c && c.moves.find(m=>m.n===name); }
-function renderSeqSaved(){
-  const wrap=document.getElementById('seqSavedWrap'), list=document.getElementById('seqSaved'); if(!list) return;
-  const saved=seqLoadSaved();
-  if(wrap) wrap.hidden=!saved.length;
-  const loadLbl=(STR[LANG]&&STR[LANG].seqLoad)||'Load', delLbl=(STR[LANG]&&STR[LANG].seqDelete)||'Delete';
-  list.innerHTML=saved.map((rec,i)=>
-    `<div class="saved-row"><span class="seqtxt">${rec.map(s=>s.n).join(' \u2192 ')}</span><button type="button" data-load="${i}">${loadLbl}</button><button type="button" data-del="${i}">${delLbl}</button></div>`
-  ).join('');
+function seqAccount(){ return (window.rodaRepertoire && window.rodaRepertoire.isSignedIn()) ? window.rodaRepertoire : null; }
+let seqSavedRows=[];
+async function seqSavedList(){
+  const acct=seqAccount();
+  if(acct){ try{ return (await acct.list()).map(item=>({id:item.id, text:item.source_text, names:item.source_text.split(/\s*,\s*/)})); }catch(e){} }
+  return seqLoadSaved().map((rec,i)=>({id:'local:'+i, text:rec.map(s=>s.n).join(' → '), names:rec.map(s=>s.n), rec}));
 }
+async function renderSeqSaved(){
+  const wrap=document.getElementById('seqSavedWrap'), list=document.getElementById('seqSaved'); if(!list) return;
+  seqSavedRows=await seqSavedList();
+  if(wrap) wrap.hidden=!seqSavedRows.length;
+  const loadLbl=(STR[LANG]&&STR[LANG].seqLoad)||'Load', delLbl=(STR[LANG]&&STR[LANG].seqDelete)||'Delete';
+  list.replaceChildren(...seqSavedRows.map((row,i)=>{
+    const div=document.createElement('div'); div.className='saved-row';
+    const txt=document.createElement('span'); txt.className='seqtxt'; txt.textContent=row.text;
+    const load=document.createElement('button'); load.type='button'; load.dataset.load=String(i); load.textContent=loadLbl;
+    const del=document.createElement('button'); del.type='button'; del.dataset.del=String(i); del.textContent=delLbl;
+    div.append(txt,load,del); return div;
+  }));
+}
+function seqFindByName(name){
+  const key=String(name).trim().toLowerCase();
+  return flat.find(f=>f.move.n.toLowerCase()===key) || null;
+}
+window.addEventListener('roda:repertoire-ready', renderSeqSaved);
 (function wireSequences(){
   const seqTabs=[...document.querySelectorAll('.seq-tab')];
   const panels={ prebuilt:document.getElementById('seqPrebuiltPanel'), build:document.getElementById('seqBuildPanel') };
@@ -2324,22 +2340,31 @@ function renderSeqSaved(){
   const undo=document.getElementById('seqUndo'), clr=document.getElementById('seqClear'), sv=document.getElementById('seqSave');
   if(undo) undo.addEventListener('click',()=>{ seqState.pop(); seqRenderStrip(); });
   if(clr)  clr.addEventListener('click',()=>{ seqState.length=0; seqRenderStrip(); });
-  if(sv)   sv.addEventListener('click',()=>{
+  if(sv)   sv.addEventListener('click',async ()=>{
     if(!seqState.length) return;
-    const saved=seqLoadSaved();
-    saved.unshift(seqState.map(f=>({c:f.catId,n:f.move.n})));
-    seqPersist(saved); renderSeqSaved();
+    const acct=seqAccount();
+    if(acct){ try{ await acct.save(seqState.map(f=>f.move.n).join(', ')); }catch(e){} }
+    else { const saved=seqLoadSaved(); saved.unshift(seqState.map(f=>({c:f.catId,n:f.move.n}))); seqPersist(saved); }
+    renderSeqSaved();
   });
   const savedList=document.getElementById('seqSaved');
-  if(savedList) savedList.addEventListener('click',e=>{
+  if(savedList) savedList.addEventListener('click',async e=>{
     const lb=e.target.closest('[data-load]'), db=e.target.closest('[data-del]');
     if(lb){
-      const rec=seqLoadSaved()[+lb.dataset.load];
-      if(rec){ seqState.length=0; rec.forEach(s=>{ const m=seqFindMove(s.c,s.n); if(m) seqState.push({move:m,catId:s.c}); });
+      const row=seqSavedRows[+lb.dataset.load];
+      if(row){ seqState.length=0;
+        if(row.rec) row.rec.forEach(s=>{ const m=seqFindMove(s.c,s.n); if(m) seqState.push({move:m,catId:s.c}); });
+        else row.names.forEach(n=>{ const f=seqFindByName(n); if(f) seqState.push(f); });
         const bt=document.querySelector('.seq-tab[data-seq="build"]'); if(bt) bt.click();
         seqRenderStrip(); window.scrollTo(0,0); }
     }
-    if(db){ const a=seqLoadSaved(); a.splice(+db.dataset.del,1); seqPersist(a); renderSeqSaved(); }
+    if(db){
+      const row=seqSavedRows[+db.dataset.del];
+      const acct=seqAccount();
+      if(row && acct && !row.rec){ try{ await acct.remove(row.id); }catch(e){} }
+      else if(row && row.rec){ const a=seqLoadSaved(); a.splice(+row.id.slice(6),1); seqPersist(a); }
+      renderSeqSaved();
+    }
   });
   seqRenderPicker();
 })();
@@ -2566,5 +2591,6 @@ document.querySelectorAll('.lang .flag').forEach(b=>b.addEventListener('click',(
 })();
 </script>
 <script type="module" src="assets/generated/public-auth.js"></script>
+<script type="module" src="assets/generated/public-sequences.js"></script>
 </body>
 </html>

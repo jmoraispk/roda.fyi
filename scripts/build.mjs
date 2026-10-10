@@ -46,6 +46,7 @@ export async function buildBrowserBundles({
     'public-auth': 'src/app/entries/public-auth.js',
     'auth-callback': 'src/app/entries/auth-callback.js',
     dashboard: 'src/app/entries/dashboard.js',
+    'public-sequences': 'src/app/entries/public-sequences.js',
   };
 
   if (!test) {

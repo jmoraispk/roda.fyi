@@ -6262,6 +6262,8 @@ import { expect, test } from '@playwright/test';
 
 async function openBuilder(page) {
   await page.goto('/#sequences');
+  // A hash-only navigation does not reload; reload so the bundles see the seeded storage.
+  await page.reload();
   await page.getByRole('tab', { name: 'Build your own' }).click();
 }
 
