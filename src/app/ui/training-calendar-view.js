@@ -7,6 +7,7 @@ import {
 } from '../training-calendar-state.js';
 import { createRoundDetail } from './round-detail.js';
 import { createRoundEditor } from './round-editor.js';
+import { createResourceSection, resourceIcons } from './resource-view.js';
 
 function kindKey(kind) {
   if (kind === 'personal_class') return 'training.personalClass';
@@ -63,6 +64,7 @@ export function createTrainingCalendarView({
   let idempotencyKey = null;
   let submitting = false;
   let viewedProfileId = targetProfileId;
+  let resourceKinds = new Map();
 
   function localizedDate(localDate, options = {}) {
     return i18n.formatDate(`${localDate}T12:00:00`, options);
@@ -163,6 +165,12 @@ export function createTrainingCalendarView({
         markers.append(marker);
       }
       button.append(markers);
+      const kinds = [...new Set(items.flatMap((item) => resourceKinds.get(item.item_id) ?? []))];
+      if (kinds.length) {
+        const icons = resourceIcons(document, i18n, kinds);
+        button.append(icons);
+        button.setAttribute('aria-label', `${button.getAttribute('aria-label')} · ${icons.getAttribute('aria-label')}`);
+      }
       calendar.append(button);
     }
   }
@@ -230,6 +238,16 @@ export function createTrainingCalendarView({
           onSave: (ratings) => service.saveRoundAssessments({
             participationId: item.participation_id, roundId: round.id, ratings,
           }),
+        }));
+      }
+
+      if ((item.resources ?? []).length || item.can_add_resources) {
+        article.append(createResourceSection({
+          document, i18n, item, service,
+          onChanged: async () => {
+            await loadMonth(state.visibleMonth);
+            await selectDay(state.selectedDate);
+          },
         }));
       }
 
@@ -305,6 +323,16 @@ export function createTrainingCalendarView({
         profileId: viewedProfileId,
       });
       state = reduceCalendarState(state, { type: 'MONTH_LOAD_SUCCEEDED', token, items });
+      try {
+        const kinds = await service.listResourceKinds({
+          start: bounds.start, endExclusive: bounds.endExclusive, profileId: viewedProfileId,
+        });
+        if (token === requestToken) {
+          resourceKinds = new Map(kinds.map((row) => [row.occurrence_id, row.kinds]));
+        }
+      } catch {
+        resourceKinds = new Map();
+      }
       if (token === requestToken) status.textContent = '';
       renderCalendar();
       return items;
@@ -469,6 +497,7 @@ export function createTrainingCalendarView({
     },
     clear() {
       requestToken += 1;
+      resourceKinds = new Map();
       state = reduceCalendarState(state, { type: 'CLEAR_PRIVATE' });
       calendar.replaceChildren();
       detail.replaceChildren();
