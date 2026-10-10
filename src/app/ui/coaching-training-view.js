@@ -1,6 +1,10 @@
 import { createPlanDraft, serializePlanDraft } from '../training-plan-state.js';
 import { createRoundDetail } from './round-detail.js';
 import { createRoundEditor } from './round-editor.js';
+import { createPastClassView } from './past-class-view.js';
+import { scheduledInstant } from '../time-zones.js';
+
+export { scheduledInstant };
 
 function safeMessage(error, fallback) {
   return error?.message || fallback;
@@ -36,37 +40,6 @@ function field(document, labelText, input) {
   const label = element(document, 'label', { className: 'field-label', text: labelText });
   label.append(input);
   return label;
-}
-
-function zonedParts(instant, timezone) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: timezone,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
-  }).formatToParts(new Date(instant));
-  return Object.fromEntries(parts.map(({ type, value }) => [type, Number(value)]));
-}
-
-export function scheduledInstant(date, time, timezone) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(`${date}T${time}`);
-  if (!match) throw new RangeError('Enter a valid training date and time.');
-  const desired = match.slice(1).map(Number);
-  const desiredEpoch = Date.UTC(desired[0], desired[1] - 1, desired[2], desired[3], desired[4]);
-  let candidate = desiredEpoch;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const observed = zonedParts(candidate, timezone);
-    const observedEpoch = Date.UTC(
-      observed.year, observed.month - 1, observed.day,
-      observed.hour, observed.minute, observed.second,
-    );
-    candidate -= observedEpoch - desiredEpoch;
-  }
-  const final = zonedParts(candidate, timezone);
-  if ([final.year, final.month, final.day, final.hour, final.minute]
-    .some((value, index) => value !== desired[index])) {
-    throw new RangeError('That local time does not exist in the selected timezone.');
-  }
-  return new Date(candidate).toISOString();
 }
 
 function normalizePlan(plan) {
@@ -123,6 +96,13 @@ export function createCoachingTrainingView({
   let completionState = null;
   let selectedStudentId = null;
   const planRoundEditor = createRoundEditor({ document, i18n, mode: 'plan', getTermMappings, repertoire });
+  const pastClass = createPastClassView({
+    document, i18n, trainingService, timezone, getTermMappings,
+    getContext: () => ({ groupId: context.groupId }),
+    getStudents: coachStudents,
+    getRoster: () => roster,
+    onRecorded: async () => { await load(); },
+  });
 
   function active() {
     return context.mode === 'coaching' && context.activeTab === 'schedule' && context.isCoach;
@@ -162,6 +142,7 @@ export function createCoachingTrainingView({
   }
 
   function clearPrivate() {
+    pastClass.close();
     plans = [];
     connections = [];
     roster = [];
@@ -199,6 +180,7 @@ export function createCoachingTrainingView({
       element(document, 'div', { className: 'dashboard-eyebrow', text: i18n.t('coach.planning') }),
       element(document, 'h2', { text: i18n.t('coach.schedule') }),
       actionButton(i18n.t('coach.createPlan'), 'new-plan'),
+      actionButton(i18n.t('pastClass.open'), 'record-past-class'),
     );
     workspace.append(header);
 
@@ -623,6 +605,7 @@ export function createCoachingTrainingView({
   workspace.addEventListener('click', (event) => {
     const button = event.target.closest('[data-action]');
     if (!button) return;
+    if (button.dataset.action === 'record-past-class') return pastClass.open();
     if (button.dataset.action === 'new-plan') openPlanEditor();
     if (button.dataset.action === 'edit-plan') openPlanEditor(button.dataset.value);
     if (button.dataset.action === 'schedule-group') openGroupSchedule(button.dataset.value);

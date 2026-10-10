@@ -119,4 +119,12 @@ describe('round editor', () => {
     expect(text(1).value).toBe('');
     expect(editor.hasContent()).toBe(false);
   });
+
+  it('hides difficulty controls when ratings are off', () => {
+    const editor = mount({ ratings: false });
+    editor.setRounds([{ sourceText: 'armada' }]);
+    expect(document.querySelector('[data-round-difficulty]')).toBeNull();
+    expect(document.querySelector('button[aria-label="Rate parts"]')).toBeNull();
+    expect(editor.getRounds()[0].ratings).toEqual([]);
+  });
 });
