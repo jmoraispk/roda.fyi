@@ -74,6 +74,24 @@ function requireTimezone(value) {
   return timezone;
 }
 
+const RESOURCE_KINDS = new Set(['video', 'voice', 'summary']);
+
+export function normalizeResource({ kind, title = null, url = null, body = null }) {
+  if (!RESOURCE_KINDS.has(kind)) invalid('invalid_resource_kind', 'Choose video, voice, or summary.');
+  const cleanTitle = optional(title);
+  if (cleanTitle && cleanTitle.length > 200) invalid('invalid_resource_title', 'Use a title of 200 characters or fewer.');
+  if (kind === 'video') {
+    const cleanUrl = clean(url) ?? '';
+    if (!cleanUrl.startsWith('https://') || cleanUrl.length > 2048) {
+      invalid('invalid_resource_url', 'Paste a link that starts with https://.');
+    }
+    return { title: cleanTitle, url: cleanUrl, body: null };
+  }
+  const text = typeof body === 'string' ? body : '';
+  if (!text.trim() || text.length > 262144) invalid('invalid_resource_body', 'Add text up to 256 KB.');
+  return { title: cleanTitle, url: null, body: text };
+}
+
 export function createTrainingService(client, options = {}) {
   const randomUUID = options.randomUUID ?? (() => globalThis.crypto.randomUUID());
 
@@ -209,6 +227,46 @@ export function createTrainingService(client, options = {}) {
         group_id: input.groupId ?? null,
         connection_id: input.connectionId ?? null,
         body: clean(input.body),
+      });
+    },
+    async addResource(input) {
+      const resource = normalizeResource(input);
+      return call('add_training_resource', { occurrence_id: input.occurrenceId, kind: input.kind, ...resource });
+    },
+    async updateResource(input) {
+      const resource = normalizeResource(input);
+      return call('update_training_resource', { resource_id: input.resourceId, ...resource });
+    },
+    async deleteResource(resourceId) {
+      return call('delete_training_resource', { resource_id: resourceId });
+    },
+    async listResourceKinds(input) {
+      return call('list_training_resource_kinds', {
+        month_start: requireLocalDate(input.start),
+        month_end: requireLocalDate(input.endExclusive),
+        profile_id: input.profileId ?? null,
+      });
+    },
+    async recordPastClass(input, now = new Date()) {
+      if (!(new Date(input.occurredAt) <= now)) {
+        invalid('past_class_in_future', 'Choose a time that has already passed.');
+      }
+      const attendees = (input.attendees ?? []).map((attendee) => ({
+        profile_id: attendee.profileId,
+        duration_minutes: requireDuration(attendee.durationMinutes),
+      }));
+      return call('record_past_class', {
+        kind: input.kind,
+        group_id: input.groupId ?? null,
+        student_profile_id: input.studentProfileId ?? null,
+        connection_id: input.connectionId ?? null,
+        occurred_at: input.occurredAt,
+        local_date: requireLocalDate(input.localDate),
+        timezone: requireTimezone(input.timezone),
+        duration_minutes: requireDuration(input.durationMinutes),
+        attendees,
+        rounds: input.rounds ?? null,
+        idempotency_key: input.idempotencyKey ?? randomUUID(),
       });
     },
     async listCalendar(input) {

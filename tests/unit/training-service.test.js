@@ -232,4 +232,79 @@ describe('training service', () => {
     [day] = await service.getDay({ localDate: '2026-10-01' });
     expect(day.rounds[0].ratings.map(({ segment_key: key }) => key)).toEqual(['t:1>2']);
   });
+
+  it('uses stable resource and past-class contracts', async () => {
+    const { client, calls } = harness();
+    const service = createTrainingService(client, { randomUUID: () => 'past-key' });
+    await service.addResource({ occurrenceId: 'o-1', kind: 'video', title: ' Rec ', url: ' https://youtu.be/x ' });
+    await service.addResource({ occurrenceId: 'o-1', kind: 'summary', body: '# Notes' });
+    await service.updateResource({ resourceId: 'r-1', title: '', body: 'Updated', kind: 'voice' });
+    await service.deleteResource('r-1');
+    await service.listResourceKinds({ start: '2026-09-01', endExclusive: '2026-10-01' });
+    await service.recordPastClass({
+      kind: 'group', groupId: 'g-1', occurredAt: '2026-09-11T13:14:14Z', localDate: '2026-09-11',
+      timezone: 'Europe/Lisbon', durationMinutes: 77,
+      attendees: [{ profileId: 's-1', durationMinutes: 77 }], rounds: null,
+    }, new Date('2026-10-10T00:00:00Z'));
+    expect(calls).toEqual([
+      ['add_training_resource', { occurrence_id: 'o-1', kind: 'video', title: 'Rec', url: 'https://youtu.be/x', body: null }],
+      ['add_training_resource', { occurrence_id: 'o-1', kind: 'summary', title: null, url: null, body: '# Notes' }],
+      ['update_training_resource', { resource_id: 'r-1', title: null, url: null, body: 'Updated' }],
+      ['delete_training_resource', { resource_id: 'r-1' }],
+      ['list_training_resource_kinds', { month_start: '2026-09-01', month_end: '2026-10-01', profile_id: null }],
+      ['record_past_class', {
+        kind: 'group', group_id: 'g-1', student_profile_id: null, connection_id: null,
+        occurred_at: '2026-09-11T13:14:14Z', local_date: '2026-09-11', timezone: 'Europe/Lisbon',
+        duration_minutes: 77, attendees: [{ profile_id: 's-1', duration_minutes: 77 }],
+        rounds: null, idempotency_key: 'past-key',
+      }],
+    ]);
+  });
+
+  it.each([
+    [{ occurrenceId: 'o', kind: 'photo', body: 'x' }, 'invalid_resource_kind'],
+    [{ occurrenceId: 'o', kind: 'video', url: 'http://x.test' }, 'invalid_resource_url'],
+    [{ occurrenceId: 'o', kind: 'video', url: `https://${'a'.repeat(2050)}` }, 'invalid_resource_url'],
+    [{ occurrenceId: 'o', kind: 'summary', body: '   ' }, 'invalid_resource_body'],
+    [{ occurrenceId: 'o', kind: 'voice', body: 'x'.repeat(262145) }, 'invalid_resource_body'],
+    [{ occurrenceId: 'o', kind: 'voice', body: 'x', title: 't'.repeat(201) }, 'invalid_resource_title'],
+  ])('validates resources %#', async (input, code) => {
+    const { client, calls } = harness();
+    await expect(createTrainingService(client).addResource(input)).rejects.toMatchObject({ code });
+    expect(calls).toEqual([]);
+  });
+
+  it('rejects future past classes before calling Supabase', async () => {
+    const { client, calls } = harness();
+    await expect(createTrainingService(client).recordPastClass({
+      kind: 'group', groupId: 'g', occurredAt: '2026-10-11T00:00:00Z', localDate: '2026-10-11',
+      timezone: 'UTC', durationMinutes: 30, attendees: [{ profileId: 's', durationMinutes: 30 }],
+    }, new Date('2026-10-10T00:00:00Z'))).rejects.toMatchObject({ code: 'past_class_in_future' });
+    expect(calls).toEqual([]);
+  });
+
+  it('records past classes and keeps resources in the local fake service', async () => {
+    const values = new Map([['roda.e2e.session', JSON.stringify({ user: { id: 'coach-1' } })]]);
+    const window = { localStorage: { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) } };
+    const service = createE2ETrainingService({ window });
+    const result = await service.recordPastClass({
+      kind: 'group', groupId: 'g-1', occurredAt: '2026-09-11T13:14:14Z', localDate: '2026-09-11',
+      timezone: 'Europe/Lisbon', durationMinutes: 77, idempotencyKey: 'past-1',
+      attendees: [{ profileId: 'student-1', durationMinutes: 77 }], rounds: [],
+    });
+    expect((await service.recordPastClass({
+      kind: 'group', groupId: 'g-1', occurredAt: '2026-09-11T13:14:14Z', localDate: '2026-09-11',
+      timezone: 'Europe/Lisbon', durationMinutes: 77, idempotencyKey: 'past-1', attendees: [],
+    })).occurrence_id).toBe(result.occurrence_id);
+    const added = await service.addResource({
+      occurrenceId: result.occurrence_id, kind: 'video', url: 'https://youtu.be/x',
+    });
+    expect(await service.listResourceKinds({
+      start: '2026-09-01', endExclusive: '2026-10-01', profileId: 'student-1',
+    })).toEqual([{ occurrence_id: result.occurrence_id, kinds: ['video'] }]);
+    await service.deleteResource(added.resource_id);
+    expect(await service.listResourceKinds({
+      start: '2026-09-01', endExclusive: '2026-10-01', profileId: 'student-1',
+    })).toEqual([]);
+  });
 });
