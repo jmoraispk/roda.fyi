@@ -900,6 +900,7 @@ select tests.create_user('10000000-0000-0000-0000-000000001003', 'outsider10@exa
 insert into public.coach_profiles (profile_id) values ('10000000-0000-0000-0000-000000001001');
 
 -- Coach creates a text plan with an uncatalogued move and expectations.
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001001');
 select public.create_workout_plan(
   'Text plan', null, null, 45, null,
@@ -932,7 +933,7 @@ select lives_ok(
   format($$select public.publish_workout_plan(%L)$$, :'text_plan_id'),
   'a text plan with movements publishes'
 );
-select tests.reset_actor();
+reset role;
 select throws_ok(
   $$insert into public.workout_plan_segment_expectations (plan_round_id, segment_key, segment_kind, difficulty)
     select id, 's', 'setup', 'easy' from public.workout_plan_rounds
@@ -941,6 +942,7 @@ select throws_ok(
 );
 
 -- A plan whose only round is text with no moves cannot publish.
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001001');
 select public.create_workout_plan(
   'Stretch only', null, null, 20, null,
@@ -952,6 +954,7 @@ select throws_ok(
 );
 
 -- Practitioner records Alone training with round and segment ratings.
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001002');
 select public.record_alone_training(
   '2026-10-01', 'Europe/Lisbon', 40, null,
@@ -998,6 +1001,7 @@ select throws_ok(
   '42501', null, 'clients cannot write assessments directly'
 );
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001003');
 select throws_ok(
   format($$select public.save_round_assessments(%L, %L, '[]'::jsonb)$$, :'participation_id', :'round_id'),
@@ -1008,7 +1012,7 @@ select is(
   0, 'unrelated users cannot read assessments'
 );
 
-select tests.reset_actor();
+reset role;
 select * from finish();
 rollback;
 ```
@@ -1915,6 +1919,7 @@ select ok((select relrowsecurity from pg_class where oid = 'public.practice_sequ
 select tests.create_user('10000000-0000-0000-0000-000000001101', 'owner11@example.test', 'Ana Onze');
 select tests.create_user('10000000-0000-0000-0000-000000001102', 'other11@example.test', 'Bia Onze');
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001101');
 select public.save_practice_sequence(null, 'Armada flow', 'armada, au', '[]'::jsonb) ->> 'sequence_id' as sequence_id \gset
 select is((select count(*)::integer from public.list_practice_sequences()), 1, 'owner lists own sequence');
@@ -1944,6 +1949,7 @@ select throws_ok(
   '42501', null, 'clients cannot insert directly'
 );
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001102');
 select is((select count(*)::integer from public.list_practice_sequences()), 0, 'other users see none');
 select is((select count(*)::integer from public.practice_sequences), 0, 'RLS hides other repertoires');
@@ -1956,13 +1962,15 @@ select throws_ok(
   'PT403', 'not_authorized', 'other users cannot delete'
 );
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001101');
 select is(public.delete_practice_sequence(:'sequence_id') ->> 'status', 'deleted', 'owner deletes');
 
+reset role;
 select tests.set_actor(null, 'anon');
 select throws_ok($$select * from public.list_practice_sequences()$$, '42501', null, 'anonymous callers are refused');
 
-select tests.reset_actor();
+reset role;
 select * from finish();
 rollback;
 ```
@@ -2394,12 +2402,14 @@ select tests.create_user('10000000-0000-0000-0000-000000001202', 'ana12@example.
 select tests.create_user('10000000-0000-0000-0000-000000001203', 'bia12@example.test', 'Bia Doze');
 insert into public.catalog_curators (profile_id) values ('10000000-0000-0000-0000-000000001201');
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001202');
 select public.record_alone_training('2026-10-02', 'UTC', 30, 'private note',
   '[{"source_text":"galopanti, armada","movements":[
      {"movement_key":"galopanti","movement_name":"Galopanti","catalogued":false,"segment_key":"m:1"},
      {"movement_key":"armada","movement_name":"Armada","segment_key":"m:2"}]}]'::jsonb,
   '50000000-0000-0000-0000-000000001201', '2026-10-02T10:00:00Z');
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001203');
 select public.record_alone_training('2026-10-03', 'UTC', 30, null,
   '[{"source_text":"galopanti","movements":[
@@ -2414,6 +2424,7 @@ select throws_ok($$select public.map_catalog_term('galopanti', 'galopante')$$, '
 select throws_ok($$insert into public.catalog_term_mappings (term, action) values ('x', 'ignore')$$,
   '42501', null, 'clients cannot write mappings directly');
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001201');
 select is(public.am_i_catalog_curator(), true, 'the curator is recognized');
 select results_eq(
@@ -2425,7 +2436,7 @@ select throws_ok($$select public.map_catalog_term('Galopanti!', 'galopante')$$, 
   'terms must be slugs');
 select is(public.map_catalog_term('galopanti', 'galopante') ->> 'relinked', '2',
   'mapping re-links completed history');
-select tests.reset_actor();
+reset role;
 select results_eq(
   $$select movement_key, catalogued, movement_name_snapshot from public.training_occurrence_movements
      where segment_key = 'm:1' order by movement_name_snapshot$$,
@@ -2437,18 +2448,20 @@ select throws_ok(
   'P0001', 'completed_training_immutable', 'ordinary updates of completed rows still fail'
 );
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001201');
 select is((select count(*)::integer from public.list_uncatalogued_terms()), 0, 'mapped terms leave the list');
 select is(public.ignore_catalog_term('stretching') ->> 'status', 'saved', 'curator ignores a term');
 select is(public.set_catalog_term_needs_video('galopante', true) ->> 'status', 'saved', 'curator tags a term');
 
+reset role;
 select tests.set_actor(null, 'anon');
 select is(
   (select count(*)::integer from public.catalog_term_mappings),
   3, 'anonymous visitors can read mappings for the parser'
 );
 
-select tests.reset_actor();
+reset role;
 select * from finish();
 rollback;
 ```
@@ -3095,6 +3108,7 @@ insert into public.group_memberships (group_id, profile_id, access_level) values
   ('20000000-0000-0000-0000-000000001301', '10000000-0000-0000-0000-000000001302', 'member'),
   ('20000000-0000-0000-0000-000000001301', '10000000-0000-0000-0000-000000001303', 'member');
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001301');
 select throws_ok(
   $$select public.record_past_class('group', '20000000-0000-0000-0000-000000001301', null, null,
@@ -3140,6 +3154,7 @@ select throws_ok(
   '23514', null, 'transcripts need text'
 );
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001302');
 select is(
   jsonb_array_length(public.get_training_day('2026-09-11', null) -> 0 -> 'resources'),
@@ -3158,6 +3173,7 @@ select is(
   array['summary', 'video']::text[], 'calendar receives resource kinds'
 );
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001304');
 select is((select count(*)::integer from public.training_resources), 0, 'outsiders read no resources');
 select throws_ok(
@@ -3165,6 +3181,7 @@ select throws_ok(
   'PT403', 'not_authorized', 'outsiders cannot delete resources'
 );
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001302');
 select public.record_alone_training('2026-10-04', 'UTC', 30, null,
   '[{"source_text":"ginga"}]'::jsonb, '50000000-0000-0000-0000-000000001304', '2026-10-04T09:00:00Z')
@@ -3174,12 +3191,13 @@ select is(
   'saved', 'practitioners add resources to their own Alone training'
 );
 
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001301');
 select is(public.update_training_resource(:'video_id', 'Recording', 'https://youtu.be/oMmctHNRyBg', null) ->> 'status',
   'saved', 'authors edit their resources');
 select is(public.delete_training_resource(:'video_id') ->> 'status', 'deleted', 'authors delete their resources');
 
-select tests.reset_actor();
+reset role;
 select * from finish();
 rollback;
 ```
@@ -3839,6 +3857,7 @@ set local search_path = extensions, public, pg_catalog;
 select no_plan();
 
 select tests.create_user('10000000-0000-0000-0000-000000001401', 'ana14@example.test', 'Ana Catorze');
+reset role;
 select tests.set_actor('10000000-0000-0000-0000-000000001401');
 select public.record_alone_training('2026-10-01', 'UTC', 30, null,
   '[{"source_text":"armada, au","movements":[
@@ -3873,7 +3892,7 @@ select is(
   0, 'round ratings never count as movement ratings'
 );
 
-select tests.reset_actor();
+reset role;
 select * from finish();
 rollback;
 ```
