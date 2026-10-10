@@ -13,7 +13,8 @@
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
-    "check": "npm run build && npm run test:unit && npm run test:e2e && npm run test:db"
+    "check": "npm run build && npm run test:unit && npm run test:e2e && npm run test:db",
+    "build:catalog": "node scripts/build-movement-catalog.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
