@@ -42,6 +42,7 @@ export function buildRatings({ roundDifficulty, segmentRatings, segments }) {
 
 export function createRoundEditor({
   document, i18n, mode = 'record', getTermMappings = () => [], repertoire = null, showAddButton = true,
+  ratings: ratingsEnabled = true,
 }) {
   editorCount += 1;
   const editorId = `round-editor-${editorCount}`;
@@ -167,10 +168,12 @@ export function createRoundEditor({
     if (repertoire) {
       tools.append(toolButton('toggle-saved', 'rounds.insertSaved', card.savedOpen), toolButton('save-sequence', 'rounds.saveSequence'));
     }
-    tools.append(toolButton('toggle-strip', 'rounds.rateParts', card.stripOpen));
+    if (ratingsEnabled) tools.append(toolButton('toggle-strip', 'rounds.rateParts', card.stripOpen));
     const message = el(document, 'p', { className: 'round-message', text: card.message, attrs: { role: 'status' } });
 
-    section.append(header, textarea, chips, warning, difficulty, tools, message);
+    section.append(header, textarea, chips, warning);
+    if (ratingsEnabled) section.append(difficulty);
+    section.append(tools, message);
     if (card.pickerOpen) {
       const picker = createMovePicker({
         document, i18n,
@@ -333,7 +336,7 @@ export function createRoundEditor({
     getRounds() {
       return cards.filter((card) => card.text.trim()).map((card) => {
         const { steps, segments } = parsed(card);
-        const ratings = buildRatings({
+        const ratings = !ratingsEnabled ? [] : buildRatings({
           roundDifficulty: card.roundDifficulty, segmentRatings: card.segmentRatings, segments,
         });
         return {
