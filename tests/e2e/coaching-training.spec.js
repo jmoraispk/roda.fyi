@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 
+// Seeded fixtures describe September 2026; pin the browser clock so month-relative views match.
+test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-09-24T12:00:00Z'));
+});
+
 const group = {
   id: 'group-lua', slug: 'grupo-lua', owner_id: 'practitioner-1', name: 'Grupo Lua',
   description: 'Evening training', location: 'Lisbon', timezone: 'Europe/Lisbon',
