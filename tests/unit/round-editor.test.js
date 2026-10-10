@@ -127,4 +127,25 @@ describe('round editor', () => {
     expect(document.querySelector('button[aria-label="Rate parts"]')).toBeNull();
     expect(editor.getRounds()[0].ratings).toEqual([]);
   });
+
+  it('drops a part rating when editing moves a different move into its position', () => {
+    const editor = mount();
+    editor.setRounds([{ sourceText: 'armada, au' }]);
+    document.querySelector('button[aria-label="Rate parts"]').click();
+    document.querySelector('[data-segment-key="m:2"]').click();
+    document.querySelector('[data-segment-editor] input[value="hard"]').click();
+    document.querySelector('[data-segment-key="t:1>2"]').click();
+    document.querySelector('[data-segment-editor] input[value="hard"]').click();
+    type(text(), 'armada, ginga, au');
+    expect(editor.getRounds()[0].ratings).toEqual([]);
+  });
+
+  it('keeps saved part ratings when the text still matches', () => {
+    const editor = mount();
+    editor.setRounds([{ sourceText: 'armada, au', ratings: [
+      { segment_key: 'm:2', segment_kind: 'move', difficulty: 'hard' },
+    ] }]);
+    type(text(), 'armada, au ');
+    expect(editor.getRounds()[0].ratings.map(({ segment_key: key }) => key)).toEqual(['m:2']);
+  });
 });

@@ -84,9 +84,20 @@ export function createRoundEditor({
     return { steps, allSteps: result.steps, warnings: result.warnings, segments: buildSegments(steps) };
   }
 
+  // Keys are positional, so a rating also remembers which moves it was about.
+  // Editing that moves a different move into the same position drops the rating.
+  function segmentIdentity(segment) {
+    return segment.kind === 'move' ? segment.slug : `${segment.from ?? ''}>${segment.to ?? ''}`;
+  }
+
   function pruneRatings(card, segments) {
-    const keys = new Set(segments.map(({ key }) => key));
-    for (const key of [...card.segmentRatings.keys()]) if (!keys.has(key)) card.segmentRatings.delete(key);
+    const byKey = new Map(segments.map((segment) => [segment.key, segment]));
+    for (const [key, rating] of [...card.segmentRatings]) {
+      const segment = byKey.get(key);
+      if (!segment) card.segmentRatings.delete(key);
+      else if (rating.identity === undefined) rating.identity = segmentIdentity(segment);
+      else if (rating.identity !== segmentIdentity(segment)) card.segmentRatings.delete(key);
+    }
   }
 
   function renderChips(container, steps, card) {
@@ -214,7 +225,8 @@ export function createRoundEditor({
       const strip = createSegmentStrip({
         document, i18n, idPrefix: card.id,
         onChange(key, rating) {
-          if (rating) card.segmentRatings.set(key, rating);
+          const segment = segments.find((entry) => entry.key === key);
+          if (rating) card.segmentRatings.set(key, { ...rating, identity: segment && segmentIdentity(segment) });
           else card.segmentRatings.delete(key);
         },
       });
