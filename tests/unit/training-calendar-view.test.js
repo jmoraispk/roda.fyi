@@ -58,6 +58,7 @@ function service(overrides = {}) {
     saveNotes: vi.fn().mockResolvedValue({ status: 'saved' }),
     saveAssessment: vi.fn().mockResolvedValue({ status: 'saved' }),
     addFeedback: vi.fn().mockResolvedValue({ status: 'saved' }),
+    saveRoundAssessments: vi.fn().mockResolvedValue({ status: 'saved' }),
     createIdempotencyKey: vi.fn(() => 'request-1'),
     ...overrides,
   };
@@ -121,14 +122,22 @@ describe('training calendar view', () => {
     view.openAlone('2026-09-22');
     document.querySelector('#aloneDuration').value = '45';
     document.querySelector('#aloneNotes').value = 'Armada practice';
-    document.querySelector('#addAloneRound').click();
-    document.querySelector('[data-action="add-movement"]').click();
-    document.querySelector('[data-movement-key]').value = 'armada';
+    const roundText = document.querySelector('textarea[aria-label="Round 1 text"]');
+    roundText.value = '10x armada, au';
+    roundText.dispatchEvent(new Event('input', { bubbles: true }));
 
     document.querySelector('#aloneTrainingForm').dispatchEvent(
       new Event('submit', { bubbles: true, cancelable: true }),
     );
     await vi.waitFor(() => expect(api.recordAloneTraining).toHaveBeenCalledTimes(1));
+    expect(api.recordAloneTraining.mock.calls[0][0].rounds).toEqual([expect.objectContaining({
+      source_text: '10x armada, au',
+      movements: [
+        expect.objectContaining({ movement_key: 'armada', repetitions: 10 }),
+        expect.objectContaining({ movement_key: 'au' }),
+      ],
+    })]);
+    expect(document.querySelector('textarea[aria-label="Round 1 text"]').value).toBe('10x armada, au');
     expect(document.querySelector('#aloneNotes').value).toBe('Armada practice');
     expect(document.querySelector('#aloneTrainingDialog').open).toBe(true);
 
@@ -172,62 +181,56 @@ describe('training calendar view', () => {
     });
   });
 
-  it('saves personal notes separately and assesses each movement before refreshing the day', async () => {
+  it('saves personal notes and round ratings before refreshing the day', async () => {
     const day = [{
-      id: 'occurrence-1', kind: 'group', duration_minutes: 60,
-      participation_id: 'participation-1', personal_notes: 'Initial note',
-      rounds: [{ id: 'round-1', label: 'Flow', movements: [{
-        id: 'movement-1', movement_name: 'Armada', assessment: null,
-      }] }], feedback: [], feedback_contexts: [],
+      id: 'a', kind: 'alone', duration_minutes: 45, participation_id: 'participation-1',
+      personal_notes: '', rounds: [{
+        id: 'round-1', source_text: 'armada, au', sequence: [], ratings: [], planned: [], movements: [],
+      }],
     }];
     const api = service({ getDay: vi.fn().mockResolvedValue(day) });
     const view = createTrainingCalendarView({
-      document, service: api, i18n: i18n(),
-      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+      document, service: api, i18n: i18n(), profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
     });
+    await view.loadMonth('2026-09');
     await view.selectDay('2026-09-22');
-
-    const notes = document.querySelector('[data-notes-form]');
-    notes.querySelector('textarea').value = 'My own observation';
+    const notes = document.querySelector('[data-notes-form="participation-1"]');
+    notes.elements.notes.value = 'Balance needs work';
     notes.requestSubmit();
     await vi.waitFor(() => expect(api.saveNotes).toHaveBeenCalledWith({
-      participationId: 'participation-1', notes: 'My own observation',
+      participationId: 'participation-1', notes: 'Balance needs work',
     }));
-
-    await vi.waitFor(() => expect(api.getDay).toHaveBeenCalledTimes(2));
-    const assessment = document.querySelector('[data-assessment-form="movement-1"]');
-    assessment.querySelector('[value="hard"]').checked = true;
-    assessment.querySelector('textarea').value = 'Balance needs work';
-    assessment.requestSubmit();
-    await vi.waitFor(() => expect(api.saveAssessment).toHaveBeenCalledWith({
-      participationId: 'participation-1', movementId: 'movement-1',
-      difficulty: 'hard', note: 'Balance needs work',
+    await vi.waitFor(() => expect(document.querySelector('[data-round-rating-form="round-1"]')).not.toBeNull());
+    const ratingForm = document.querySelector('[data-round-rating-form="round-1"]');
+    ratingForm.querySelector('input[value="hard"]').click();
+    ratingForm.requestSubmit();
+    await vi.waitFor(() => expect(api.saveRoundAssessments).toHaveBeenCalledWith({
+      participationId: 'participation-1', roundId: 'round-1',
+      ratings: [{ segment_key: 'r', segment_kind: 'round', difficulty: 'hard', note: null, from_movement_key: null, to_movement_key: null }],
     }));
-    expect(api.getDay).toHaveBeenCalledTimes(3);
+    expect(document.querySelector('.round-source').textContent).toBe('armada, au');
   });
 
-  it('keeps the selected day visible after a failed assessment', async () => {
-    const api = service({
-      getDay: vi.fn().mockResolvedValue([{
-        id: 'occurrence-1', kind: 'alone', duration_minutes: 30,
-        participation_id: 'participation-1', rounds: [{ movements: [{
-          id: 'movement-1', movement_name: 'Ginga', assessment: null,
-        }] }], feedback: [], feedback_contexts: [],
-      }]),
-      saveAssessment: vi.fn().mockRejectedValue(new TypeError('offline')),
-    });
+  it('refuses to save Alone training without any round text', async () => {
+    const api = service();
     const view = createTrainingCalendarView({
-      document, service: api, i18n: i18n(),
-      profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+      document, service: api, i18n: i18n(), profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
     });
-    await view.selectDay('2026-09-22');
-    const assessment = document.querySelector('[data-assessment-form="movement-1"]');
-    assessment.querySelector('[value="okay"]').checked = true;
-    assessment.requestSubmit();
-    await vi.waitFor(() => expect(assessment.querySelector('[role="status"]').textContent)
-      .toContain('offline'));
-    expect(document.querySelector('#trainingDayDetail').textContent).toContain('Ginga');
-    expect(api.getDay).toHaveBeenCalledTimes(1);
+    await view.loadMonth('2026-09');
+    view.openAlone('2026-09-22');
+    document.querySelector('#aloneTrainingForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(document.querySelector('#aloneTrainingStatus').textContent)
+      .toBe('Write what you trained in at least one round.');
+    expect(api.recordAloneTraining).not.toHaveBeenCalled();
+  });
+
+  it('pre-fills round cards when logging a saved sequence', async () => {
+    const view = createTrainingCalendarView({
+      document, service: service(), i18n: i18n(), profile: { id: 'practitioner-1' }, timezone: 'Europe/Lisbon',
+    });
+    await view.loadMonth('2026-09');
+    view.openAlone('2026-09-22', { rounds: [{ sourceText: 'armada, au' }] });
+    expect(document.querySelector('textarea[aria-label="Round 1 text"]').value).toBe('armada, au');
   });
 
   it('shows scoped coach feedback and only renders authoring for server-returned contexts', async () => {

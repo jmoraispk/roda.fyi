@@ -256,6 +256,12 @@ const STRINGS = Object.freeze({
     'rounds.sequenceSaved': 'Saved to your repertoire.',
     'rounds.sequenceSaveError': "We couldn't save this sequence. Please try again.",
     'rounds.rateParts': 'Rate parts',
+    'alone.needRound': 'Write what you trained in at least one round.',
+    'training.saveRatings': 'Save ratings',
+    'training.ratingsSaved': 'Ratings saved.',
+    'training.ratingsError': "We couldn't save these ratings. Please try again.",
+    'training.roundRating': 'Round: {difficulty}',
+    'training.legacyRating': '{name}: {difficulty}',
   }),
   pt: Object.freeze({
     'dashboard.changeLanguage': 'Mudar idioma',
@@ -511,6 +517,12 @@ const STRINGS = Object.freeze({
     'rounds.sequenceSaved': 'Guardada no teu repertório.',
     'rounds.sequenceSaveError': 'Não foi possível guardar esta sequência. Tenta novamente.',
     'rounds.rateParts': 'Avaliar partes',
+    'alone.needRound': 'Escreve o que treinaste em pelo menos uma ronda.',
+    'training.saveRatings': 'Guardar avaliações',
+    'training.ratingsSaved': 'Avaliações guardadas.',
+    'training.ratingsError': 'Não foi possível guardar as avaliações. Tenta novamente.',
+    'training.roundRating': 'Ronda: {difficulty}',
+    'training.legacyRating': '{name}: {difficulty}',
   }),
 });
 

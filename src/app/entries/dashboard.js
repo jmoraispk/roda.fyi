@@ -1,10 +1,12 @@
 import { createAuthService } from '../auth-service.js';
+import { createCatalogService } from '../catalog-service.js';
 import { createConnectionService } from '../connection-service.js';
 import { publicConfig } from '../config.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
 import { seedDemoData } from '../demo-data.js';
 import { createGroupService } from '../group-service.js';
 import { createProfileService } from '../profile-service.js';
+import { createRepertoireService } from '../repertoire-service.js';
 import { createTrainingService } from '../training-service.js';
 import { createStatisticsService } from '../statistics-service.js';
 import { createRodaClient } from '../supabase-client.js';
@@ -15,6 +17,8 @@ import {
   createE2EProfileService,
   createE2ETrainingService,
   createE2EStatisticsService,
+  createE2ECatalogService,
+  createE2ERepertoireService,
 } from '../testing/fake-services.js';
 import { createDashboardView } from '../ui/dashboard-view.js';
 import { createConnectionView } from '../ui/connection-view.js';
@@ -96,6 +100,15 @@ async function main() {
   const statisticsService = localMode
     ? createE2EStatisticsService({ window })
     : createStatisticsService(client);
+  const catalogService = localMode
+    ? createE2ECatalogService({ window })
+    : createCatalogService(client);
+  const repertoireService = localMode
+    ? createE2ERepertoireService({ window })
+    : createRepertoireService(client);
+  let termMappings = [];
+  const getTermMappings = () => termMappings;
+  catalogService.listTermMappings().then((rows) => { termMappings = rows; }).catch(() => {});
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
   const localeButton = document.querySelector('#dashboardLocale');
   const demoBadge = document.querySelector('#demoBadge');
@@ -247,6 +260,8 @@ async function main() {
       service: trainingService,
       i18n,
       profile,
+      getTermMappings,
+      repertoire: repertoireService,
       timezone: profile.timezone_override
         || Intl.DateTimeFormat().resolvedOptions().timeZone
         || 'UTC',
