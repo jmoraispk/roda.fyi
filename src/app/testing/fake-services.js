@@ -3,6 +3,7 @@ import { resolveTimezoneOverride } from '../profile-service.js';
 import { AppError } from '../errors.js';
 import { normalizeSequenceInput } from '../repertoire-service.js';
 import { requireTerm } from '../catalog-service.js';
+import { normalizeResource } from '../training-service.js';
 
 const SESSION_KEY = 'roda.e2e.session';
 
@@ -549,6 +550,7 @@ export function createE2ETrainingService({ window }) {
       failNext: null,
       revokeReadsFor: [],
       roundRatings: {},
+      resources: [],
       ...JSON.parse(storage.getItem(stateKey) ?? '{}'),
     };
   }
@@ -859,6 +861,83 @@ export function createE2ETrainingService({ window }) {
       return { status: 'saved', participation_id: participation.id };
     },
 
+    async addResource(input) {
+      const state = readState();
+      guard(state, 'addResource');
+      const resource = normalizeResource(input);
+      const occurrence = state.occurrences.find(({ id }) => id === input.occurrenceId);
+      if (!occurrence || occurrence.recorded_by !== actorId()) throw new AppError('authorization', 'not_authorized');
+      const id = nextId(state, 'resource');
+      state.resources.push({ id, occurrence_id: occurrence.id, kind: input.kind, added_by: actorId(), ...resource });
+      writeState(state);
+      record({ type: 'add-resource', kind: input.kind });
+      return { status: 'saved', resource_id: id };
+    },
+    async updateResource(input) {
+      const state = readState();
+      const resource = state.resources.find(({ id }) => id === input.resourceId);
+      if (!resource || resource.added_by !== actorId()) throw new AppError('authorization', 'not_authorized');
+      Object.assign(resource, normalizeResource({ ...input, kind: resource.kind }));
+      writeState(state);
+      return { status: 'saved', resource_id: resource.id };
+    },
+    async deleteResource(resourceId) {
+      const state = readState();
+      const resource = state.resources.find(({ id }) => id === resourceId);
+      if (!resource || resource.added_by !== actorId()) throw new AppError('authorization', 'not_authorized');
+      state.resources = state.resources.filter(({ id }) => id !== resourceId);
+      writeState(state);
+      return { status: 'deleted', resource_id: resourceId };
+    },
+    async listResourceKinds(input) {
+      const state = readState();
+      const profileId = input.profileId ?? actorId();
+      const occurrenceIds = new Set(state.participations
+        .filter(({ profile_id: id }) => id === profileId).map(({ occurrence_id: id }) => id));
+      const byOccurrence = new Map();
+      for (const resource of state.resources) {
+        const occurrence = state.occurrences.find(({ id }) => id === resource.occurrence_id);
+        if (!occurrenceIds.has(resource.occurrence_id)) continue;
+        if (occurrence.local_date < input.start || occurrence.local_date >= input.endExclusive) continue;
+        const kinds = byOccurrence.get(resource.occurrence_id) ?? new Set();
+        kinds.add(resource.kind);
+        byOccurrence.set(resource.occurrence_id, kinds);
+      }
+      return [...byOccurrence].map(([occurrenceId, kinds]) => ({
+        occurrence_id: occurrenceId, kinds: [...kinds].sort(),
+      }));
+    },
+    async recordPastClass(input) {
+      const state = readState();
+      guard(state, 'recordPastClass');
+      const existing = state.occurrences.find(({ idempotency_key: key }) => key === input.idempotencyKey);
+      if (existing) return completion(state, existing);
+      if (new Date(input.occurredAt) > new Date()) {
+        throw new AppError('validation', 'past_class_in_future');
+      }
+      const occurrence = {
+        id: nextId(state, 'occurrence'), kind: input.kind, group_id: input.groupId ?? null,
+        schedule_id: null, recorded_by: actorId(), occurred_at: input.occurredAt,
+        local_date: input.localDate, timezone: input.timezone,
+        default_duration_minutes: input.durationMinutes, idempotency_key: input.idempotencyKey,
+        rounds: structuredClone(input.rounds ?? []),
+      };
+      state.occurrences.push(occurrence);
+      const attendees = input.kind === 'group'
+        ? input.attendees
+        : [{ profileId: input.studentProfileId, durationMinutes: input.durationMinutes }];
+      for (const attendee of attendees) {
+        state.participations.push({
+          id: nextId(state, 'participation'), occurrence_id: occurrence.id,
+          profile_id: attendee.profileId, actual_duration_minutes: attendee.durationMinutes,
+          personal_notes: null, confirmed_at: input.occurredAt,
+        });
+      }
+      writeState(state);
+      record({ type: 'record-past-class', occurrenceId: occurrence.id });
+      return completion(state, occurrence);
+    },
+
     async saveRoundAssessments(input) {
       const state = readState();
       guard(state, 'saveRoundAssessments');
@@ -1012,6 +1091,11 @@ export function createE2ETrainingService({ window }) {
           });
           return {
             id: occurrence.id, item_type: 'completed', kind: occurrence.kind,
+            occurrence_id: occurrence.id,
+            resources: state.resources
+              .filter(({ occurrence_id: id }) => id === occurrence.id)
+              .map((resource) => ({ ...resource, can_edit: resource.added_by === actorId() })),
+            can_add_resources: occurrence.recorded_by === actorId(),
             status: 'completed', starts_at: occurrence.occurred_at,
             duration_minutes: participation.actual_duration_minutes,
             group_id: occurrence.group_id,
