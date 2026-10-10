@@ -185,3 +185,17 @@
 .segment[data-difficulty="easy"] { border-color: #6fae6a; }
 .segment[data-difficulty="okay"] { border-color: #eba63c; }
 .segment[data-difficulty="hard"] { border-color: #d0573f; background: rgb(208 87 63 / 18%); }
+
+.round-editor { display: grid; gap: .8rem; }
+.round-card { display: grid; gap: .5rem; padding: .8rem; border: 1px solid var(--line, #3a2d20); border-radius: 14px; }
+.round-card-header { display: flex; justify-content: space-between; align-items: center; }
+.round-chips { display: flex; flex-wrap: wrap; gap: .3rem; list-style: none; margin: 0; padding: 0; align-items: center; }
+.round-chip { display: inline-flex; gap: .3rem; align-items: center; border-radius: 999px; padding: .15rem .55rem; font-size: .78rem; border: 1px solid #6fae6a; }
+.round-chip-new { border-color: #eba63c; border-style: dashed; }
+.round-chip-excluded { opacity: .45; text-decoration: line-through; }
+.round-chip-exclude { border: 0; background: transparent; color: inherit; cursor: pointer; }
+.chip-group { display: inline-flex; gap: .3rem; align-items: center; padding: .15rem .4rem; border: 1px solid var(--line, #3a2d20); border-radius: 10px; }
+.chip-group-count { font-weight: 700; }
+.round-difficulty { display: flex; flex-wrap: wrap; gap: .6rem; border: 0; padding: 0; }
+.round-tools { display: flex; flex-wrap: wrap; gap: .4rem; }
+.round-warning:empty, .round-message:empty { display: none; }
