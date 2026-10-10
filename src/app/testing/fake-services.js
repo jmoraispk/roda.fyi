@@ -1,6 +1,7 @@
 import { consumeReturnRoute } from '../return-route.js';
 import { resolveTimezoneOverride } from '../profile-service.js';
 import { AppError } from '../errors.js';
+import { normalizeSequenceInput } from '../repertoire-service.js';
 
 const SESSION_KEY = 'roda.e2e.session';
 
@@ -1190,6 +1191,61 @@ export function createE2EStatisticsService({ window }) {
         .map(({ profile_id, display_name, avatar_path, graduation }) => ({
           profile_id, display_name, avatar_path, graduation,
         }));
+    },
+  };
+}
+
+export function createE2ERepertoireService({ window }) {
+  const { localStorage: storage } = window;
+  const key = 'roda.e2e.repertoireState';
+  const read = () => ({ items: [], counter: 0, ...JSON.parse(storage.getItem(key) ?? '{}') });
+  const write = (state) => storage.setItem(key, JSON.stringify(state));
+  const owner = () => readSession(storage)?.user?.id ?? 'practitioner-1';
+  return {
+    async list() {
+      return read().items.filter(({ profile_id: id }) => id === owner())
+        .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+        .map(({ profile_id: _owner, import_ref: _ref, ...item }) => item);
+    },
+    async save({ id = null, title, sourceText, sequence = null }) {
+      const normalized = normalizeSequenceInput({ title, sourceText });
+      const state = read();
+      let item = id ? state.items.find((entry) => entry.id === id && entry.profile_id === owner()) : null;
+      if (id && !item) throw new AppError('authorization', 'not_authorized');
+      state.counter += 1;
+      const now = new Date(Date.UTC(2026, 9, 10, 12, 0, state.counter)).toISOString();
+      if (!item) {
+        item = { id: `sequence-${state.counter}`, profile_id: owner(), import_ref: null };
+        state.items.push(item);
+      }
+      Object.assign(item, { title: normalized.title, source_text: normalized.text, sequence, updated_at: now });
+      write(state);
+      return { status: 'saved', sequence_id: item.id };
+    },
+    async remove(id) {
+      const state = read();
+      const before = state.items.length;
+      state.items = state.items.filter((entry) => !(entry.id === id && entry.profile_id === owner()));
+      if (state.items.length === before) throw new AppError('authorization', 'not_authorized');
+      write(state);
+      return { status: 'deleted', sequence_id: id };
+    },
+    async importItems(items) {
+      const state = read();
+      let imported = 0;
+      for (const entry of items) {
+        if (state.items.some((item) => item.profile_id === owner() && item.import_ref === entry.import_ref)) continue;
+        state.counter += 1;
+        state.items.push({
+          id: `sequence-${state.counter}`, profile_id: owner(), import_ref: entry.import_ref,
+          title: entry.title || entry.source_text.slice(0, 60), source_text: entry.source_text,
+          sequence: entry.sequence ?? null,
+          updated_at: new Date(Date.UTC(2026, 9, 10, 12, 0, state.counter)).toISOString(),
+        });
+        imported += 1;
+      }
+      write(state);
+      return { status: 'imported', imported };
     },
   };
 }
