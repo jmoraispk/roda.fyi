@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 
+// Seeded fixtures describe September 2026; pin the browser clock so month-relative views match.
+test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-09-24T12:00:00Z'));
+});
+
 const completeProfile = {
   id: 'practitioner-1',
   display_name: 'Ana Silva',
