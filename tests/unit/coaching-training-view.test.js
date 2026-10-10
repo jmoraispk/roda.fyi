@@ -113,7 +113,7 @@ describe('coaching training view', () => {
     expect(document.querySelector('#workoutPlanDialog').open).toBe(false);
   });
 
-  it('edits ordered rounds, saves a draft, publishes it, and makes the published version read-only', async () => {
+  it('composes text rounds with planned difficulty, publishes, and makes the version read-only', async () => {
     const { view, api } = createView();
     view.setContext({ mode: 'coaching', activeTab: 'schedule', groupId: 'group-1', isCoach: true });
     await view.load();
@@ -122,35 +122,50 @@ describe('coaching training view', () => {
     document.querySelector('[name="planTitle"]').value = '  Armada ladder  ';
     document.querySelector('[name="planDuration"]').value = '50';
     document.querySelector('[data-action="add-round"]').click();
-    document.querySelector('[data-action="add-round"]').click();
-    const rounds = document.querySelectorAll('[data-plan-round]');
-    rounds[0].querySelector('[name="roundLabel"]').value = 'First';
-    rounds[1].querySelector('[name="roundLabel"]').value = 'Second';
-    rounds[1].querySelector('[data-action="move-round-up"]').click();
-    document.querySelector('[data-plan-round] [data-action="add-plan-movement"]').click();
-    document.querySelector('[data-plan-movement] [name="movementName"]').value = 'Armada';
-    document.querySelector('[data-plan-movement] [name="movementRepetitions"]').value = '8';
-    document.querySelector('[data-plan-round] [data-action="add-plan-movement"]').click();
-    const movements = document.querySelectorAll('[data-plan-movement]');
-    movements[1].querySelector('[name="movementName"]').value = 'Godeme';
-    movements[1].querySelector('[data-action="move-movement-up"]').click();
+    const roundText = document.querySelector('textarea[aria-label="Round 1 text"]');
+    roundText.value = '8x armada, godeme';
+    roundText.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('[data-round-difficulty] input[value="hard"]').click();
 
     document.querySelector('#workoutPlanForm').requestSubmit(
       document.querySelector('[data-action="save-plan"]'),
     );
     await vi.waitFor(() => expect(api.trainingService.createPlan).toHaveBeenCalledTimes(1));
-    expect(api.trainingService.createPlan.mock.calls[0][0]).toMatchObject({
+    expect(api.trainingService.createPlan).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Armada ladder', durationMinutes: 50, groupId: 'group-1',
-      rounds: [{
-        label: 'Second',
-        movements: [{ movement_name: 'Godeme' }, { movement_name: 'Armada' }],
-      }, { label: 'First' }],
-    });
+      rounds: [expect.objectContaining({
+        source_text: '8x armada, godeme',
+        movements: [
+          expect.objectContaining({ movement_key: 'armada', repetitions: 8 }),
+          expect.objectContaining({ movement_key: 'godeme', catalogued: true }),
+        ],
+        ratings: [expect.objectContaining({ segment_key: 'r', difficulty: 'hard' })],
+      })],
+    }));
 
     document.querySelector('[data-action="publish-plan"]').click();
     await vi.waitFor(() => expect(api.trainingService.publishPlan).toHaveBeenCalledWith('plan-2'));
     expect(document.querySelector('[name="planTitle"]').disabled).toBe(true);
-    expect(document.querySelector('[data-action="add-round"]')).toBeNull();
+    expect(document.querySelector('#workoutPlanForm [data-action="add-round"]')).toBeNull();
+    expect(document.querySelector('#workoutPlanForm .round-source').textContent).toBe('8x armada, godeme');
+  });
+
+  it('shows legacy plan movements as round text', async () => {
+    const { view } = createView({
+      trainingService: {
+        listPlans: vi.fn().mockResolvedValue([{
+          plan_id: 'legacy', version_id: 'v1', title: 'Old plan', state: 'draft',
+          expected_duration_minutes: 30, rounds: [{ id: 'r1', movements: [
+            { movement_key: 'armada', movement_name: 'Armada', repetitions: 10 },
+            { movement_key: 'au', movement_name: 'Aú' },
+          ] }],
+        }]),
+      },
+    });
+    view.setContext({ mode: 'coaching', activeTab: 'schedule', groupId: 'group-1', isCoach: true });
+    await view.load();
+    document.querySelector('[data-action="edit-plan"][data-value="legacy"]').click();
+    expect(document.querySelector('textarea[aria-label="Round 1 text"]').value).toBe('10x Armada, Aú');
   });
 
   it('schedules hidden group training and direct or group-derived personal classes', async () => {
@@ -201,13 +216,15 @@ describe('coaching training view', () => {
     view.openPlanEditor();
     document.querySelector('[name="planTitle"]').value = 'Do not lose me';
     document.querySelector('[data-action="add-round"]').click();
-    document.querySelector('[data-plan-round] [data-action="add-plan-movement"]').click();
-    document.querySelector('[data-plan-movement] [name="movementName"]').value = 'Godeme';
+    const roundText = document.querySelector('textarea[aria-label="Round 1 text"]');
+    roundText.value = '8x armada, godeme';
+    roundText.dispatchEvent(new Event('input', { bubbles: true }));
     document.querySelector('#workoutPlanForm').requestSubmit();
 
-    await vi.waitFor(() => expect(document.querySelector('#workoutPlanDialog').open).toBe(true));
+    await vi.waitFor(() => expect(document.querySelector('#workoutPlanForm .profile-status').textContent).not.toBe(''));
+    expect(document.querySelector('#workoutPlanDialog').open).toBe(true);
     expect(document.querySelector('[name="planTitle"]').value).toBe('Do not lose me');
-    expect(document.querySelector('[name="movementName"]').value).toBe('Godeme');
+    expect(document.querySelector('textarea[aria-label="Round 1 text"]').value).toBe('8x armada, godeme');
   });
 
   it('suppresses stale loads and clears private data when access is revoked', async () => {

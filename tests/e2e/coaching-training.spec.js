@@ -63,9 +63,7 @@ async function createAndPublishPlan(page) {
   await dialog.getByLabel('Plan title').fill('Armada ladder');
   await dialog.getByLabel('Expected duration in minutes').fill('50');
   await dialog.getByRole('button', { name: 'Add round' }).click();
-  await dialog.getByRole('button', { name: 'Add movement' }).click();
-  await dialog.getByLabel('Movement', { exact: true }).fill('Armada');
-  await dialog.getByLabel('Movement repetitions').fill('8');
+  await dialog.getByLabel('Round 1 text').fill('8x armada');
   await dialog.getByRole('button', { name: 'Save draft' }).click();
   await expect(dialog.getByRole('button', { name: 'Publish plan' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Publish plan' }).click();

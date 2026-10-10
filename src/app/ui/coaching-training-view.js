@@ -1,14 +1,6 @@
-import {
-  addMovement,
-  addRound,
-  createPlanDraft,
-  moveMovement,
-  moveRound,
-  removeMovement,
-  serializePlanDraft,
-} from '../training-plan-state.js';
-
-const MOVEMENTS = ['Ginga', 'Armada', 'Au', 'Bencao', 'Meia Lua de Frente', 'Galopante', 'Godeme', 'Elbow strike', 'Escala'];
+import { createPlanDraft, serializePlanDraft } from '../training-plan-state.js';
+import { createRoundDetail } from './round-detail.js';
+import { createRoundEditor } from './round-editor.js';
 
 function safeMessage(error, fallback) {
   return error?.message || fallback;
@@ -88,23 +80,7 @@ function normalizePlan(plan) {
     durationMinutes: plan.expected_duration_minutes ?? plan.durationMinutes,
     instructions: plan.instructions,
     published: (plan.state ?? '').toLowerCase() === 'published' || plan.published,
-    rounds: (plan.rounds ?? []).map((round, roundIndex) => ({
-      id: round.id ?? `round-${roundIndex}`,
-      label: round.label ?? '',
-      repetitions: round.repetitions ?? null,
-      durationSeconds: round.duration_seconds ?? round.durationSeconds ?? null,
-      restSeconds: round.rest_seconds ?? round.restSeconds ?? null,
-      instructions: round.instructions ?? '',
-      movements: (round.movements ?? []).map((movement, movementIndex) => ({
-        id: movement.id ?? `movement-${roundIndex}-${movementIndex}`,
-        movementKey: movement.movement_key ?? movement.movementKey ?? '',
-        movementName: movement.movement_name ?? movement.movementName ?? '',
-        side: movement.side ?? '',
-        repetitions: movement.repetitions ?? null,
-        durationSeconds: movement.duration_seconds ?? movement.durationSeconds ?? null,
-        instructions: movement.instructions ?? '',
-      })),
-    })),
+    rounds: plan.rounds ?? [],
   });
 }
 
@@ -117,6 +93,8 @@ export function createCoachingTrainingView({
   timezone = 'UTC',
   profileId,
   onAccessRevoked = async () => {},
+  getTermMappings = () => [],
+  repertoire = null,
 }) {
   const workspace = document.querySelector('#coachingTrainingWorkspace');
   const studentWorkspace = document.querySelector('#coachingStudentsPanel');
@@ -144,12 +122,7 @@ export function createCoachingTrainingView({
   let completing = false;
   let completionState = null;
   let selectedStudentId = null;
-  let localCounter = 0;
-
-  function nextId() {
-    localCounter += 1;
-    return `editor-${localCounter}`;
-  }
+  const planRoundEditor = createRoundEditor({ document, i18n, mode: 'plan', getTermMappings, repertoire });
 
   function active() {
     return context.mode === 'coaching' && context.activeTab === 'schedule' && context.isCoach;
@@ -468,23 +441,6 @@ export function createCoachingTrainingView({
       description: planForm.elements.planDescription.value,
       durationMinutes: planForm.elements.planDuration.value,
       instructions: planForm.elements.planInstructions.value,
-      rounds: [...planForm.querySelectorAll('[data-plan-round]')].map((round) => ({
-        id: round.dataset.planRound,
-        label: round.querySelector('[name="roundLabel"]').value,
-        repetitions: round.querySelector('[name="roundRepetitions"]').value,
-        durationSeconds: round.querySelector('[name="roundDuration"]').value,
-        restSeconds: round.querySelector('[name="roundRest"]').value,
-        instructions: round.querySelector('[name="roundInstructions"]').value,
-        movements: [...round.querySelectorAll('[data-plan-movement]')].map((movement) => ({
-          id: movement.dataset.planMovement,
-          movementKey: movement.querySelector('[name="movementName"]').value,
-          movementName: movement.querySelector('[name="movementName"]').value,
-          side: movement.querySelector('[name="movementSide"]').value,
-          repetitions: movement.querySelector('[name="movementRepetitions"]').value,
-          durationSeconds: movement.querySelector('[name="movementDuration"]').value,
-          instructions: movement.querySelector('[name="movementInstructions"]').value,
-        })),
-      })),
     };
   }
 
@@ -523,77 +479,24 @@ export function createCoachingTrainingView({
       field(document, i18n.t('coach.expectedDuration'), duration),
       field(document, i18n.t('coach.instructions'), instructions),
     );
-    const rounds = element(document, 'div', { className: 'plan-rounds' });
-    editorState.rounds.forEach((round, index) => {
-      const box = element(document, 'fieldset', { className: 'plan-round' });
-      box.dataset.planRound = round.id;
-      box.append(element(document, 'legend', { text: i18n.t('coach.round', { number: index + 1 }) }));
-      const label = element(document, 'input', { name: 'roundLabel', value: round.label, disabled: readOnly });
-      const repetitions = element(document, 'input', { type: 'number', name: 'roundRepetitions', value: round.repetitions ?? '', disabled: readOnly });
-      const roundDuration = element(document, 'input', { type: 'number', name: 'roundDuration', value: round.durationSeconds ?? '', disabled: readOnly });
-      const rest = element(document, 'input', { type: 'number', name: 'roundRest', value: round.restSeconds ?? '', disabled: readOnly });
-      const roundInstructions = element(document, 'input', { name: 'roundInstructions', value: round.instructions, disabled: readOnly });
-      for (const input of [label, repetitions, roundDuration, rest, roundInstructions]) input.className = 'field-input';
-      box.append(
-        field(document, i18n.t('coach.roundLabel'), label),
-        field(document, i18n.t('coach.roundRepetitions'), repetitions),
-        field(document, i18n.t('coach.roundDuration'), roundDuration),
-        field(document, i18n.t('coach.rest'), rest),
-        field(document, i18n.t('coach.roundInstructions'), roundInstructions),
-      );
-      if (!readOnly) {
-        box.append(
-          actionButton(i18n.t('coach.moveRoundUp'), 'move-round-up'),
-          actionButton(i18n.t('coach.moveRoundDown'), 'move-round-down'),
-        );
-      }
-      const movementList = element(document, 'div', { className: 'plan-movement-list' });
-      round.movements.forEach((movement) => {
-        const row = element(document, 'div', { className: 'plan-movement' });
-        row.dataset.planMovement = movement.id;
-        const name = element(document, 'input', { name: 'movementName', value: movement.movementName, required: true, disabled: readOnly });
-        name.className = 'field-input';
-        name.setAttribute('list', 'capoeiraMovementNames');
-        const side = element(document, 'select', { name: 'movementSide', disabled: readOnly });
-        for (const [value, key] of [['', 'anySide'], ['left', 'left'], ['right', 'right'], ['both', 'both']]) {
-          const text = i18n.t(`coach.${key}`);
-          const option = element(document, 'option', { value, text });
-          option.selected = movement.side === value;
-          side.append(option);
-        }
-        const movementRepetitions = element(document, 'input', { type: 'number', name: 'movementRepetitions', value: movement.repetitions ?? '', disabled: readOnly });
-        const movementDuration = element(document, 'input', { type: 'number', name: 'movementDuration', value: movement.durationSeconds ?? '', disabled: readOnly });
-        const movementInstructions = element(document, 'input', { name: 'movementInstructions', value: movement.instructions, disabled: readOnly });
-        for (const input of [side, movementRepetitions, movementDuration, movementInstructions]) input.className = 'field-input';
-        row.append(
-          field(document, i18n.t('coach.movement'), name),
-          field(document, i18n.t('coach.side'), side),
-          field(document, i18n.t('coach.movementRepetitions'), movementRepetitions),
-          field(document, i18n.t('coach.movementDuration'), movementDuration),
-          field(document, i18n.t('coach.movementInstructions'), movementInstructions),
-        );
-        if (!readOnly) {
-          row.append(
-            actionButton(i18n.t('coach.moveMovementUp'), 'move-movement-up'),
-            actionButton(i18n.t('coach.moveMovementDown'), 'move-movement-down'),
-            actionButton(i18n.t('coach.removeMovement'), 'remove-movement'),
-          );
-        }
-        movementList.append(row);
+    if (readOnly) {
+      const rounds = element(document, 'div', { className: 'plan-rounds' });
+      editorState.rounds.forEach((round, index) => {
+        rounds.append(createRoundDetail({
+          document, i18n, index, editable: false, onSave() {}, getTermMappings,
+          round: {
+            id: `plan-round-${index}`, source_text: round.sourceText, sequence: null,
+            ratings: round.ratings, planned: [], movements: [],
+          },
+        }));
       });
-      box.append(movementList);
-      if (!readOnly) box.append(actionButton(i18n.t('coach.addMovement'), 'add-plan-movement'));
-      rounds.append(box);
-    });
-    planForm.append(rounds);
-    const names = element(document, 'datalist');
-    names.id = 'capoeiraMovementNames';
-    MOVEMENTS.forEach((name) => names.append(element(document, 'option', { value: name })));
-    planForm.append(names);
+      planForm.append(rounds);
+    } else {
+      planForm.append(planRoundEditor.element);
+    }
     if (!readOnly) {
       const actions = element(document, 'div', { className: 'dashboard-actions' });
       actions.append(
-        actionButton(i18n.t('coach.addRound'), 'add-round'),
         Object.assign(element(document, 'button', {
           type: 'submit', className: 'primary-button', text: i18n.t('coach.saveDraft'), action: 'save-plan',
         }), { disabled: savingPlan }),
@@ -608,6 +511,7 @@ export function createCoachingTrainingView({
     if (!active()) return;
     const plan = plans.find(({ id }) => id === planId);
     editorState = plan ? normalizePlan(plan) : createPlanDraft({ groupId: context.groupId, durationMinutes: 60 });
+    planRoundEditor.setRounds(editorState.rounds);
     renderPlanForm();
     showDialog(planDialog);
   }
@@ -762,44 +666,10 @@ export function createCoachingTrainingView({
   });
 
   planForm.addEventListener('click', async (event) => {
+    if (event.target.closest('.round-editor')) return;
     const button = event.target.closest('[data-action]');
     if (!button || !editorState) return;
     if (button.dataset.action === 'close-plan') return closeDialog(planDialog);
-    if (button.dataset.action === 'add-round') {
-      syncEditor();
-      editorState = addRound(editorState, {}, { randomUUID: nextId });
-      renderPlanForm();
-    }
-    if (button.dataset.action === 'move-round-up' || button.dataset.action === 'move-round-down') {
-      syncEditor();
-      const roundId = button.closest('[data-plan-round]').dataset.planRound;
-      editorState = moveRound(
-        editorState,
-        roundId,
-        button.dataset.action === 'move-round-up' ? 'up' : 'down',
-      );
-      renderPlanForm();
-    }
-    if (button.dataset.action === 'add-plan-movement') {
-      syncEditor();
-      const roundId = button.closest('[data-plan-round]').dataset.planRound;
-      editorState = addMovement(editorState, roundId, {}, { randomUUID: nextId });
-      renderPlanForm();
-    }
-    if (['move-movement-up', 'move-movement-down', 'remove-movement'].includes(button.dataset.action)) {
-      syncEditor();
-      const roundId = button.closest('[data-plan-round]').dataset.planRound;
-      const movementId = button.closest('[data-plan-movement]').dataset.planMovement;
-      editorState = button.dataset.action === 'remove-movement'
-        ? removeMovement(editorState, roundId, movementId)
-        : moveMovement(
-          editorState,
-          roundId,
-          movementId,
-          button.dataset.action === 'move-movement-up' ? 'up' : 'down',
-        );
-      renderPlanForm();
-    }
     if (button.dataset.action === 'publish-plan') {
       try {
         await trainingService.publishPlan(editorState.id);
@@ -821,7 +691,8 @@ export function createCoachingTrainingView({
     const planStatus = planForm.querySelector('.profile-status');
     planStatus.textContent = '';
     try {
-      const serialized = { ...serializePlanDraft(editorState), groupId: context.groupId };
+      const editorRounds = planRoundEditor.getRounds();
+      const serialized = { ...serializePlanDraft(editorState, editorRounds), groupId: context.groupId };
       const result = editorState.id
         ? await trainingService.savePlanDraft({
           ...serialized, planId: editorState.id, expectedUpdatedAt: editorState.expectedUpdatedAt,
@@ -832,6 +703,7 @@ export function createCoachingTrainingView({
         id: result.plan_id ?? editorState.id,
         versionId: result.version_id ?? editorState.versionId,
         expectedUpdatedAt: result.updated_at ?? editorState.expectedUpdatedAt,
+        rounds: editorRounds.map((round) => ({ sourceText: round.source_text, ratings: round.ratings })),
       };
       const existing = plans.findIndex(({ id }) => id === editorState.id);
       if (existing >= 0) plans.splice(existing, 1, editorState);
