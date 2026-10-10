@@ -2437,9 +2437,9 @@ select throws_ok($$select public.map_catalog_term('Galopanti!', 'galopante')$$, 
 select is(public.map_catalog_term('galopanti', 'galopante') ->> 'relinked', '2',
   'mapping re-links completed history');
 reset role;
-select results_eq(
+select set_eq(
   $$select movement_key, catalogued, movement_name_snapshot from public.training_occurrence_movements
-     where segment_key = 'm:1' order by movement_name_snapshot$$,
+     where segment_key = 'm:1'$$,
   $$values ('galopante'::text, true, 'Galopanti'::text), ('galopante'::text, true, 'galopanti'::text)$$,
   'relinked rows keep their written names'
 );

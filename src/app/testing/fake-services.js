@@ -2,6 +2,7 @@ import { consumeReturnRoute } from '../return-route.js';
 import { resolveTimezoneOverride } from '../profile-service.js';
 import { AppError } from '../errors.js';
 import { normalizeSequenceInput } from '../repertoire-service.js';
+import { requireTerm } from '../catalog-service.js';
 
 const SESSION_KEY = 'roda.e2e.session';
 
@@ -1246,6 +1247,99 @@ export function createE2ERepertoireService({ window }) {
       }
       write(state);
       return { status: 'imported', imported };
+    },
+  };
+}
+
+export function createE2ECatalogService({ window }) {
+  const { localStorage: storage } = window;
+  const key = 'roda.e2e.catalogState';
+  const read = () => ({ mappings: [], ...JSON.parse(storage.getItem(key) ?? '{}') });
+  const write = (state) => storage.setItem(key, JSON.stringify(state));
+  const curator = () => storage.getItem('roda.e2e.catalogCurator') === 'true';
+  const requireCurator = () => {
+    if (!curator()) throw new AppError('authorization', 'not_authorized');
+  };
+  const training = () => JSON.parse(storage.getItem('roda.e2e.trainingState') ?? '{}');
+  const writeTraining = (state) => storage.setItem('roda.e2e.trainingState', JSON.stringify(state));
+  const upsert = (term, values) => {
+    const state = read();
+    const existing = state.mappings.find((mapping) => mapping.term === term);
+    if (existing) Object.assign(existing, values);
+    else state.mappings.push({ term, action: null, target_slug: null, target_term: null, needs_video: false, ...values });
+    write(state);
+  };
+  const relink = (term, targetKey, catalogued) => {
+    const state = training();
+    let relinked = 0;
+    for (const occurrence of state.occurrences ?? []) {
+      for (const round of occurrence.rounds ?? []) {
+        for (const movement of round.movements ?? []) {
+          if (movement.movement_key === term && movement.catalogued === false) {
+            movement.movement_key = targetKey;
+            movement.catalogued = catalogued;
+            relinked += 1;
+          }
+        }
+      }
+    }
+    writeTraining(state);
+    return relinked;
+  };
+  return {
+    async listTermMappings() {
+      return read().mappings;
+    },
+    async amICurator() {
+      return curator();
+    },
+    async listUncataloguedTerms() {
+      requireCurator();
+      const handled = new Set(read().mappings.filter(({ action }) => action).map(({ term }) => term));
+      const flagged = new Set(read().mappings.filter(({ needs_video: flag }) => flag).map(({ term }) => term));
+      const state = training();
+      const byTerm = new Map();
+      for (const participation of state.participations ?? []) {
+        const occurrence = (state.occurrences ?? []).find(({ id }) => id === participation.occurrence_id);
+        for (const round of occurrence?.rounds ?? []) {
+          for (const movement of round.movements ?? []) {
+            if (movement.catalogued !== false || handled.has(movement.movement_key)) continue;
+            const entry = byTerm.get(movement.movement_key) ?? {
+              term: movement.movement_key, spelling: movement.movement_name, people: new Set(), uses: 0,
+              first_seen: occurrence.occurred_at ?? null, last_seen: occurrence.occurred_at ?? null,
+              needs_video: flagged.has(movement.movement_key),
+            };
+            entry.people.add(participation.profile_id);
+            entry.uses += 1;
+            byTerm.set(movement.movement_key, entry);
+          }
+        }
+      }
+      return [...byTerm.values()]
+        .map((entry) => ({ ...entry, people: entry.people.size }))
+        .sort((a, b) => b.people - a.people || b.uses - a.uses || a.term.localeCompare(b.term));
+    },
+    async mapTerm(term, targetSlug) {
+      requireCurator();
+      requireTerm(term); requireTerm(targetSlug);
+      upsert(term, { action: 'alias', target_slug: targetSlug, target_term: null });
+      return { status: 'saved', relinked: relink(term, targetSlug, true) };
+    },
+    async mergeTerm(term, targetTerm) {
+      requireCurator();
+      requireTerm(term); requireTerm(targetTerm);
+      upsert(term, { action: 'merge', target_slug: null, target_term: targetTerm });
+      return { status: 'saved', relinked: relink(term, targetTerm, false) };
+    },
+    async ignoreTerm(term) {
+      requireCurator();
+      upsert(requireTerm(term), { action: 'ignore', target_slug: null, target_term: null });
+      return { status: 'saved' };
+    },
+    async setNeedsVideo(term, needsVideo) {
+      requireCurator();
+      upsert(requireTerm(term), { needs_video: Boolean(needsVideo) });
+      return { status: 'saved' };
     },
   };
 }
