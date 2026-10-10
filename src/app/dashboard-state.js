@@ -68,7 +68,7 @@ export function reduceDashboardState(state, event) {
     case 'TAB_CHOSEN': {
       const allowed = event.mode === 'coaching'
         ? ['schedule', 'students', 'groups']
-        : ['calendar', 'statistics'];
+        : ['calendar', 'statistics', 'repertoire', 'catalog'];
       if (event.mode !== state.mode || !allowed.includes(event.tab)) return state;
       return {
         ...state,

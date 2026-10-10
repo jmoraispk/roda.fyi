@@ -180,4 +180,12 @@ describe('dashboard state', () => {
 
     expect(state).toEqual(createDashboardState());
   });
+
+  it('accepts repertoire and catalog tabs in My Training', () => {
+    let state = createDashboardState();
+    state = reduceDashboardState(state, { type: 'TAB_CHOSEN', mode: 'training', tab: 'repertoire' });
+    expect(dashboardView(state).activeTab).toBe('repertoire');
+    state = reduceDashboardState(state, { type: 'TAB_CHOSEN', mode: 'training', tab: 'catalog' });
+    expect(dashboardView(state).activeTab).toBe('catalog');
+  });
 });

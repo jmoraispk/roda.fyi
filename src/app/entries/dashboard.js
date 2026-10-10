@@ -7,6 +7,7 @@ import { seedDemoData } from '../demo-data.js';
 import { createGroupService } from '../group-service.js';
 import { createProfileService } from '../profile-service.js';
 import { createRepertoireService } from '../repertoire-service.js';
+import { importLocalRepertoire } from '../repertoire-import.js';
 import { createTrainingService } from '../training-service.js';
 import { createStatisticsService } from '../statistics-service.js';
 import { createRodaClient } from '../supabase-client.js';
@@ -27,6 +28,7 @@ import { createProfileView } from '../ui/profile-view.js';
 import { createTrainingCalendarView } from '../ui/training-calendar-view.js';
 import { createCoachingTrainingView } from '../ui/coaching-training-view.js';
 import { createStatisticsView } from '../ui/statistics-view.js';
+import { createRepertoireView } from '../ui/repertoire-view.js';
 
 function currentRoute() {
   return `${location.pathname}${location.search}${location.hash}`;
@@ -123,6 +125,8 @@ async function main() {
   let trainingCalendarController;
   let coachingTrainingController;
   let statisticsController;
+  let repertoireController;
+  let repertoireImport = Promise.resolve();
   let connectionIdentity;
   let initializing = false;
   let initialized = false;
@@ -182,6 +186,7 @@ async function main() {
         trainingCalendarController.clear();
         coachingTrainingController.clear();
         statisticsController.clear();
+        repertoireController.clear();
         dashboard.clear();
         await authService.signOut();
         if (demoMode) location.replace('/');
@@ -214,6 +219,9 @@ async function main() {
         }
         if (mode === 'training' && activeTab === 'calendar' && profile.completed_at) {
           trainingCalendarController.refresh();
+        }
+        if (mode === 'training' && activeTab === 'repertoire') {
+          repertoireImport.then(() => repertoireController.load());
         }
         if (mode === 'training' && activeTab === 'statistics' && profile.completed_at) {
           statisticsController.setGroup(membership?.group_id ?? null);
@@ -266,6 +274,12 @@ async function main() {
         || Intl.DateTimeFormat().resolvedOptions().timeZone
         || 'UTC',
     });
+    repertoireController = createRepertoireView({
+      document, i18n, repertoire: repertoireService,
+      onLog: (item) => trainingCalendarController.openAlone(undefined, {
+        rounds: [{ sourceText: item.source_text }],
+      }),
+    });
     coachingTrainingController = createCoachingTrainingView({
       document,
       trainingService,
@@ -309,6 +323,9 @@ async function main() {
       const startup = await loadStartupData(profileService, groupService);
       profile = startup.profile;
       createControllers(startup.coachProfile);
+      repertoireImport = importLocalRepertoire({
+        storage: localStorage, repertoire: repertoireService, userId: session.user.id,
+      }).catch(() => {});
       dashboard.load({
         session,
         profile,
@@ -349,6 +366,7 @@ async function main() {
         trainingCalendarController.clear();
         coachingTrainingController.clear();
         statisticsController.clear();
+        repertoireController.clear();
         dashboard.clear();
         returnToSignIn();
       });

@@ -50,6 +50,8 @@ export function createDashboardView({
     document.querySelector('#trainingWorkspace h1').textContent = i18n.t('dashboard.myTraining');
     document.querySelector('#trainingCalendarTab').textContent = i18n.t('dashboard.calendar');
     document.querySelector('#trainingStatisticsTab').textContent = i18n.t('dashboard.statistics');
+    document.querySelector('#trainingRepertoireTab').textContent = i18n.t('dashboard.repertoire');
+    document.querySelector('#trainingCatalogTab').textContent = i18n.t('dashboard.catalog');
     trainingTabs.setAttribute('aria-label', i18n.t('dashboard.trainingSections'));
     document.querySelector('#coachingWorkspace > .dashboard-eyebrow').textContent = i18n.t('dashboard.coachMode');
     document.querySelector('#coachingWorkspace > h1').textContent = i18n.t('dashboard.coaching');
@@ -133,6 +135,8 @@ export function createDashboardView({
       panel.hidden = panel.id !== {
         calendar: 'trainingCalendarPanel',
         statistics: 'trainingStatisticsPanel',
+        repertoire: 'trainingRepertoirePanel',
+        catalog: 'trainingCatalogPanel',
       }[view.activeTab];
     }
     for (const button of coachingTabs.querySelectorAll('[data-dashboard-tab]')) {
