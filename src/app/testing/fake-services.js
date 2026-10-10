@@ -1212,6 +1212,27 @@ export function createE2EStatisticsService({ window }) {
       });
       const highest = Math.max(0, ...[...movements.values()].map(({ session_count: count }) => count));
       const rangeDays = Math.max(1, (new Date(`${endExclusive}T00:00:00Z`) - new Date(`${start}T00:00:00Z`)) / 86400000);
+      const roundRatings = trainingState().roundRatings ?? {};
+      const pairs = new Map();
+      for (const { participation } of activity) {
+        for (const rating of Object.values(roundRatings[participation.id] ?? {}).flat()) {
+          if (!['transition', 'loop'].includes(rating.segment_kind)
+            || !rating.from_movement_key || !rating.to_movement_key) continue;
+          const pairKey = `${rating.from_movement_key}>${rating.to_movement_key}`;
+          const entry = pairs.get(pairKey) ?? {
+            from_movement_key: rating.from_movement_key, to_movement_key: rating.to_movement_key,
+            from_name: rating.from_movement_key, to_name: rating.to_movement_key,
+            hard_count: 0, rating_count: 0,
+          };
+          entry.rating_count += 1;
+          if (rating.difficulty === 'hard') entry.hard_count += 1;
+          pairs.set(pairKey, entry);
+        }
+      }
+      const hardestTransitions = [...pairs.values()].filter(({ hard_count: count }) => count > 0)
+        .sort((a, b) => b.hard_count - a.hard_count || b.rating_count - a.rating_count
+          || a.from_movement_key.localeCompare(b.from_movement_key))
+        .slice(0, 5);
       return {
         range_start: start, range_end_exclusive: endExclusive, timezone,
         session_count: activity.length, total_minutes: totalMinutes, current_streak: currentStreak,
@@ -1220,6 +1241,7 @@ export function createE2EStatisticsService({ window }) {
         context_distribution: [...contexts.values()],
         favorite_movements: [...movements.values()].filter(({ session_count: count }) => count === highest && highest),
         difficulty_trends: [],
+        hardest_transitions: hardestTransitions,
       };
     },
 
