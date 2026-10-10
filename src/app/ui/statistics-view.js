@@ -118,7 +118,22 @@ export function createStatisticsView({
     });
     if (!trendList.children.length) trendList.append(element(document, 'li', '', '—'));
     trends.append(trendList);
-    details.append(favorites, contexts, trends);
+    const transitions = element(document, 'section', 'statistics-detail');
+    transitions.dataset.hardestTransitions = '';
+    transitions.append(element(document, 'h3', '', i18n.t('statistics.hardestTransitions')));
+    const transitionRows = personalData.hardest_transitions ?? [];
+    if (!transitionRows.length) {
+      transitions.append(element(document, 'p', 'calendar-empty', i18n.t('statistics.noTransitions')));
+    } else {
+      const transitionList = element(document, 'ol', 'statistics-simple-list');
+      transitionRows.forEach((row) => {
+        transitionList.append(element(document, 'li', '', i18n.t('statistics.transitionLine', {
+          from: row.from_name, to: row.to_name, hard: row.hard_count, total: row.rating_count,
+        })));
+      });
+      transitions.append(transitionList);
+    }
+    details.append(favorites, contexts, trends, transitions);
     container.append(details);
   }
 
