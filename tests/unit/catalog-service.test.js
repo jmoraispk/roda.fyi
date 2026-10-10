@@ -58,6 +58,7 @@ describe('catalog service', () => {
       occurrences: [{ id: 'o1', rounds: [{ movements: [
         { movement_key: 'galopanti', movement_name: 'Galopanti', catalogued: false },
         { movement_key: 'armada', movement_name: 'Armada', catalogued: true },
+        { movement_key: 'felt-dizzy-after-the-fight-today', movement_name: 'felt dizzy after the fight today', catalogued: false },
       ] }] }],
       participations: [{ id: 'p1', occurrence_id: 'o1', profile_id: 'practitioner-1' }],
     };

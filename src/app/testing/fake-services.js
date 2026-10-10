@@ -1410,6 +1410,7 @@ export function createE2ECatalogService({ window }) {
         for (const round of occurrence?.rounds ?? []) {
           for (const movement of round.movements ?? []) {
             if (movement.catalogued !== false || handled.has(movement.movement_key)) continue;
+            if (movement.movement_key.length > 40 || movement.movement_key.split('-').length > 4) continue;
             const entry = byTerm.get(movement.movement_key) ?? {
               term: movement.movement_key, spelling: movement.movement_name, people: new Set(), uses: 0,
               first_seen: occurrence.occurred_at ?? null, last_seen: occurrence.occurred_at ?? null,
