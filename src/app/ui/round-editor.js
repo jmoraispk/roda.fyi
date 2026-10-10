@@ -20,6 +20,26 @@ function appendToText(current, addition) {
   return /[,(→]$/.test(trimmed) || /->$/.test(trimmed) ? `${trimmed} ${addition}` : `${trimmed}, ${addition}`;
 }
 
+export function buildRatings({ roundDifficulty, segmentRatings, segments }) {
+  const byKey = new Map(segments.map((segment) => [segment.key, segment]));
+  const ratings = [];
+  if (roundDifficulty) {
+    ratings.push({ segment_key: 'r', segment_kind: 'round', difficulty: roundDifficulty, note: null, from_movement_key: null, to_movement_key: null });
+  }
+  for (const [key, rating] of segmentRatings) {
+    const segment = byKey.get(key);
+    if (!segment) continue;
+    const neighbors = ['transition', 'loop'].includes(segment.kind);
+    ratings.push({
+      segment_key: key, segment_kind: segment.kind, difficulty: rating.difficulty,
+      note: rating.note?.trim() || null,
+      from_movement_key: neighbors ? segment.from : null,
+      to_movement_key: neighbors ? segment.to : null,
+    });
+  }
+  return ratings;
+}
+
 export function createRoundEditor({
   document, i18n, mode = 'record', getTermMappings = () => [], repertoire = null, showAddButton = true,
 }) {
@@ -313,22 +333,9 @@ export function createRoundEditor({
     getRounds() {
       return cards.filter((card) => card.text.trim()).map((card) => {
         const { steps, segments } = parsed(card);
-        const byKey = new Map(segments.map((segment) => [segment.key, segment]));
-        const ratings = [];
-        if (card.roundDifficulty) {
-          ratings.push({ segment_key: 'r', segment_kind: 'round', difficulty: card.roundDifficulty, note: null, from_movement_key: null, to_movement_key: null });
-        }
-        for (const [key, rating] of card.segmentRatings) {
-          const segment = byKey.get(key);
-          if (!segment) continue;
-          const neighbors = ['transition', 'loop'].includes(segment.kind);
-          ratings.push({
-            segment_key: key, segment_kind: segment.kind, difficulty: rating.difficulty,
-            note: rating.note?.trim() || null,
-            from_movement_key: neighbors ? segment.from : null,
-            to_movement_key: neighbors ? segment.to : null,
-          });
-        }
+        const ratings = buildRatings({
+          roundDifficulty: card.roundDifficulty, segmentRatings: card.segmentRatings, segments,
+        });
         return {
           label: null,
           source_text: card.text.trim(),

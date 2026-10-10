@@ -5,13 +5,8 @@ import {
   reduceCalendarState,
   shiftMonth,
 } from '../training-calendar-state.js';
-
-const MOVEMENTS = Object.freeze([
-  ['ginga', 'Ginga'],
-  ['armada', 'Armada'],
-  ['meia-lua-de-compasso', 'Meia Lua de Compasso'],
-  ['au', 'Aú'],
-]);
+import { createRoundDetail } from './round-detail.js';
+import { createRoundEditor } from './round-editor.js';
 
 function kindKey(kind) {
   if (kind === 'personal_class') return 'training.personalClass';
@@ -38,6 +33,8 @@ export function createTrainingCalendarView({
   targetProfileId = null,
   canCoach = false,
   onAccessRevoked = async () => {},
+  getTermMappings = () => [],
+  repertoire = null,
 }) {
   const calendar = document.querySelector('#trainingCalendar');
   const monthLabel = document.querySelector('#calendarMonthLabel');
@@ -57,6 +54,10 @@ export function createTrainingCalendarView({
   const addRound = document.querySelector('#addAloneRound');
   const formStatus = document.querySelector('#aloneTrainingStatus');
   const saveButton = document.querySelector('#saveAloneTraining');
+  const roundEditor = createRoundEditor({
+    document, i18n, mode: 'record', getTermMappings, repertoire, showAddButton: false,
+  });
+  rounds.replaceChildren(roundEditor.element);
   let state = createCalendarState();
   let requestToken = 0;
   let idempotencyKey = null;
@@ -79,6 +80,7 @@ export function createTrainingCalendarView({
     saveButton.textContent = i18n.t('alone.save');
     document.querySelector('[data-close-alone]')
       .setAttribute('aria-label', i18n.t('alone.close'));
+    roundEditor.refreshCopy();
   }
 
   function renderSidebar() {
@@ -222,58 +224,13 @@ export function createTrainingCalendarView({
       }
 
       for (const [roundIndex, round] of (item.rounds ?? []).entries()) {
-        const roundBox = document.createElement('section');
-        roundBox.className = 'training-round-detail';
-        const roundTitle = document.createElement('h4');
-        roundTitle.textContent = round.label || i18n.t('alone.round', { number: roundIndex + 1 });
-        roundBox.append(roundTitle);
-        for (const movement of round.movements ?? []) {
-          const movementBox = document.createElement('div');
-          movementBox.className = 'training-movement-detail';
-          const name = document.createElement('strong');
-          name.textContent = movement.movement_name ?? movement.movementName;
-          movementBox.append(name);
-          if (ownRecord && item.participation_id) {
-            const assessment = document.createElement('form');
-            assessment.dataset.assessmentForm = movement.id;
-            assessment.dataset.participationId = item.participation_id;
-            const choices = document.createElement('fieldset');
-            const legend = document.createElement('legend');
-            legend.textContent = i18n.t('training.difficulty');
-            choices.append(legend);
-            for (const difficulty of ['easy', 'okay', 'hard']) {
-              const label = document.createElement('label');
-              const radio = document.createElement('input');
-              radio.type = 'radio';
-              radio.name = 'difficulty';
-              radio.value = difficulty;
-              radio.required = true;
-              radio.checked = movement.assessment?.difficulty === difficulty;
-              label.append(radio, i18n.t(`training.${difficulty}`));
-              choices.append(label);
-            }
-            const note = document.createElement('textarea');
-            note.className = 'field-input field-textarea';
-            note.name = 'note';
-            note.value = movement.assessment?.note ?? '';
-            note.setAttribute('aria-label', i18n.t('training.movementNote'));
-            const save = document.createElement('button');
-            save.type = 'submit';
-            save.className = 'secondary-button';
-            save.textContent = i18n.t('training.saveAssessment');
-            const assessmentStatus = document.createElement('p');
-            assessmentStatus.setAttribute('role', 'status');
-            assessment.append(choices, note, save, assessmentStatus);
-            movementBox.append(assessment);
-          } else if (movement.assessment) {
-            const result = document.createElement('p');
-            result.textContent = `${i18n.t(`training.${movement.assessment.difficulty}`)}${
-              movement.assessment.note ? ` · ${movement.assessment.note}` : ''}`;
-            movementBox.append(result);
-          }
-          roundBox.append(movementBox);
-        }
-        article.append(roundBox);
+        article.append(createRoundDetail({
+          document, i18n, round, index: roundIndex, getTermMappings,
+          editable: ownRecord && Boolean(item.participation_id),
+          onSave: (ratings) => service.saveRoundAssessments({
+            participationId: item.participation_id, roundId: round.id, ratings,
+          }),
+        }));
       }
 
       if ((item.feedback ?? []).length) {
@@ -382,77 +339,12 @@ export function createTrainingCalendarView({
     }
   }
 
-  function addMovementRow(container) {
-    const row = document.createElement('div');
-    row.className = 'alone-movement-row';
-    const select = document.createElement('select');
-    select.className = 'field-input';
-    select.dataset.movementKey = '';
-    select.setAttribute('aria-label', i18n.t('alone.movement'));
-    for (const [value, label] of MOVEMENTS) {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      select.append(option);
-    }
-    const repetitions = document.createElement('input');
-    repetitions.type = 'number';
-    repetitions.min = '1';
-    repetitions.dataset.movementRepetitions = '';
-    repetitions.setAttribute('aria-label', i18n.t('alone.repetitions'));
-    row.append(select, repetitions);
-    container.append(row);
-  }
-
-  function addRoundEditor() {
-    const index = rounds.querySelectorAll('.alone-round').length + 1;
-    const fieldset = document.createElement('fieldset');
-    fieldset.className = 'alone-round';
-    const legend = document.createElement('legend');
-    legend.textContent = i18n.t('alone.round', { number: index });
-    const label = document.createElement('input');
-    label.className = 'field-input';
-    label.dataset.roundLabel = '';
-    label.setAttribute('aria-label', i18n.t('alone.roundLabel'));
-    const movementList = document.createElement('div');
-    movementList.className = 'alone-movement-list';
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'secondary-button';
-    button.dataset.action = 'add-movement';
-    button.textContent = i18n.t('alone.addMovement');
-    fieldset.append(legend, label, movementList, button);
-    rounds.append(fieldset);
-  }
-
-  function serializeRounds() {
-    return [...rounds.querySelectorAll('.alone-round')].map((round) => ({
-      label: round.querySelector('[data-round-label]').value.trim() || null,
-      repetitions: null,
-      duration_seconds: null,
-      rest_seconds: null,
-      instructions: null,
-      movements: [...round.querySelectorAll('.alone-movement-row')].map((movement) => {
-        const select = movement.querySelector('[data-movement-key]');
-        const repetitions = movement.querySelector('[data-movement-repetitions]').value;
-        return {
-          movement_key: select.value,
-          movement_name: select.selectedOptions[0].textContent,
-          side: null,
-          repetitions: repetitions ? Number(repetitions) : null,
-          duration_seconds: null,
-          instructions: null,
-        };
-      }),
-    }));
-  }
-
-  function openAlone(date = state.selectedDate) {
+  function openAlone(date = state.selectedDate, { rounds: prefill = null } = {}) {
     applyCopy();
     dateInput.value = date ?? `${state.visibleMonth}-01`;
     durationInput.value = '45';
     notesInput.value = '';
-    rounds.replaceChildren();
+    roundEditor.setRounds(prefill?.length ? prefill : [{ sourceText: '' }]);
     formStatus.textContent = '';
     idempotencyKey = service.createIdempotencyKey();
     showDialog(dialog);
@@ -460,6 +352,11 @@ export function createTrainingCalendarView({
 
   async function submitAlone() {
     if (submitting) return;
+    const payloadRounds = roundEditor.getRounds();
+    if (!payloadRounds.length) {
+      formStatus.textContent = i18n.t('alone.needRound');
+      return;
+    }
     submitting = true;
     saveButton.disabled = true;
     saveButton.textContent = i18n.t('alone.saving');
@@ -471,12 +368,12 @@ export function createTrainingCalendarView({
         timezone,
         durationMinutes: Number(durationInput.value),
         notes: notesInput.value,
-        rounds: serializeRounds(),
+        rounds: payloadRounds,
         idempotencyKey,
       });
       closeDialog(dialog);
       form.reset();
-      rounds.replaceChildren();
+      roundEditor.setRounds([{ sourceText: '' }]);
       idempotencyKey = null;
       await loadMonth(submittedDate.slice(0, 7));
       await selectDay(submittedDate);
@@ -506,11 +403,7 @@ export function createTrainingCalendarView({
   previousMonth.addEventListener('click', () => loadMonth(shiftMonth(state.visibleMonth, -1)));
   nextMonth.addEventListener('click', () => loadMonth(shiftMonth(state.visibleMonth, 1)));
   recordAlone.addEventListener('click', () => openAlone());
-  addRound.addEventListener('click', addRoundEditor);
-  rounds.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-action="add-movement"]');
-    if (button) addMovementRow(button.parentElement.querySelector('.alone-movement-list'));
-  });
+  addRound.addEventListener('click', () => roundEditor.addRound());
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     submitAlone();
@@ -521,9 +414,8 @@ export function createTrainingCalendarView({
     event.preventDefault();
     const submittedDate = state.selectedDate;
     const notesForm = event.target.closest('[data-notes-form]');
-    const assessmentForm = event.target.closest('[data-assessment-form]');
     const feedbackForm = event.target.closest('[data-feedback-form]');
-    const activeForm = notesForm ?? assessmentForm ?? feedbackForm;
+    const activeForm = notesForm ?? feedbackForm;
     if (!activeForm) return;
     const formMessage = activeForm.querySelector('[role="status"]');
     formMessage.textContent = '';
@@ -532,13 +424,6 @@ export function createTrainingCalendarView({
         await service.saveNotes({
           participationId: notesForm.dataset.notesForm,
           notes: notesForm.elements.notes.value,
-        });
-      } else if (assessmentForm) {
-        await service.saveAssessment({
-          participationId: assessmentForm.dataset.participationId,
-          movementId: assessmentForm.dataset.assessmentForm,
-          difficulty: new FormData(assessmentForm).get('difficulty'),
-          note: assessmentForm.elements.note.value,
         });
       } else {
         const [kind, id] = feedbackForm.elements.context.value.split(':');

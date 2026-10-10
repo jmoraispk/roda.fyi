@@ -5381,6 +5381,7 @@ and add after the first `toHaveBeenCalledTimes(1)` wait:
     await vi.waitFor(() => expect(api.saveNotes).toHaveBeenCalledWith({
       participationId: 'participation-1', notes: 'Balance needs work',
     }));
+    await vi.waitFor(() => expect(document.querySelector('[data-round-rating-form="round-1"]')).not.toBeNull());
     const ratingForm = document.querySelector('[data-round-rating-form="round-1"]');
     ratingForm.querySelector('input[value="hard"]').click();
     ratingForm.requestSubmit();

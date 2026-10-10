@@ -21,9 +21,7 @@ async function fillAlone(page, { date = '2026-09-22', notes = 'Armada practice' 
   await dialog.getByLabel('Training date').fill(date);
   await dialog.getByLabel('Duration in minutes').fill('45');
   await dialog.getByLabel('Personal notes').fill(notes);
-  await dialog.getByRole('button', { name: 'Add round' }).click();
-  await dialog.getByRole('button', { name: 'Add movement' }).click();
-  await dialog.getByLabel('Movement').selectOption('armada');
+  await dialog.getByLabel('Round 1 text').fill('10x armada, au');
   return dialog;
 }
 
@@ -84,20 +82,37 @@ test('keeps the calendar inside a mobile viewport', async ({ page }, testInfo) =
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 });
 
-test('records a personal movement assessment without losing the selected day', async ({ page }) => {
+test('rates a round and a transition from the day detail', async ({ page }) => {
   await page.goto('/dashboard');
   const dialog = await fillAlone(page, { notes: 'Assessment day' });
   await dialog.getByRole('button', { name: 'Save training' }).click();
   await expect(dialog).toBeHidden();
 
   const detail = page.locator('#trainingDayDetail');
-  await detail.getByRole('radio', { name: 'Hard' }).check();
-  await detail.getByLabel('Movement note').fill('The landing was unstable.');
-  await detail.getByRole('button', { name: 'Save assessment' }).click();
-  await expect(detail.getByRole('radio', { name: 'Hard' })).toBeChecked();
-  await expect(detail.getByLabel('Movement note')).toHaveValue('The landing was unstable.');
+  await expect(detail.locator('.round-source')).toHaveText('10x armada, au');
+  await detail.getByRole('radio', { name: 'Hard' }).first().check();
+  await detail.getByRole('button', { name: 'Rate parts' }).click();
+  await detail.getByRole('button', { name: 'Transition Armada → Aú' }).click();
+  await detail.locator('[data-segment-editor]').getByRole('radio', { name: 'Hard' }).check();
+  await detail.getByRole('button', { name: 'Save ratings' }).click();
+  await expect(detail.getByText('Ratings saved.')).toBeVisible();
   await expect.poll(() => page.evaluate(() => {
     const state = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
-    return state.assessments.map(({ difficulty, note }) => ({ difficulty, note }));
-  })).toEqual([{ difficulty: 'hard', note: 'The landing was unstable.' }]);
+    return Object.values(state.roundRatings).flatMap((byRound) => Object.values(byRound).flat())
+      .map(({ segment_key: key, difficulty }) => `${key}:${difficulty}`).sort();
+  })).toEqual(['r:hard', 't:1>2:hard']);
+});
+
+test('records a round typed with an unknown move and shows it as new', async ({ page }) => {
+  await page.goto('/dashboard');
+  await page.getByRole('button', { name: 'Record Alone training' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Record Alone training' });
+  await dialog.getByLabel('Round 1 text').fill('armada, galopanti');
+  await expect(dialog.locator('[data-chip="2"]')).toHaveAttribute('data-status', 'new');
+  await dialog.getByLabel('Training date').fill('2026-09-23');
+  await dialog.getByRole('button', { name: 'Save training' }).click();
+  await expect(dialog).toBeHidden();
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('roda.e2e.trainingState'))
+    .occurrences[0].rounds[0].movements.map(({ movement_key: key, catalogued }) => `${key}:${catalogued}`)))
+    .toEqual(['armada:true', 'galopanti:false']);
 });
