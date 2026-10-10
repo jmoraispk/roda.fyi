@@ -166,4 +166,70 @@ describe('training service', () => {
     });
     expect(persisted).not.toHaveProperty('totals');
   });
+
+  it('accepts text-only rounds and rejects rounds with neither text nor movements', async () => {
+    const { client, calls } = harness();
+    const service = createTrainingService(client, { randomUUID: () => 'k' });
+    const textRound = { source_text: 'and, e', sequence: [], movements: [], ratings: [] };
+    await service.recordAloneTraining({
+      localDate: '2026-10-01', timezone: 'UTC', durationMinutes: 20, rounds: [textRound],
+    });
+    expect(calls[0][1].rounds).toEqual([textRound]);
+    await expect(service.recordAloneTraining({
+      localDate: '2026-10-01', timezone: 'UTC', durationMinutes: 20,
+      rounds: [{ source_text: '  ', movements: [] }],
+    })).rejects.toMatchObject({ code: 'invalid_rounds' });
+  });
+
+  it('saves round ratings through one RPC', async () => {
+    const { client, calls } = harness();
+    const ratings = [{ segment_key: 'r', segment_kind: 'round', difficulty: 'hard' }];
+    await createTrainingService(client).saveRoundAssessments({
+      participationId: 'p-1', roundId: 'round-1', ratings,
+    });
+    expect(calls).toEqual([['save_round_assessments', {
+      participation_id: 'p-1', round_id: 'round-1', ratings,
+    }]]);
+  });
+
+  it.each([
+    [[{ segment_key: 'r', segment_kind: 'round', difficulty: 'brutal' }], 'invalid_difficulty'],
+    [[{ segment_key: '', segment_kind: 'round', difficulty: 'easy' }], 'invalid_segment'],
+  ])('validates ratings before saving', async (ratings, code) => {
+    const { client, calls } = harness();
+    await expect(createTrainingService(client).saveRoundAssessments({
+      participationId: 'p-1', roundId: 'round-1', ratings,
+    })).rejects.toMatchObject({ kind: 'validation', code });
+    expect(calls).toEqual([]);
+  });
+
+  it('keeps round ratings in the local fake service', async () => {
+    const storage = new Map();
+    const window = {
+      localStorage: {
+        getItem: (key) => storage.get(key) ?? null,
+        setItem: (key, value) => storage.set(key, value),
+      },
+    };
+    const service = createE2ETrainingService({ window });
+    const result = await service.recordAloneTraining({
+      localDate: '2026-10-01', timezone: 'UTC', durationMinutes: 30, idempotencyKey: 'k1',
+      rounds: [{
+        source_text: 'armada, au', sequence: [], movements: [],
+        ratings: [{ segment_key: 'r', segment_kind: 'round', difficulty: 'okay' }],
+      }],
+    });
+    let [day] = await service.getDay({ localDate: '2026-10-01' });
+    expect(day.rounds[0]).toMatchObject({
+      source_text: 'armada, au',
+      ratings: [{ segment_key: 'r', segment_kind: 'round', difficulty: 'okay' }],
+      planned: [],
+    });
+    await service.saveRoundAssessments({
+      participationId: result.participation_id, roundId: day.rounds[0].id,
+      ratings: [{ segment_key: 't:1>2', segment_kind: 'transition', difficulty: 'hard' }],
+    });
+    [day] = await service.getDay({ localDate: '2026-10-01' });
+    expect(day.rounds[0].ratings.map(({ segment_key: key }) => key)).toEqual(['t:1>2']);
+  });
 });

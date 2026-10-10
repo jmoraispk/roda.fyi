@@ -42,12 +42,30 @@ function requireTitle(value) {
   return title;
 }
 
+function roundHasContent(round) {
+  const hasText = typeof round?.source_text === 'string' && round.source_text.trim() !== '';
+  const hasMovements = Array.isArray(round?.movements) && round.movements.length > 0;
+  return hasText || hasMovements;
+}
+
 function requireRounds(rounds) {
-  if (!Array.isArray(rounds) || rounds.length === 0
-    || rounds.some((round) => !Array.isArray(round.movements) || round.movements.length === 0)) {
-    invalid('invalid_rounds', 'Add at least one round and movement.');
+  if (!Array.isArray(rounds) || rounds.length === 0 || !rounds.every(roundHasContent)) {
+    invalid('invalid_rounds', 'Add at least one round.');
   }
   return rounds;
+}
+
+function requireRatings(ratings) {
+  if (!Array.isArray(ratings)) invalid('invalid_segment', 'Choose what to rate.');
+  for (const rating of ratings) {
+    if (typeof rating?.segment_key !== 'string' || !rating.segment_key.trim()) {
+      invalid('invalid_segment', 'Choose what to rate.');
+    }
+    if (!DIFFICULTIES.has(rating.difficulty)) {
+      invalid('invalid_difficulty', 'Choose Easy, Okay, or Hard.');
+    }
+  }
+  return ratings;
 }
 
 function requireTimezone(value) {
@@ -176,6 +194,13 @@ export function createTrainingService(client, options = {}) {
         occurrence_movement_id: input.movementId,
         difficulty: input.difficulty,
         note: optional(input.note),
+      });
+    },
+    async saveRoundAssessments(input) {
+      return call('save_round_assessments', {
+        participation_id: input.participationId,
+        round_id: input.roundId,
+        ratings: requireRatings(input.ratings),
       });
     },
     async addFeedback(input) {

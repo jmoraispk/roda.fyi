@@ -546,6 +546,7 @@ export function createE2ETrainingService({ window }) {
       counter: 0,
       failNext: null,
       revokeReadsFor: [],
+      roundRatings: {},
       ...JSON.parse(storage.getItem(stateKey) ?? '{}'),
     };
   }
@@ -758,6 +759,14 @@ export function createE2ETrainingService({ window }) {
         personal_notes: input.notes?.trim() || null,
         confirmed_at: occurrence.occurred_at,
       };
+      occurrence.rounds = occurrence.rounds.map((round, index) => ({
+        ...round, id: round.id ?? `${occurrence.id}-round-${index + 1}`,
+      }));
+      state.roundRatings[participation.id] = Object.fromEntries(
+        occurrence.rounds.map((round, index) => [
+          round.id, structuredClone(input.rounds[index]?.ratings ?? []),
+        ]),
+      );
       state.occurrences.push(occurrence);
       state.participations.push(participation);
       writeState(state);
@@ -846,6 +855,20 @@ export function createE2ETrainingService({ window }) {
       participation.personal_notes = input.notes?.trim() || null;
       writeState(state);
       return { status: 'saved', participation_id: participation.id };
+    },
+
+    async saveRoundAssessments(input) {
+      const state = readState();
+      guard(state, 'saveRoundAssessments');
+      const participation = state.participations.find(({ id }) => id === input.participationId);
+      if (!participation || participation.profile_id !== actorId()) {
+        throw new AppError('authorization', 'not_authorized');
+      }
+      state.roundRatings[participation.id] ??= {};
+      state.roundRatings[participation.id][input.roundId] = structuredClone(input.ratings);
+      writeState(state);
+      record({ type: 'save-round-assessments', roundId: input.roundId });
+      return { status: 'saved', round_id: input.roundId };
     },
 
     async saveAssessment(input) {
@@ -961,19 +984,30 @@ export function createE2ETrainingService({ window }) {
         .map(({ occurrence, participation }) => {
           const feedbackContexts = contextsFor(occurrence);
           const allowedIds = new Set(feedbackContexts.map(({ id }) => id));
-          const rounds = structuredClone(occurrence.rounds).map((round, roundIndex) => ({
-            ...round,
-            id: round.id ?? `${occurrence.id}-round-${roundIndex + 1}`,
-            movements: (round.movements ?? []).map((movement, movementIndex) => {
-              const movementId = movement.id
-                ?? `${occurrence.id}-movement-${roundIndex + 1}-${movementIndex + 1}`;
-              const assessment = state.assessments.find((entry) => (
-                entry.participation_id === participation.id
-                && entry.movement_id === movementId
-              ));
-              return { ...movement, id: movementId, assessment: assessment ?? null };
-            }),
-          }));
+          const schedule = state.schedules.find(({ id }) => id === occurrence.schedule_id);
+          const plan = state.plans.find(({ version_id: versionId }) => (
+            versionId === schedule?.plan_version_id
+          ));
+          const rounds = structuredClone(occurrence.rounds).map((round, roundIndex) => {
+            const roundId = round.id ?? `${occurrence.id}-round-${roundIndex + 1}`;
+            return {
+              ...round,
+              id: roundId,
+              source_text: round.source_text ?? null,
+              sequence: round.sequence ?? null,
+              ratings: state.roundRatings?.[participation.id]?.[roundId] ?? [],
+              planned: structuredClone(plan?.rounds?.[roundIndex]?.ratings ?? []),
+              movements: (round.movements ?? []).map((movement, movementIndex) => {
+                const movementId = movement.id
+                  ?? `${occurrence.id}-movement-${roundIndex + 1}-${movementIndex + 1}`;
+                const assessment = state.assessments.find((entry) => (
+                  entry.participation_id === participation.id
+                  && entry.movement_id === movementId
+                ));
+                return { ...movement, id: movementId, assessment: assessment ?? null };
+              }),
+            };
+          });
           return {
             id: occurrence.id, item_type: 'completed', kind: occurrence.kind,
             status: 'completed', starts_at: occurrence.occurred_at,
