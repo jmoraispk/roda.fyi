@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AppError } from '../../src/app/errors.js';
 import { createStatisticsService } from '../../src/app/statistics-service.js';
+import { createE2EStatisticsService } from '../../src/app/testing/fake-services.js';
 
 function client(responses = {}) {
   return {
@@ -74,5 +75,27 @@ describe('statistics service', () => {
     await expect(service.getGroup({
       groupId: 'group-1', start: '2026-09-01', endExclusive: '2026-10-01', metric: 'time',
     })).rejects.toBeInstanceOf(AppError);
+  });
+
+  it('lists hardest transitions from local round ratings', async () => {
+    const values = new Map([
+      ['roda.e2e.session', JSON.stringify({ user: { id: 'practitioner-1' } })],
+      ['roda.e2e.trainingState', JSON.stringify({
+        occurrences: [{ id: 'o1', kind: 'alone', local_date: '2026-10-02', rounds: [] }],
+        participations: [{ id: 'p1', occurrence_id: 'o1', profile_id: 'practitioner-1', actual_duration_minutes: 30 }],
+        roundRatings: { p1: { r1: [
+          { segment_key: 't:1>2', segment_kind: 'transition', difficulty: 'hard', from_movement_key: 'armada', to_movement_key: 'au' },
+          { segment_key: 'r', segment_kind: 'round', difficulty: 'hard' },
+        ] } },
+      })],
+    ]);
+    const window = { localStorage: { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) } };
+    const result = await createE2EStatisticsService({ window }).getPersonal({
+      start: '2026-10-01', endExclusive: '2026-11-01', timezone: 'UTC',
+    });
+    expect(result.hardest_transitions).toEqual([{
+      from_movement_key: 'armada', to_movement_key: 'au', from_name: 'armada', to_name: 'au',
+      hard_count: 1, rating_count: 1,
+    }]);
   });
 });
