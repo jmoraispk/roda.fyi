@@ -307,4 +307,48 @@ describe('training service', () => {
       start: '2026-09-01', endExclusive: '2026-10-01', profileId: 'student-1',
     })).toEqual([]);
   });
+
+  it('reads recent trainings and one training by id', async () => {
+    const { client, calls } = harness();
+    const service = createTrainingService(client);
+    await service.listRecentTrainings();
+    await service.listRecentTrainings(3);
+    await service.getTraining('o-1');
+    expect(calls).toEqual([
+      ['list_recent_trainings', { result_limit: 10 }],
+      ['list_recent_trainings', { result_limit: 3 }],
+      ['get_training', { occurrence_id: 'o-1' }],
+    ]);
+  });
+
+  it('serves recent trainings and training pages from the local fake', async () => {
+    const values = new Map([['roda.e2e.session', JSON.stringify({ user: { id: 'practitioner-1' } })]]);
+    const window = { localStorage: { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) } };
+    const service = createE2ETrainingService({ window });
+    const older = await service.recordAloneTraining({
+      localDate: '2026-10-01', timezone: 'UTC', durationMinutes: 30, idempotencyKey: 'a',
+      occurredAt: '2026-10-01T08:00:00Z',
+      rounds: [{ source_text: 'ginga 10 min', sequence: [], movements: [], ratings: [] }],
+    });
+    const newer = await service.recordAloneTraining({
+      localDate: '2026-10-02', timezone: 'UTC', durationMinutes: 45, idempotencyKey: 'b',
+      occurredAt: '2026-10-02T08:00:00Z',
+      rounds: [{ source_text: '10x (armada, au)', sequence: [], movements: [],
+        ratings: [{ segment_key: 'r', segment_kind: 'round', difficulty: 'hard' }] }],
+    });
+    await service.addResource({ occurrenceId: newer.occurrence_id, kind: 'video', url: 'https://youtu.be/x' });
+    const recent = await service.listRecentTrainings(10);
+    expect(recent.map(({ occurrence_id: id }) => id)).toEqual([newer.occurrence_id, older.occurrence_id]);
+    expect(recent[0]).toMatchObject({
+      kind: 'alone', role: 'participant', duration_minutes: 45, attendee_count: 1,
+      first_round_text: '10x (armada, au)', felt: 'hard', has_rating: true, resource_kinds: ['video'],
+    });
+    const page = await service.getTraining(newer.occurrence_id);
+    expect(page).toMatchObject({
+      occurrence_id: newer.occurrence_id, role: 'participant', duration_minutes: 45,
+      participation: { id: newer.participation_id }, can_add_resources: true,
+    });
+    expect(page.rounds[0].source_text).toBe('10x (armada, au)');
+    await expect(service.getTraining('missing')).rejects.toMatchObject({ kind: 'authorization' });
+  });
 });

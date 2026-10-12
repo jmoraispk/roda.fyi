@@ -604,6 +604,40 @@ export function createE2ETrainingService({ window }) {
     };
   }
 
+  function dayRounds(state, occurrence, participation) {
+    const schedule = state.schedules.find(({ id }) => id === occurrence.schedule_id);
+    const plan = state.plans.find(({ version_id: versionId }) => versionId === schedule?.plan_version_id);
+    return structuredClone(occurrence.rounds ?? []).map((round, roundIndex) => {
+      const roundId = round.id ?? `${occurrence.id}-round-${roundIndex + 1}`;
+      return {
+        ...round,
+        id: roundId,
+        source_text: round.source_text ?? null,
+        sequence: round.sequence ?? null,
+        ratings: participation ? state.roundRatings?.[participation.id]?.[roundId] ?? [] : [],
+        planned: structuredClone(plan?.rounds?.[roundIndex]?.ratings ?? []),
+        movements: (round.movements ?? []).map((movement, movementIndex) => {
+          const movementId = movement.id
+            ?? `${occurrence.id}-movement-${roundIndex + 1}-${movementIndex + 1}`;
+          const assessment = participation && state.assessments.find((entry) => (
+            entry.participation_id === participation.id && entry.movement_id === movementId
+          ));
+          return { ...movement, id: movementId, assessment: assessment ?? null };
+        }),
+      };
+    });
+  }
+
+  function groupName(groupId) {
+    const groups = JSON.parse(storage.getItem('roda.e2e.groupState') ?? '{}').groups ?? [];
+    return groups.find(({ id }) => id === groupId)?.name ?? null;
+  }
+
+  function coachName(profileId) {
+    const profile = JSON.parse(storage.getItem('roda.e2e.profile') ?? '{}');
+    return profile.id === profileId ? profile.display_name ?? null : 'Coach';
+  }
+
   function roundsFor(plan, override) {
     return structuredClone(override ?? plan?.rounds ?? []);
   }
@@ -938,6 +972,69 @@ export function createE2ETrainingService({ window }) {
       return completion(state, occurrence);
     },
 
+    async listRecentTrainings(limit = 10) {
+      const state = readState();
+      guard(state, 'listRecentTrainings', { read: true });
+      const me = actorId();
+      return state.occurrences
+        .map((occurrence) => {
+          const attendees = state.participations.filter(({ occurrence_id: id }) => id === occurrence.id);
+          const mine = attendees.find(({ profile_id: id }) => id === me);
+          if (!attendees.length || (!mine && occurrence.recorded_by !== me)) return null;
+          const rounds = dayRounds(state, occurrence, mine);
+          const first = rounds[0];
+          return {
+            occurrence_id: occurrence.id, kind: occurrence.kind, local_date: occurrence.local_date,
+            occurred_at: occurrence.occurred_at,
+            duration_minutes: mine?.actual_duration_minutes ?? occurrence.default_duration_minutes,
+            group_name: groupName(occurrence.group_id), coach_name: coachName(occurrence.recorded_by),
+            attendee_count: attendees.length, role: mine ? 'participant' : 'coach',
+            first_round_text: first
+              ? first.source_text ?? (first.movements ?? []).map((movement) => movement.movement_name).join(', ')
+              : null,
+            round_count: rounds.length,
+            felt: rounds.flatMap(({ ratings }) => ratings).find(({ segment_key: key }) => key === 'r')?.difficulty ?? null,
+            has_rating: rounds.some(({ ratings }) => ratings.length > 0),
+            resource_kinds: [...new Set(state.resources
+              .filter(({ occurrence_id: id }) => id === occurrence.id).map(({ kind }) => kind))].sort(),
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))
+        .slice(0, Math.min(Math.max(limit, 1), 50));
+    },
+
+    async getTraining(occurrenceId) {
+      const state = readState();
+      guard(state, 'getTraining', { read: true });
+      const me = actorId();
+      const occurrence = state.occurrences.find(({ id }) => id === occurrenceId);
+      const attendees = state.participations.filter(({ occurrence_id: id }) => id === occurrenceId);
+      const mine = attendees.find(({ profile_id: id }) => id === me);
+      if (!occurrence || (!mine && occurrence.recorded_by !== me)) {
+        throw new AppError('authorization', 'not_authorized');
+      }
+      return {
+        occurrence_id: occurrence.id, kind: occurrence.kind, local_date: occurrence.local_date,
+        timezone: occurrence.timezone, occurred_at: occurrence.occurred_at,
+        duration_minutes: mine?.actual_duration_minutes ?? occurrence.default_duration_minutes,
+        group_id: occurrence.group_id, group_name: groupName(occurrence.group_id),
+        student_name: null, coach_profile_id: occurrence.recorded_by,
+        coach_name: coachName(occurrence.recorded_by), attendee_count: attendees.length,
+        role: mine ? 'participant' : 'coach',
+        participation: mine ? {
+          id: mine.id, personal_notes: mine.personal_notes ?? null,
+          duration_minutes: mine.actual_duration_minutes,
+        } : null,
+        rounds: dayRounds(state, occurrence, mine),
+        feedback: mine ? state.feedback.filter(({ participation_id: id }) => id === mine.id) : [],
+        resources: state.resources
+          .filter(({ occurrence_id: id }) => id === occurrence.id)
+          .map((resource) => ({ ...resource, can_edit: resource.added_by === me })),
+        can_add_resources: occurrence.recorded_by === me,
+      };
+    },
+
     async saveRoundAssessments(input) {
       const state = readState();
       guard(state, 'saveRoundAssessments');
@@ -1003,6 +1100,8 @@ export function createE2ETrainingService({ window }) {
             status: 'completed', starts_at: occurrence.occurred_at,
             duration_minutes: participation.actual_duration_minutes,
             group_id: occurrence.group_id,
+            coach_profile_id: occurrence.recorded_by,
+            group_name: groupName(occurrence.group_id),
           };
         });
       const upcoming = state.schedules
@@ -1017,6 +1116,8 @@ export function createE2ETrainingService({ window }) {
           duration_minutes: schedule.duration_minutes,
           group_id: schedule.group_id,
           visible_in_advance: schedule.visible_in_advance,
+          coach_profile_id: schedule.arranged_by,
+          group_name: groupName(schedule.group_id),
         }));
       return [...completed, ...upcoming]
         .filter(({ local_date: date }) => date >= input.start && date < input.endExclusive)
@@ -1065,30 +1166,7 @@ export function createE2ETrainingService({ window }) {
         .map(({ occurrence, participation }) => {
           const feedbackContexts = contextsFor(occurrence);
           const allowedIds = new Set(feedbackContexts.map(({ id }) => id));
-          const schedule = state.schedules.find(({ id }) => id === occurrence.schedule_id);
-          const plan = state.plans.find(({ version_id: versionId }) => (
-            versionId === schedule?.plan_version_id
-          ));
-          const rounds = structuredClone(occurrence.rounds).map((round, roundIndex) => {
-            const roundId = round.id ?? `${occurrence.id}-round-${roundIndex + 1}`;
-            return {
-              ...round,
-              id: roundId,
-              source_text: round.source_text ?? null,
-              sequence: round.sequence ?? null,
-              ratings: state.roundRatings?.[participation.id]?.[roundId] ?? [],
-              planned: structuredClone(plan?.rounds?.[roundIndex]?.ratings ?? []),
-              movements: (round.movements ?? []).map((movement, movementIndex) => {
-                const movementId = movement.id
-                  ?? `${occurrence.id}-movement-${roundIndex + 1}-${movementIndex + 1}`;
-                const assessment = state.assessments.find((entry) => (
-                  entry.participation_id === participation.id
-                  && entry.movement_id === movementId
-                ));
-                return { ...movement, id: movementId, assessment: assessment ?? null };
-              }),
-            };
-          });
+          const rounds = dayRounds(state, occurrence, participation);
           return {
             id: occurrence.id, item_type: 'completed', kind: occurrence.kind,
             occurrence_id: occurrence.id,

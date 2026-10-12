@@ -269,6 +269,12 @@ export function createTrainingService(client, options = {}) {
         idempotency_key: input.idempotencyKey ?? randomUUID(),
       });
     },
+    async listRecentTrainings(limit = 10) {
+      return call('list_recent_trainings', { result_limit: limit });
+    },
+    async getTraining(occurrenceId) {
+      return call('get_training', { occurrence_id: occurrenceId });
+    },
     async listCalendar(input) {
       return call('list_training_calendar', {
         month_start: requireLocalDate(input.start),
