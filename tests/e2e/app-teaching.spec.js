@@ -1,0 +1,31 @@
+// tests/e2e/app-teaching.spec.js
+import { expect, test } from '@playwright/test';
+
+test('a coach writes and publishes a plan, then schedules it', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-22T12:00:00Z'));
+  await page.goto('/app?demo=1#/me/teaching');
+  await expect(page.locator('a[href="#/class/demo-schedule"]')).toBeVisible();
+  await expect(page.locator('a[href="#/me/teaching/plans/demo-plan"]')).toContainText('Ginga and counter-flow');
+  await page.getByRole('link', { name: /New plan/ }).click();
+  await page.getByLabel('Plan title').fill('Armada ladder');
+  await page.locator('textarea[data-round-text]').first().fill('10x (armada, au)');
+  await page.getByRole('button', { name: 'Save draft' }).click();
+  await expect(page).toHaveURL(/#\/me\/teaching\/plans\/plan-\d+$/);
+  await page.getByRole('button', { name: 'Publish plan' }).click();
+  await page.getByRole('button', { name: /Schedule this plan/ }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByLabel('Date').fill('2026-10-24');
+  await sheet.getByLabel('Start time').fill('19:00');
+  await sheet.getByRole('button', { name: 'Schedule', exact: true }).click();
+  await expect(page).toHaveURL(/#\/class\/schedule-\d+$/);
+  await expect(page.locator('h1.training-title')).toHaveText('Group · Roda da Lua');
+});
+
+test('on desktop a class opens beside Teaching', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.includes('mobile'), 'desktop side-by-side only');
+  await page.clock.setFixedTime(new Date('2026-10-22T12:00:00Z'));
+  await page.goto('/app?demo=1#/me/teaching');
+  await page.locator('a[href="#/class/demo-schedule"]').click();
+  await expect(page.locator('#appDetail h1.training-title')).toHaveText('Group · Roda da Lua');
+  await expect(page.locator('#appMain [data-teaching-home]')).toBeVisible();
+});

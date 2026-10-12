@@ -7,6 +7,8 @@ import { renderCalendar } from '../screens/calendar.js';
 import { renderClass } from '../screens/class.js';
 import { renderLog } from '../screens/log.js';
 import { renderMe, renderSettings } from '../screens/me.js';
+import { renderPlan } from '../screens/plan.js';
+import { renderTeaching } from '../screens/teaching.js';
 import { renderPlaceholder } from '../screens/placeholder.js';
 import { renderToday } from '../screens/today.js';
 import { renderWelcome } from '../screens/welcome.js';
@@ -111,6 +113,7 @@ async function main() {
         onProfileSaved: profileSaved,
       });
     }
+    if (section === 'teaching') return renderTeaching(ctx, route);
     return renderPlaceholder(ctx, { title: i18n.t(`app.${section}`) });
   }
 
@@ -132,6 +135,7 @@ async function main() {
         });
       case 'teaching-record': return renderRecordClass(ctx, route);
       case 'class': return renderClass(ctx, route);
+      case 'teaching-plan': return renderPlan(ctx, route);
       case 'discover': return renderPlaceholder(ctx, { title: i18n.t('app.discover') });
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }
@@ -146,13 +150,16 @@ async function main() {
     const token = ++renderToken;
     closeSheet();
     const detailRoute = isDetail(route);
-    const sideBySide = desktop.matches && route.name === 'training';
+    // Ruling R23: a class, plan, or student opened from Teaching appears beside it on desktop.
+    const besideTeaching = desktop.matches && ['class', 'teaching-plan', 'teaching-student'].includes(route.name)
+      && layout.main.firstElementChild?.dataset.teachingHome !== undefined;
+    const sideBySide = (desktop.matches && route.name === 'training') || besideTeaching;
     layout.setActive(tabFor(route) ?? tabFor(lastTopLevel));
     layout.setDetailMode(detailRoute && !sideBySide);
     if (!detailRoute) lastTopLevel = route;
     const target = sideBySide ? layout.detail : layout.main;
     target.replaceChildren(el(document, 'p', { className: 'muted screen-loading', text: i18n.t('app.loading') }));
-    if (sideBySide && layout.main.firstElementChild?.dataset.screen !== lastTopLevel.name) {
+    if (sideBySide && !besideTeaching && layout.main.firstElementChild?.dataset.screen !== lastTopLevel.name) {
       const top = await screenFor(lastTopLevel);
       top.dataset.screen = lastTopLevel.name;
       if (token === renderToken) layout.main.replaceChildren(top);
