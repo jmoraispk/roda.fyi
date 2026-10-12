@@ -27,7 +27,7 @@ select columns_are(
   'profiles',
   array[
     'id', 'display_name', 'avatar_path', 'timezone_override',
-    'leaderboard_visible', 'completed_at', 'created_at', 'updated_at'
+    'leaderboard_visible', 'usage_mode', 'completed_at', 'created_at', 'updated_at'
   ],
   'profiles exposes only the contracted columns'
 );

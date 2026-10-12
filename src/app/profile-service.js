@@ -20,6 +20,15 @@ export function resolveTimezoneOverride(choice, intl = Intl) {
   return value;
 }
 
+export const USAGE_MODES = Object.freeze(['train', 'both', 'teach']);
+
+export function requireUsageMode(mode) {
+  if (!USAGE_MODES.includes(mode)) {
+    throw new AppError('validation', 'invalid_usage_mode', 'Choose Train, Both, or Teach.');
+  }
+  return mode;
+}
+
 export function profilePrefill(user, profile) {
   const isComplete = Boolean(profile.completed_at);
   const metadata = user?.user_metadata ?? {};
@@ -43,7 +52,7 @@ function unwrap(result) {
   return result.data;
 }
 
-const PROFILE_COLUMNS = 'id, display_name, avatar_path, timezone_override, leaderboard_visible, completed_at, created_at, updated_at';
+const PROFILE_COLUMNS = 'id, display_name, avatar_path, timezone_override, leaderboard_visible, usage_mode, completed_at, created_at, updated_at';
 const COACH_COLUMNS = 'profile_id, activated_at, created_at, updated_at';
 const PICTURE_EXTENSIONS = Object.freeze({
   'image/jpeg': 'jpg',
@@ -89,6 +98,10 @@ export function createProfileService(client, options = {}) {
 
     async registerAsCoach() {
       return unwrap(await client.rpc('register_as_coach', {}));
+    },
+
+    async setUsageMode(mode) {
+      return unwrap(await client.rpc('set_usage_mode', { mode: requireUsageMode(mode) }));
     },
 
     async uploadProfilePicture(profileId, file) {
