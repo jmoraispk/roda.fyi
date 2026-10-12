@@ -8,6 +8,7 @@ import { renderProgress } from '../screens/progress.js';
 import { renderRepertoire } from '../screens/repertoire.js';
 import { renderCalendar } from '../screens/calendar.js';
 import { renderClass } from '../screens/class.js';
+import { renderGroup } from '../screens/group.js';
 import { renderGroups } from '../screens/groups.js';
 import { renderLog } from '../screens/log.js';
 import { renderMe, renderSettings } from '../screens/me.js';
@@ -158,6 +159,7 @@ async function main() {
       case 'class': return renderClass(ctx, route);
       case 'teaching-plan': return renderPlan(ctx, route);
       case 'teaching-student': return renderStudent(ctx, route);
+      case 'group': return renderGroup(ctx, route);
       case 'discover': return renderPlaceholder(ctx, { title: i18n.t('app.discover') });
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }

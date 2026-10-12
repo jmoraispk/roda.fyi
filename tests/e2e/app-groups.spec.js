@@ -32,3 +32,12 @@ test('a student asks a coach to coach them', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(page.locator('[data-coach="coach-lua"]')).toContainText('Pending');
 });
+
+test('a coach invites a student from the group page', async ({ page }) => {
+  await page.goto('/app?demo=1#/me/groups');
+  await page.getByRole('link', { name: /Roda da Lua/ }).click();
+  await expect(page).toHaveURL(/#\/group\/demo-group$/);
+  await page.getByRole('button', { name: 'Create invitation link' }).click();
+  await expect(page.getByLabel('Invitation link')).toHaveValue(/\/dashboard\?member_invite=invite-1$/);
+  await expect(page.locator('[data-member="student-bia"]')).toBeVisible();
+});
