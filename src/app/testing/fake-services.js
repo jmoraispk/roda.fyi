@@ -1,5 +1,5 @@
 import { consumeReturnRoute } from '../return-route.js';
-import { resolveTimezoneOverride } from '../profile-service.js';
+import { requireUsageMode, resolveTimezoneOverride } from '../profile-service.js';
 import { AppError } from '../errors.js';
 import { normalizeSequenceInput } from '../repertoire-service.js';
 import { requireTerm } from '../catalog-service.js';
@@ -86,13 +86,14 @@ export function createE2EProfileService({ window }) {
         'The profile could not be loaded.',
       );
       const saved = JSON.parse(storage.getItem('roda.e2e.profile'));
-      if (saved) return saved;
+      if (saved) return { usage_mode: 'train', ...saved };
       const profile = {
         id: 'practitioner-1',
         display_name: 'Capoeirista',
         avatar_path: null,
         timezone_override: null,
         leaderboard_visible: true,
+        usage_mode: 'train',
         completed_at: null,
       };
       storage.setItem('roda.e2e.profile', JSON.stringify(profile));
@@ -141,6 +142,21 @@ export function createE2EProfileService({ window }) {
       record({ type: 'register-coach' });
       storage.setItem('roda.e2e.coachProfile', JSON.stringify(coachProfile));
       return { status: 'active', profile_id: coachProfile.profile_id };
+    },
+
+    async setUsageMode(mode) {
+      requireUsageMode(mode);
+      const current = JSON.parse(storage.getItem('roda.e2e.profile') ?? '{}');
+      storage.setItem('roda.e2e.profile', JSON.stringify({ ...current, usage_mode: mode }));
+      let created = false;
+      if (mode !== 'train' && !JSON.parse(storage.getItem('roda.e2e.coachProfile') ?? 'null')) {
+        storage.setItem('roda.e2e.coachProfile', JSON.stringify({
+          profile_id: current.id ?? 'practitioner-1', activated_at: '2026-10-12T12:00:00Z',
+        }));
+        created = true;
+      }
+      record({ type: 'set-usage-mode', mode });
+      return { status: 'updated', usage_mode: mode, coach_profile_created: created };
     },
   };
 }

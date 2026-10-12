@@ -22,7 +22,7 @@ describe('demo data', () => {
     const coach = JSON.parse(localStorage.getItem('roda.e2e.coachProfile'));
     const groups = JSON.parse(localStorage.getItem('roda.e2e.groupState'));
     const training = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
-    expect(profile).toMatchObject({ id: 'practitioner-1', completed_at: expect.any(String) });
+    expect(profile).toMatchObject({ id: 'practitioner-1', usage_mode: 'both', completed_at: expect.any(String) });
     expect(coach).toMatchObject({ profile_id: 'practitioner-1' });
     expect(groups.memberships).toHaveLength(1);
     expect(groups.rosters['demo-group'].length).toBeGreaterThanOrEqual(4);

@@ -1,5 +1,5 @@
 const DEMO_VERSION_KEY = 'roda.demo.version';
-const DEMO_VERSION = '2';
+const DEMO_VERSION = '3';
 
 function monthContext(now) {
   const year = now.getFullYear();
@@ -51,6 +51,7 @@ export function seedDemoData(storage, now = new Date()) {
     timezone_override: null,
     leaderboard_visible: true,
     graduation: 'Aluno',
+    usage_mode: 'both',
     completed_at: `${date(1)}T12:00:00Z`,
   };
   const coachProfile = {

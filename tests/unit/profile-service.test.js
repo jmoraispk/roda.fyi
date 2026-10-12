@@ -4,8 +4,11 @@ import {
   createProfileService,
   detectBrowserTimezone,
   profilePrefill,
+  requireUsageMode,
   resolveTimezoneOverride,
+  USAGE_MODES,
 } from '../../src/app/profile-service.js';
+import { createE2EProfileService } from '../../src/app/testing/fake-services.js';
 
 function rpcClient(results = {}) {
   const calls = [];
@@ -152,7 +155,7 @@ describe('createProfileService', () => {
     expect(await service.loadProfile()).toEqual(profile);
     expect(await service.loadCoachProfile()).toEqual(coachProfile);
     expect(calls).toEqual([
-      ['select', 'profiles', 'id, display_name, avatar_path, timezone_override, leaderboard_visible, completed_at, created_at, updated_at'],
+      ['select', 'profiles', 'id, display_name, avatar_path, timezone_override, leaderboard_visible, usage_mode, completed_at, created_at, updated_at'],
       ['select', 'coach_profiles', 'profile_id, activated_at, created_at, updated_at'],
     ]);
   });
@@ -238,5 +241,38 @@ describe('createProfileService', () => {
       name: 'portrait.png', type: 'image/png', size: (5 * 1024 * 1024) + 1,
     })).rejects.toMatchObject({ code: 'picture_too_large' });
     expect(calls).toEqual([]);
+  });
+});
+
+describe('usage mode', () => {
+  it('sets the usage mode through the RPC', async () => {
+    const { client, calls } = rpcClient({ set_usage_mode: { data: { status: 'updated', usage_mode: 'both' }, error: null } });
+    const service = createProfileService(client);
+    expect(await service.setUsageMode('both')).toEqual({ status: 'updated', usage_mode: 'both' });
+    expect(calls).toEqual([['set_usage_mode', { mode: 'both' }]]);
+  });
+
+  it('rejects unknown modes before calling Supabase', async () => {
+    const { client, calls } = rpcClient();
+    await expect(createProfileService(client).setUsageMode('coach')).rejects.toMatchObject({ code: 'invalid_usage_mode' });
+    expect(calls).toEqual([]);
+    expect(USAGE_MODES).toEqual(['train', 'both', 'teach']);
+    expect(requireUsageMode('teach')).toBe('teach');
+  });
+
+  it('stores the mode and registers coaching in the local fake', async () => {
+    const values = new Map([['roda.e2e.profile', JSON.stringify({ id: 'practitioner-1', display_name: 'Ana', completed_at: null })]]);
+    const window = {
+      localStorage: { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v), removeItem: (k) => values.delete(k) },
+      __RODA_E2E_EVENTS__: [],
+    };
+    const service = createE2EProfileService({ window });
+    expect((await service.loadProfile()).usage_mode).toBe('train');
+    expect(await service.setUsageMode('teach')).toEqual({ status: 'updated', usage_mode: 'teach', coach_profile_created: true });
+    expect((await service.loadProfile()).usage_mode).toBe('teach');
+    expect(await service.loadCoachProfile()).toMatchObject({ profile_id: 'practitioner-1' });
+    expect(await service.setUsageMode('train')).toMatchObject({ coach_profile_created: false });
+    expect(await service.loadCoachProfile()).not.toBeNull();
+    expect(window.__RODA_E2E_EVENTS__).toContainEqual({ type: 'set-usage-mode', mode: 'train' });
   });
 });
