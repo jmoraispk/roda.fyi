@@ -369,6 +369,10 @@ const STRINGS = Object.freeze({
     'today.open': 'Open',
     'today.felt': 'felt {difficulty}',
     'today.attended': '{count} attended',
+    'cal.previous': 'Previous month',
+    'cal.next': 'Next month',
+    'cal.empty': 'Nothing on this day.',
+    'cal.upcoming': 'Upcoming',
   }),
   pt: Object.freeze({
     'dashboard.changeLanguage': 'Mudar idioma',
@@ -737,6 +741,10 @@ const STRINGS = Object.freeze({
     'today.open': 'Abrir',
     'today.felt': 'pareceu {difficulty}',
     'today.attended': '{count} presentes',
+    'cal.previous': 'Mês anterior',
+    'cal.next': 'Mês seguinte',
+    'cal.empty': 'Nada neste dia.',
+    'cal.upcoming': 'Próximo',
   }),
 });
 
