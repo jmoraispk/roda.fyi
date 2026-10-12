@@ -189,3 +189,5 @@ input, select, textarea { font-size: 16px; }
 .mode-option[aria-checked="true"] { background: var(--gold); color: var(--bg); font-weight: 700; }
 .mode-hints { display: flex; justify-content: space-between; }
 .me-top { text-decoration: none; }
+/* Sheets with forms */
+.sheet-form { display: grid; gap: 4px; margin-top: 10px; }
