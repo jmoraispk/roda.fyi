@@ -593,8 +593,9 @@ describe('router', () => {
     expect(window.location.hash).toBe('#/');
     router.navigate('/calendar');
     await vi.waitFor(() => expect(onRoute).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'calendar' })));
+    const before = onRoute.mock.calls.length;
     router.navigate('/calendar');
-    expect(onRoute).toHaveBeenCalledTimes(3);
+    expect(onRoute).toHaveBeenCalledTimes(before + 1);
     router.stop();
   });
 });
