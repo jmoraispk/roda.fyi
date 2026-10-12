@@ -1,6 +1,6 @@
 // src/app/ui/repertoire-view.js
-export function createRepertoireView({ document, i18n, repertoire, onLog }) {
-  const panel = document.querySelector('#trainingRepertoirePanel');
+export function createRepertoireView({ document, i18n, repertoire, onLog, panel: panelElement = null }) {
+  const panel = panelElement ?? document.querySelector('#trainingRepertoirePanel');
   let items = [];
   let renaming = null;
   let confirming = null;

@@ -18,8 +18,9 @@ export function createStatisticsView({
   timezone = 'UTC',
   today = new Date(),
   onAccessRevoked = () => {},
+  root: rootElement = null,
 }) {
-  const root = document.querySelector('#trainingStatisticsPanel');
+  const root = rootElement ?? document.querySelector('#trainingStatisticsPanel');
   let period = 'month';
   let metric = 'time';
   let groupId = null;

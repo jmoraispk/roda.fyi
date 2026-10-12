@@ -1,8 +1,8 @@
 // src/app/ui/catalog-view.js
 import { listMoves, slugify } from '../movement-catalog.js';
 
-export function createCatalogView({ document, i18n, catalog, onMappingsChanged }) {
-  const panel = document.querySelector('#trainingCatalogPanel');
+export function createCatalogView({ document, i18n, catalog, onMappingsChanged, panel: panelElement = null }) {
+  const panel = panelElement ?? document.querySelector('#trainingCatalogPanel');
   let terms = [];
   let token = 0;
 

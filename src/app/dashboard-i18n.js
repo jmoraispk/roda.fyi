@@ -497,6 +497,7 @@ const STRINGS = Object.freeze({
     'teaching.decline': 'Decline',
     'peopleSearch.request': 'Request',
     'groupPage.actionError': "That didn't work. Please try again.",
+    'progress.rankingGroup': 'Group for the ranking',
   }),
   pt: Object.freeze({
     'dashboard.changeLanguage': 'Mudar idioma',
@@ -993,6 +994,7 @@ const STRINGS = Object.freeze({
     'teaching.decline': 'Recusar',
     'peopleSearch.request': 'Pedir',
     'groupPage.actionError': 'Não resultou. Tenta novamente.',
+    'progress.rankingGroup': 'Grupo da classificação',
   }),
 });
 
