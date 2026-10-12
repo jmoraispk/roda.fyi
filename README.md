@@ -34,9 +34,14 @@ and can map, merge, or ignore them.
 ### The new app (`/app`)
 
 A mobile-first version of the dashboard is being built at `/app`: Today,
-Calendar, Log training, and the training page, with a bottom tab bar on phones
-and a sidebar on desktop. It can be added to a phone's home screen. Sections
-not rebuilt yet link to the classic dashboard at `/dashboard`.
+Calendar, Log training, the training page, the coach's class page, and Me with
+Progress, Repertoire, Teaching (plans, students, scheduling, past classes),
+Groups, Catalog for curators, and Settings. New accounts start with a short
+welcome, and a Train · Both · Teach setting in Me changes what **+** offers and
+whether Teaching is listed, without removing any data. The app has a bottom tab
+bar on phones and a sidebar on desktop and can be added to a phone's home
+screen. Discover is not rebuilt yet and links to the classic dashboard at
+`/dashboard`.
 
 ## Local browser development
 
