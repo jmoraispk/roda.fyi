@@ -71,4 +71,23 @@ describe('router', () => {
     router.stop();
     back.mockRestore();
   });
+
+  it('parses the query and the record route', () => {
+    expect(parseRoute('#/training/abc?add=1')).toMatchObject({ name: 'training', params: { id: 'abc' }, query: { add: '1' } });
+    expect(parseRoute('#/me/teaching/record')).toMatchObject({ name: 'teaching-record', query: {} });
+    expect(tabFor(parseRoute('#/me/teaching/record'))).toBe('me');
+    expect(isDetail(parseRoute('#/me/teaching/record'))).toBe(true);
+    expect(isDetail(parseRoute('#/welcome'))).toBe(true);
+  });
+
+  it('replaces the current entry without adding history', () => {
+    window.location.hash = '#/me/teaching';
+    const onRoute = vi.fn();
+    const router = createRouter({ window, onRoute });
+    const before = window.history.length;
+    router.replace('/me');
+    expect(window.location.hash).toBe('#/me');
+    expect(window.history.length).toBe(before);
+    expect(onRoute).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'me' }));
+  });
 });

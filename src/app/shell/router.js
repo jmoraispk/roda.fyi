@@ -11,6 +11,7 @@ const ROUTES = [
   ['group', new RegExp(`^/group/${ID}$`), ['id']],
   ['me', /^\/me$/, []],
   ['me-section', /^\/me\/(progress|repertoire|groups|catalog|settings|teaching)$/, ['section']],
+  ['teaching-record', /^\/me\/teaching\/record$/, []],
   ['teaching-plan', new RegExp(`^/me/teaching/plans/${ID}$`), ['id']],
   ['teaching-student', new RegExp(`^/me/teaching/students/${ID}$`), ['id']],
   ['welcome', /^\/welcome$/, []],
@@ -18,21 +19,24 @@ const ROUTES = [
 
 const TABS = {
   today: 'today', calendar: 'calendar', discover: 'discover', person: 'discover', group: 'discover',
-  me: 'me', 'me-section': 'me', 'teaching-plan': 'me', 'teaching-student': 'me', welcome: 'me',
+  me: 'me', 'me-section': 'me', 'teaching-plan': 'me', 'teaching-student': 'me', 'teaching-record': 'me', welcome: 'me',
 };
 const DETAIL = new Set([
   'training', 'class', 'log', 'person', 'group', 'me-section', 'teaching-plan', 'teaching-student',
+  'teaching-record', 'welcome',
 ]);
 
 export function parseRoute(hash) {
-  const path = String(hash ?? '').replace(/^#/, '').split('?')[0] || '/';
+  const [rawPath, rawQuery = ''] = String(hash ?? '').replace(/^#/, '').split('?');
+  const path = rawPath || '/';
+  const query = Object.fromEntries(new URLSearchParams(rawQuery));
   for (const [name, pattern, keys] of ROUTES) {
     const match = pattern.exec(path);
     if (match) {
-      return { name, path, params: Object.fromEntries(keys.map((key, index) => [key, match[index + 1] ?? null])) };
+      return { name, path, params: Object.fromEntries(keys.map((key, index) => [key, match[index + 1] ?? null])), query };
     }
   }
-  return { name: 'today', path: '/', params: {}, redirected: true };
+  return { name: 'today', path: '/', params: {}, query: {}, redirected: true };
 }
 
 export function tabFor(route) {
@@ -77,6 +81,10 @@ export function createRouter({ window, onRoute }) {
       depth += 1;
       skipNext = true;
       window.location.hash = path;
+    },
+    replace(path) {
+      window.history.replaceState(null, '', `#${path}`);
+      handle();
     },
     back(fallbackPath = '/') {
       if (depth > 0) {
