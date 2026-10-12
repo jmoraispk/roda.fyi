@@ -19,6 +19,9 @@ function titleFor(i18n, training) {
 }
 
 export async function renderTraining(ctx, route) {
+  // Ruling R6: `?add=1` (set after Finish class) opens Add resources once.
+  const wantsAdd = route.query?.add === '1';
+  const plainRoute = { ...route, query: {} };
   const { document, i18n } = ctx;
   const screen = el(document, 'section', { className: 'screen screen-training' });
   const back = () => ctx.back('/');
@@ -31,7 +34,7 @@ export async function renderTraining(ctx, route) {
       el(document, 'p', { className: 'muted', text: unavailable ? i18n.t('trainingPage.unavailable') : (error?.message || i18n.t('app.loadError')) }));
     return screen;
   }
-  const reload = async () => screen.replaceWith(await renderTraining(ctx, route));
+  const reload = async () => screen.replaceWith(await renderTraining(ctx, plainRoute));
   screen.append(pageHeader({ document, title: '', backLabel: i18n.t('app.back'), onBack: back }));
 
   const video = training.resources.find(({ kind, url }) => kind === 'video' && youtubeEmbedUrl(url));
@@ -146,5 +149,11 @@ export async function renderTraining(ctx, route) {
       } } }));
   }
   if (actions.length) screen.append(el(document, 'div', { className: 'training-bar' }, actions));
+  if (wantsAdd && training.can_add_resources) {
+    ctx.window?.history?.replaceState?.(null, '', `#/training/${training.occurrence_id}`);
+    setTimeout(() => {
+      if (screen.isConnected) screen.querySelector('[data-action="add"]')?.click();
+    }, 0);
+  }
   return screen;
 }

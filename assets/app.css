@@ -22,9 +22,9 @@ button { font: inherit; color: inherit; }
 /* The page areas take focus after each navigation for screen readers; they are not controls, so no ring. */
 .app-main:focus, .app-detail:focus { outline: none; }
 /* Detail screens with a bottom bar fill the screen so the bar rests at the bottom even when content is short. */
-.screen-log, .screen-training, .screen-record { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; padding-bottom: 0; }
-.screen-log > .log-dock, .screen-record > .log-dock, .screen-training > .training-bar { margin-top: auto; }
-.screen-log > :nth-last-child(2), .screen-record > :nth-last-child(2), .screen-training > :nth-last-child(2) { margin-bottom: 18px; }
+.screen-log, .screen-training, .screen-record, .screen-class { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; padding-bottom: 0; }
+.screen-log > .log-dock, .screen-record > .log-dock, .screen-training > .training-bar, .screen-class > .training-bar { margin-top: auto; }
+.screen-log > :nth-last-child(2), .screen-record > :nth-last-child(2), .screen-training > :nth-last-child(2), .screen-class > :nth-last-child(2) { margin-bottom: 18px; }
 .page-header { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; }
 .page-title { font: 800 1.5rem/1.1 var(--display); margin: 0; flex: 1; }
 .page-back { border: 0; background: transparent; font-size: 1.8rem; line-height: 1; padding: 0 6px; cursor: pointer; }
@@ -81,7 +81,7 @@ button { font: inherit; color: inherit; }
   .app-panes:has(.app-detail:not(:empty)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .app-detail { border-left: 1px solid var(--line); max-height: 100vh; overflow: auto; position: sticky; top: 0; }
   .screen { padding-bottom: 32px; }
-  .screen-log, .screen-training, .screen-record { padding-bottom: 0; }
+  .screen-log, .screen-training, .screen-record, .screen-class { padding-bottom: 0; }
   .screen-welcome { padding-bottom: 16px; }
   .sheet { left: 50%; right: auto; width: 520px; transform: translateX(-50%); }
 }
@@ -198,3 +198,15 @@ input, select, textarea { font-size: 16px; }
 .record-when { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
 .record-resources { margin: 10px 0; }
 .record-resources summary { cursor: pointer; padding: 6px 0; }
+/* Coach's class page */
+.attendance { display: grid; }
+.attendance-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 4px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; font-size: 1rem; }
+.attendance-check { width: 24px; height: 24px; border-radius: 6px; border: 1.5px solid var(--line); display: grid; place-items: center; color: transparent; }
+.attendance-row[aria-checked="true"] .attendance-check { background: var(--green); border-color: var(--green); color: var(--bg); }
+.class-hint:empty { display: none; }
+.training-bar button:disabled { opacity: .45; cursor: default; }
+.button-secondary.small, .button-primary.small { padding: 6px 12px; font-size: .85rem; }
+.screen-class .training-bar { gap: 10px; padding: 10px 16px calc(10px + var(--safe-bottom)); }
+.screen-class .training-bar button { border: 1px solid #5a4630; border-radius: 999px; padding: 10px 0; }
+.screen-class .training-bar [data-action="finish"] { background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 700; }
+.screen-class .training-bar [data-action="finish"]:disabled { opacity: .5; }
