@@ -1,0 +1,60 @@
+<style>
+  .phones { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+  .phone { width: 300px; height: 620px; border-radius: 34px; background: #17120d; border: 8px solid #2b241c;
+    color: #ecdcc0; font: 13px/1.35 system-ui, sans-serif; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .scr { flex: 1; overflow: hidden; padding: 14px 14px 0; }
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #a8977c; }
+  h4 { margin: 4px 0 0; font-size: 17px; }
+  .muted { color: #a8977c; font-size: 11px; }
+  .tag { display: inline-block; border-radius: 999px; padding: 3px 9px; font-size: 11px; border: 1px solid #5a4630; margin: 6px 4px 0 0; background: #231c15; }
+  .video { height: 150px; border-radius: 14px; background: linear-gradient(135deg,#2b3540,#14181d); display: grid; place-items: center; margin: 4px 0 6px; position: relative; }
+  .video .play { width: 46px; height: 46px; border-radius: 50%; background: #fffd; color: #111; display: grid; place-items: center; font-size: 18px; }
+  .video .cap { position: absolute; left: 10px; bottom: 8px; font-size: 10px; color: #ddd; }
+  .res { display: flex; gap: 6px; margin: 8px 0 4px; }
+  .res a { flex: 1; text-align: center; border: 1px solid #5a4630; border-radius: 10px; padding: 6px 0; font-size: 11px; color: #ecdcc0; text-decoration: none; background: #231c15; }
+  .lbl { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #a8977c; margin: 12px 0 4px; }
+  .chap { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid #2b241c; }
+  .chap .n { color: #eba63c; font-size: 11px; width: 18px; flex: none; }
+  .fb { border-left: 3px solid #eba63c; padding-left: 8px; margin: 8px 0; font-size: 12px; }
+  .bar { height: 54px; border-top: 1px solid #3a2f23; display: grid; grid-template-columns: repeat(3,1fr); align-items: center; text-align: center; font-size: 11px; background: #1b150f; }
+  .bar .main { color: #eba63c; font-weight: 700; }
+  .feel { font-size: 10px; border-radius: 6px; padding: 1px 6px; background: #3a2f23; color: #c9b796; }
+</style>
+
+<h2>Training page v2: video first, time always shown</h2>
+<p class="subtitle">Changes from your notes: date and time as small text; <b>duration</b> and <b>attendees</b> as the two tags; the class duration shows even when the video is shorter or missing; resources are plain clickable buttons; "felt" is a quiet detail instead of a highlight. Left: with a recording. Right: without one.</p>
+
+<div class="phones">
+  <div class="phone">
+    <div class="scr">
+      <div class="top"><span>‹ Back</span><span>⋯</span></div>
+      <div class="video"><div class="play">▶</div><span class="cap">Recording · 56:18 of the class</span></div>
+      <h4>Group class · Grupo Lua</h4>
+      <div class="muted">Fri 26 Sep · 14:19 · Coach João</div>
+      <span class="tag">⏱ 1h 26m</span><span class="tag">👥 6 attended</span>
+      <div class="res"><a>🎥 Recording</a><a>🎙️ Transcript</a><a>📄 Summary</a></div>
+      <div class="lbl">Rounds</div>
+      <div class="chap"><span class="n">1</span><div><b>ginga 10 min</b></div></div>
+      <div class="chap"><span class="n">2</span><div><b>10x (armada, aú)</b> <span class="feel">felt Hard</span></div></div>
+      <div class="chap"><span class="n">3</span><div><b>3x (negativa, rolê)</b></div></div>
+      <div class="fb">Good rhythm. Let the shoulders stay loose. — João</div>
+    </div>
+    <div class="bar"><div class="main">★ Rate</div><div>📝 Notes</div><div>📎 Add</div></div>
+  </div>
+
+  <div class="phone">
+    <div class="scr">
+      <div class="top"><span>‹ Back</span><span>⋯</span></div>
+      <h4>Alone</h4>
+      <div class="muted">Fri 10 Oct · 07:30</div>
+      <span class="tag">⏱ 45m</span>
+      <div class="res"><a>🎙️ Voice note</a></div>
+      <div class="lbl">Rounds</div>
+      <div class="chap"><span class="n">1</span><div><b>ginga 10 min</b></div></div>
+      <div class="chap"><span class="n">2</span><div><b>10x (armada, aú)</b> <span class="feel">felt Okay</span></div></div>
+      <div class="lbl">Notes</div>
+      <div class="muted" style="font-size:12px;color:#ecdcc0">Knees felt better today; keep the hips low in the aú.</div>
+    </div>
+    <div class="bar"><div class="main">★ Rate</div><div>📝 Notes</div><div>📎 Add</div></div>
+  </div>
+</div>

@@ -1,0 +1,103 @@
+<style>
+  .phones { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+  .phone { width: 300px; height: 620px; border-radius: 34px; background: #17120d; border: 8px solid #2b241c;
+    color: #ecdcc0; font: 13px/1.35 system-ui, sans-serif; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .scr { flex: 1; overflow: hidden; padding: 16px 14px 0; }
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .top b { font-size: 17px; }
+  .x { color: #a8977c; font-size: 18px; }
+  .muted { color: #a8977c; font-size: 11px; }
+  .chipbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip { border: 1px solid #5a4630; border-radius: 999px; padding: 4px 10px; font-size: 11px; background: #231c15; }
+  .chip.on { background: #eba63c; color: #17120d; border-color: #eba63c; font-weight: 700; }
+  .round { background: #231c15; border: 1px solid #3a2f23; border-radius: 14px; padding: 10px; margin-bottom: 8px; }
+  .round h5 { margin: 0 0 6px; font-size: 12px; color: #a8977c; display: flex; justify-content: space-between; }
+  .txt { background: #17120d; border: 1px solid #3a2f23; border-radius: 10px; padding: 8px; font-size: 13px; min-height: 34px; }
+  .mv { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 10px; margin: 5px 3px 0 0; border: 1px solid #6fae6a; }
+  .mv.new { border: 1px dashed #eba63c; }
+  .grp { display: inline-block; border: 1px solid #5a4630; border-radius: 10px; padding: 1px 5px; margin-top: 5px; font-size: 10px; }
+  .feel { display: flex; gap: 6px; margin-top: 8px; }
+  .feel span { flex: 1; text-align: center; border: 1px solid #3a2f23; border-radius: 8px; padding: 4px 0; font-size: 11px; }
+  .feel .sel { background: #5a2a20; border-color: #d0573f; }
+  .add { text-align: center; border: 1px dashed #5a4630; border-radius: 12px; padding: 8px; color: #a8977c; font-size: 12px; margin-bottom: 8px; }
+  .more { display: flex; gap: 6px; flex-wrap: wrap; }
+  .save { position: absolute; left: 14px; right: 14px; bottom: 14px; background: #eba63c; color: #17120d; text-align: center; font-weight: 700; border-radius: 999px; padding: 11px; }
+  .steps { display: flex; gap: 4px; margin-bottom: 12px; }
+  .steps div { flex: 1; height: 4px; border-radius: 2px; background: #3a2f23; }
+  .steps .on { background: #eba63c; }
+  .bubble { background: #231c15; border: 1px solid #3a2f23; border-radius: 14px 14px 14px 4px; padding: 8px 10px; margin-bottom: 8px; }
+  .input { position: absolute; left: 12px; right: 12px; bottom: 14px; display: flex; gap: 6px; }
+  .input .field { flex: 1; background: #231c15; border: 1px solid #5a4630; border-radius: 999px; padding: 9px 12px; color: #a8977c; font-size: 12px; }
+  .input .go { width: 38px; border-radius: 50%; background: #eba63c; color: #17120d; display: grid; place-items: center; font-weight: 700; }
+  .picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; }
+  .picker div { background: #17120d; border: 1px solid #3a2f23; border-radius: 8px; height: 38px; display: grid; place-items: center; font-size: 9px; color: #a8977c; }
+</style>
+
+<h2>Log training (the + button): which composer?</h2>
+<p class="subtitle">Noted for Today: <b>A (card stack) with B's week strip on top</b>. Now the most-used flow, logging what you trained.</p>
+
+<div class="options" style="margin-bottom:18px">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content"><h3>One screen</h3><p>Date and duration as chips at the top, round cards in the middle, extras folded away, Save pinned at the bottom.</p></div></div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content"><h3>Chat-style</h3><p>Type or paste what you trained into one box. Each send becomes a round card above it. Feels like messaging, and AI-ready later.</p></div></div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)"><div class="letter">C</div><div class="content"><h3>Three quick steps</h3><p>1 What you trained → 2 How it felt → 3 Details (date, notes, resources). Each step fits one screen.</p></div></div>
+</div>
+
+<div class="phones">
+  <!-- A -->
+  <div class="phone">
+    <div class="scr">
+      <div class="top"><span class="x">✕</span><b>Log training</b><span class="muted">Alone ▾</span></div>
+      <div class="chipbar"><span class="chip on">Today</span><span class="chip">Yesterday</span><span class="chip">📅</span><span class="chip">45 min ▾</span></div>
+      <div class="round">
+        <h5><span>Round 1</span><span>⋯</span></h5>
+        <div class="txt">ginga 10 min</div>
+        <span class="mv">✓ Ginga · 10 min</span>
+        <div class="feel"><span>Easy</span><span>Okay</span><span>Hard</span></div>
+      </div>
+      <div class="round">
+        <h5><span>Round 2</span><span>⋯</span></h5>
+        <div class="txt">10x (armada, aú, galopanti)</div>
+        <span class="grp">×10 <span class="mv">✓ Armada</span><span class="mv">✓ Aú</span><span class="mv new">galopanti · new</span></span>
+        <div class="feel"><span>Easy</span><span>Okay</span><span class="sel">Hard</span></div>
+      </div>
+      <div class="add">+ Round · 🥋 Moves · 📚 Saved</div>
+      <div class="more"><span class="chip">📝 Notes</span><span class="chip">🎥 Link</span><span class="chip">🎙️ Transcript</span><span class="chip">📄 Summary</span></div>
+    </div>
+    <div class="save">Save</div>
+  </div>
+
+  <!-- B -->
+  <div class="phone">
+    <div class="scr">
+      <div class="top"><span class="x">✕</span><b>Log training</b><span class="muted">Today · 45m ▾</span></div>
+      <div class="muted" style="margin-bottom:8px">Write what you trained. Each message is a round.</div>
+      <div class="bubble"><b>Round 1</b> · ginga 10 min<br><span class="mv">✓ Ginga · 10 min</span></div>
+      <div class="bubble"><b>Round 2</b> · 10x (armada, aú, galopanti)<br><span class="grp">×10 <span class="mv">✓ Armada</span><span class="mv">✓ Aú</span><span class="mv new">galopanti · new</span></span>
+        <div class="feel"><span>Easy</span><span>Okay</span><span class="sel">Hard</span></div></div>
+      <div class="muted" style="text-align:center;margin-top:6px">tap a round to edit · long-press to rate parts</div>
+      <div class="more" style="margin-top:10px"><span class="chip">🥋 Moves</span><span class="chip">📚 Saved</span><span class="chip">📎 Resources</span><span class="chip on">Done</span></div>
+    </div>
+    <div class="input"><div class="field">e.g. 3x (negativa, rolê)</div><div class="go">↑</div></div>
+  </div>
+
+  <!-- C -->
+  <div class="phone">
+    <div class="scr">
+      <div class="steps"><div class="on"></div><div></div><div></div></div>
+      <div class="top"><span class="x">✕</span><b>What did you train?</b><span class="muted">1/3</span></div>
+      <div class="round">
+        <h5><span>Round 1</span><span>⋯</span></h5>
+        <div class="txt">ginga 10 min</div>
+        <span class="mv">✓ Ginga · 10 min</span>
+      </div>
+      <div class="round">
+        <h5><span>Round 2</span><span>⋯</span></h5>
+        <div class="txt">10x (armada, aú, ...</div>
+        <div class="picker"><div>Armada</div><div>Aú</div><div>Ginga</div><div>Negativa</div><div>Rolê</div><div>Queixada</div><div>Martelo</div><div>More…</div></div>
+      </div>
+      <div class="add">+ Round</div>
+      <div class="muted" style="text-align:center">Next: how it felt · then date, notes, resources</div>
+    </div>
+    <div class="save">Next →</div>
+  </div>
+</div>

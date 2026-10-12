@@ -1,0 +1,104 @@
+<style>
+  .phones { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+  .phone { width: 300px; height: 620px; border-radius: 34px; background: #17120d; border: 8px solid #2b241c;
+    color: #ecdcc0; font: 13px/1.35 system-ui, sans-serif; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .scr { flex: 1; overflow: hidden; padding: 14px 14px 0; }
+  .hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .hdr b { font-size: 18px; }
+  .muted { color: #a8977c; font-size: 11px; }
+  .grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; text-align: center; font-size: 11px; }
+  .grid .wd { color: #a8977c; font-size: 9px; }
+  .grid .d { height: 30px; border-radius: 8px; background: #231c15; padding-top: 2px; }
+  .grid .sel { outline: 2px solid #eba63c; }
+  .grid .out { opacity: .3; }
+  .grid .today { background: #3a2a15; }
+  .dots { display: flex; gap: 2px; justify-content: center; margin-top: 2px; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; display: block; }
+  .a { background: #eba63c; } .g { background: #4fb3a9; } .p { background: #b58ad8; } .t { box-sizing: border-box; border: 1.5px solid #4fb3a9; }
+  .item { background: #231c15; border: 1px solid #3a2f23; border-radius: 12px; padding: 8px 10px; margin-top: 7px; display: flex; justify-content: space-between; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 58px; background: #2a2119; border-radius: 18px 18px 0 0; padding: 10px 14px 12px; box-shadow: 0 -8px 20px #0007; }
+  .grab { width: 36px; height: 4px; border-radius: 2px; background: #5a4630; margin: 0 auto 8px; }
+  .tabs { height: 58px; border-top: 1px solid #3a2f23; display: grid; grid-template-columns: repeat(5,1fr); align-items: center; text-align: center; font-size: 10px; color: #a8977c; background: #1b150f; }
+  .tabs .on { color: #eba63c; font-weight: 700; }
+  .plus { width: 40px; height: 40px; border-radius: 50%; background: #eba63c; color: #17120d; font-size: 24px; font-weight: 700; display: grid; place-items: center; margin: -20px auto 0; }
+  .me-top { display: flex; gap: 10px; align-items: center; margin: 6px 0 12px; }
+  .ava { width: 52px; height: 52px; border-radius: 50%; background: #eba63c; color: #17120d; display: grid; place-items: center; font-weight: 800; font-size: 18px; }
+  .seg { display: grid; grid-template-columns: repeat(3,1fr); background: #231c15; border: 1px solid #3a2f23; border-radius: 999px; padding: 3px; margin: 6px 0 4px; position: relative; }
+  .seg span { text-align: center; padding: 7px 0; font-size: 12px; border-radius: 999px; z-index: 1; }
+  .seg .on { background: #eba63c; color: #17120d; font-weight: 700; }
+  .track { display: flex; justify-content: space-between; font-size: 9px; color: #a8977c; padding: 0 10px; margin-bottom: 10px; }
+  .list div { display: flex; justify-content: space-between; padding: 9px 2px; border-bottom: 1px solid #2b241c; }
+  h4 { margin: 4px 0 0; font-size: 17px; }
+  .tag { display: inline-block; border-radius: 999px; padding: 3px 9px; font-size: 11px; border: 1px solid #5a4630; margin: 6px 4px 0 0; background: #231c15; }
+  .lbl { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #a8977c; margin: 12px 0 4px; }
+  .att { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2b241c; }
+  .ck { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid #5a4630; display: grid; place-items: center; font-size: 12px; }
+  .ck.on { background: #6fae6a; border-color: #6fae6a; color: #102010; }
+  .bar { height: 58px; border-top: 1px solid #3a2f23; display: flex; gap: 8px; align-items: center; padding: 0 12px; background: #1b150f; }
+  .bar .b { flex: 1; text-align: center; border-radius: 999px; padding: 9px 0; font-size: 12px; border: 1px solid #5a4630; }
+  .bar .main { background: #eba63c; color: #17120d; border-color: #eba63c; font-weight: 700; }
+</style>
+
+<h2>Calendar and Me, revised; plus the coach's class page</h2>
+<p class="subtitle">Left: <b>full October</b> with the bottom sheet. Middle: <b>Me</b> with a 3-position slider (Train · Both · Teach) instead of the Venn diagram. Right, new: what a coach sees when opening an <b>upcoming class</b>, with the plan, a quick attendance check-off, and "Finish class", which records it and opens Add resources.</p>
+
+<div class="phones">
+  <!-- Calendar -->
+  <div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="muted">‹</span><b>October 2026</b><span class="muted">›</span></div>
+      <div class="grid">
+        <div class="wd">M</div><div class="wd">T</div><div class="wd">W</div><div class="wd">T</div><div class="wd">F</div><div class="wd">S</div><div class="wd">S</div>
+        <div class="d out">28</div><div class="d out">29</div><div class="d out">30</div><div class="d">1</div><div class="d">2<div class="dots"><i class="g"></i></div></div><div class="d">3<div class="dots"><i class="a"></i></div></div><div class="d">4</div>
+        <div class="d">5</div><div class="d">6</div><div class="d">7<div class="dots"><i class="p"></i></div></div><div class="d">8</div><div class="d sel">9<div class="dots"><i class="g"></i><i class="a"></i></div></div><div class="d">10<div class="dots"><i class="a"></i></div></div><div class="d today">11<div class="dots"><i class="t"></i></div></div>
+        <div class="d">12</div><div class="d">13</div><div class="d">14</div><div class="d">15<div class="dots"><i class="t"></i></div></div><div class="d">16</div><div class="d">17</div><div class="d">18<div class="dots"><i class="t"></i></div></div>
+        <div class="d">19</div><div class="d">20</div><div class="d">21</div><div class="d">22<div class="dots"><i class="t"></i></div></div><div class="d">23</div><div class="d">24</div><div class="d">25</div>
+        <div class="d">26</div><div class="d">27</div><div class="d">28</div><div class="d">29<div class="dots"><i class="t"></i></div></div><div class="d">30</div><div class="d">31</div><div class="d out">1</div>
+      </div>
+    </div>
+    <div class="sheet"><div class="grab"></div>
+      <b>Thursday 9</b>
+      <div class="item"><span><b>Group class</b> · 19:00<br><span class="muted">Grupo Lua · 1h 26m · 6</span></span><span>🎥 📄</span></div>
+      <div class="item"><span><b>Alone</b> · 07:30<br><span class="muted">45m</span></span><span>🎙️</span></div>
+    </div>
+    <div class="tabs"><div>Today</div><div class="on">Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div>
+
+  <!-- Me -->
+  <div class="phone">
+    <div class="scr">
+      <div class="me-top"><div class="ava">JM</div><div><b style="font-size:16px">João Morais</b><div class="muted">Grupo Lua · Lisbon</div></div></div>
+      <div class="muted">How I use roda</div>
+      <div class="seg"><span>Train</span><span class="on">Both</span><span>Teach</span></div>
+      <div class="track"><span>log my training</span><span>teach classes</span></div>
+      <div class="list">
+        <div><span>📈 Progress</span><span class="muted">stats · hardest transitions ›</span></div>
+        <div><span>📚 Repertoire</span><span class="muted">6 sequences ›</span></div>
+        <div><span>🧑‍🏫 Teaching</span><span class="muted">plans · students ›</span></div>
+        <div><span>👥 Groups</span><span class="muted">Grupo Lua ›</span></div>
+        <div><span>🗂️ Catalog</span><span class="muted">3 new terms ›</span></div>
+        <div><span>⚙️ Settings</span><span class="muted">profile · language · privacy ›</span></div>
+      </div>
+    </div>
+    <div class="tabs"><div>Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div class="on">Me</div></div>
+  </div>
+
+  <!-- Coach class -->
+  <div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="muted">‹ Back</span><span class="muted">Edit plan</span></div>
+      <h4>Group class · Grupo Lua</h4>
+      <div class="muted">Today · 19:00 · you teach · plan: Armada ladder</div>
+      <span class="tag">⏱ 1h</span><span class="tag">👥 8 coming</span>
+      <div class="lbl">Plan</div>
+      <div class="muted" style="color:#ecdcc0;font-size:12px">1 · ginga 10 min<br>2 · 10x (armada, aú)<br>3 · 3x (negativa, rolê)</div>
+      <div class="lbl">Who's here · tap to mark</div>
+      <div class="att"><span>Bia Santos</span><span class="ck on">✓</span></div>
+      <div class="att"><span>Caio Lima</span><span class="ck on">✓</span></div>
+      <div class="att"><span>Duda Reis</span><span class="ck"></span></div>
+      <div class="att"><span>Eva Costa</span><span class="ck on">✓</span></div>
+      <div class="muted" style="margin-top:6px">+ 4 more</div>
+    </div>
+    <div class="bar"><div class="b">Cancel class</div><div class="b main">Finish class</div></div>
+  </div>
+</div>
