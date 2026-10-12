@@ -11,7 +11,7 @@ function ctx(overrides = {}) {
   const storage = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) };
   return {
     document, i18n: createDashboardI18n({ document, storage, navigator: { languages: ['en'] } }),
-    profile: { id: 'p1', display_name: 'João Morais' },
+    profile: { id: 'p1', display_name: 'João Morais', usage_mode: 'both' },
     services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) } },
     navigate: vi.fn(), back: vi.fn(),
     ...overrides,
@@ -71,5 +71,41 @@ describe('me screen', () => {
     await vi.waitFor(() => expect(onProfileSaved).toHaveBeenCalledWith(expect.objectContaining({ display_name: 'Ana Morais' })));
     expect(profile.completeProfile).toHaveBeenCalledWith({ displayName: 'Ana Morais', timezoneChoice: 'Europe/Lisbon', leaderboardVisible: false });
     expect(view.querySelector('[data-profile-status]').textContent).toBe('Profile saved.');
+  });
+
+  it('hides Teaching in Train and switches mode from the slider', async () => {
+    const setUsageMode = vi.fn().mockResolvedValue({ status: 'updated' });
+    const onModeChange = vi.fn();
+    const context = ctx({
+      profile: { id: 'p1', display_name: 'João Morais', usage_mode: 'train' },
+      services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) }, profile: { setUsageMode } },
+      markCoach: vi.fn(),
+    });
+    const view = await renderMe(context, {}, { onModeChange });
+    expect(view.querySelector('a.me-top').getAttribute('href')).toBe('#/me/settings');
+    expect(view.querySelector('a[href="#/me/teaching"]')).toBeNull();
+    view.querySelector('[data-mode="both"]').click();
+    await vi.waitFor(() => expect(view.querySelector('a[href="#/me/teaching"]')).not.toBeNull());
+    expect(setUsageMode).toHaveBeenCalledWith('both');
+    expect(context.profile.usage_mode).toBe('both');
+    expect(context.markCoach).toHaveBeenCalled();
+    expect(onModeChange).toHaveBeenCalledWith('both');
+  });
+
+  it('snaps back and explains when the mode cannot be saved', async () => {
+    const setUsageMode = vi.fn().mockRejectedValue(new Error('You are offline.'));
+    const onModeChange = vi.fn();
+    const context = ctx({
+      profile: { id: 'p1', display_name: 'João Morais', usage_mode: 'both' },
+      services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) }, profile: { setUsageMode } },
+      markCoach: vi.fn(),
+    });
+    const view = await renderMe(context, {}, { onModeChange });
+    view.querySelector('[data-mode="train"]').click();
+    await vi.waitFor(() => expect(view.querySelector('[role="status"]').textContent).toBe('You are offline.'));
+    expect(view.querySelector('[data-mode="both"]').getAttribute('aria-checked')).toBe('true');
+    expect(view.querySelector('a[href="#/me/teaching"]')).not.toBeNull();
+    expect(context.profile.usage_mode).toBe('both');
+    expect(onModeChange).not.toHaveBeenCalled();
   });
 });

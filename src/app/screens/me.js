@@ -1,8 +1,15 @@
 // src/app/screens/me.js
-import { createProfileForm, saveProfile } from './profile-form.js';
+import { listsTeaching, modeOf } from '../shell/access.js';
 import { el, initials, pageHeader } from '../shell/page.js';
+import { createModeSlider } from './mode-slider.js';
+import { createProfileForm, saveProfile } from './profile-form.js';
 
-export async function renderMe(ctx) {
+const ROWS = [
+  ['progress', 'app.progress', '📈'], ['repertoire', 'app.repertoire', '📚'], ['teaching', 'app.teaching', '🧑‍🏫'],
+  ['groups', 'app.groups', '👥'], ['catalog', 'app.catalog', '🗂️'], ['settings', 'app.settings', '⚙️'],
+];
+
+export async function renderMe(ctx, _route = {}, { onModeChange = () => {} } = {}) {
   const { document, i18n, profile, services } = ctx;
   let curator = false;
   try {
@@ -10,21 +17,48 @@ export async function renderMe(ctx) {
   } catch {
     curator = false;
   }
-  const rows = [
-    ['progress', 'app.progress', '📈'], ['repertoire', 'app.repertoire', '📚'],
-    ['teaching', 'app.teaching', '🧑‍🏫'], ['groups', 'app.groups', '👥'],
-    ...(curator ? [['catalog', 'app.catalog', '🗂️']] : []),
-    ['settings', 'app.settings', '⚙️'],
-  ];
+  const list = el(document, 'nav', { className: 'me-list', attrs: { 'aria-label': i18n.t('app.me') } });
+  function renderRows(mode) {
+    list.replaceChildren(...ROWS
+      .filter(([section]) => (section !== 'teaching' || listsTeaching(mode)) && (section !== 'catalog' || curator))
+      .map(([section, key, icon]) => el(document, 'a', { className: 'me-row', attrs: { href: `#/me/${section}` } }, [
+        el(document, 'span', { text: `${icon} ${i18n.t(key)}` }),
+        el(document, 'span', { className: 'muted', text: '›' }),
+      ])));
+  }
+  const status = el(document, 'p', { className: 'form-status', attrs: { role: 'status' } });
+  let saved = modeOf(profile);
+  let request = 0;
+  const slider = createModeSlider({
+    document, i18n, value: saved,
+    onChange: async (mode) => {
+      const mine = ++request;
+      status.textContent = '';
+      try {
+        await services.profile.setUsageMode(mode);
+        if (mine !== request) return;
+        saved = mode;
+        profile.usage_mode = mode;
+        if (mode !== 'train') ctx.markCoach();
+        renderRows(mode);
+        onModeChange(mode);
+      } catch (error) {
+        if (mine !== request) return;
+        slider.set(saved);
+        status.textContent = error?.message || i18n.t('mode.saveError');
+      }
+    },
+  });
+  renderRows(saved);
   return el(document, 'section', { className: 'screen screen-me' }, [
     pageHeader({ document, title: i18n.t('app.me') }),
-    el(document, 'div', { className: 'me-top' }, [
+    el(document, 'a', { className: 'me-top', attrs: { href: '#/me/settings', 'aria-label': `${profile.display_name} · ${i18n.t('profileForm.title')}` } }, [
       el(document, 'div', { className: 'me-avatar', text: initials(profile.display_name), attrs: { 'aria-hidden': 'true' } }),
       el(document, 'div', { className: 'me-name', text: profile.display_name }),
     ]),
-    el(document, 'nav', { className: 'me-list' }, rows.map(([section, key, icon]) => el(document, 'a', {
-      className: 'me-row', attrs: { href: `#/me/${section}` },
-    }, [el(document, 'span', { text: `${icon} ${i18n.t(key)}` }), el(document, 'span', { className: 'muted', text: '›' })]))),
+    slider.element,
+    status,
+    list,
   ]);
 }
 
