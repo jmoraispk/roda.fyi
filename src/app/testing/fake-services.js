@@ -339,6 +339,15 @@ export function createE2EGroupService({ window }) {
       writeState(state);
       return { status: 'removed' };
     },
+    async leaveGroup(groupId) {
+      const state = readState();
+      state.memberships = state.memberships.map((item) => (item.group_id === groupId ? { ...item, state: 'left' } : item));
+      state.rosters[groupId] = (state.rosters[groupId] ?? []).map((item) => (
+        item.profile_id === 'practitioner-1' ? { ...item, membership_state: 'left' } : item));
+      writeState(state);
+      record({ type: 'leave-group', groupId });
+      return { status: 'left', group_id: groupId };
+    },
 
     async createInvitation(groupId, email = null) {
       const state = readState();
