@@ -1,0 +1,54 @@
+// tests/unit/me-screen.test.js
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from 'vitest';
+
+import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
+import { renderMe, renderSettings } from '../../src/app/screens/me.js';
+import { renderPlaceholder } from '../../src/app/screens/placeholder.js';
+
+function ctx(overrides = {}) {
+  const values = new Map([['roda.dashboard.locale', 'en']]);
+  const storage = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) };
+  return {
+    document, i18n: createDashboardI18n({ document, storage, navigator: { languages: ['en'] } }),
+    profile: { id: 'p1', display_name: 'João Morais' },
+    services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) } },
+    navigate: vi.fn(), back: vi.fn(),
+    ...overrides,
+  };
+}
+
+describe('me screen', () => {
+  it('shows the profile and section rows', async () => {
+    const view = await renderMe(ctx());
+    expect(view.querySelector('.me-avatar').textContent).toBe('JM');
+    expect(view.querySelector('.me-name').textContent).toBe('João Morais');
+    expect([...view.querySelectorAll('.me-row')].map((row) => row.getAttribute('href'))).toEqual([
+      '#/me/progress', '#/me/repertoire', '#/me/teaching', '#/me/groups', '#/me/settings',
+    ]);
+  });
+
+  it('lists Catalog for curators', async () => {
+    const view = await renderMe(ctx({ services: { catalog: { amICurator: vi.fn().mockResolvedValue(true) } } }));
+    expect(view.querySelector('a[href="#/me/catalog"]')).not.toBeNull();
+  });
+
+  it('switches language and signs out from Settings', async () => {
+    const onLocaleChange = vi.fn();
+    const onSignOut = vi.fn();
+    const context = ctx();
+    const view = await renderSettings(context, { onLocaleChange, onSignOut });
+    view.querySelector('button[data-locale="pt"]').click();
+    expect(context.i18n.locale()).toBe('pt');
+    expect(onLocaleChange).toHaveBeenCalled();
+    view.querySelector('button[data-action="sign-out"]').click();
+    expect(onSignOut).toHaveBeenCalled();
+    expect(view.querySelector('a[href="/dashboard"]')).not.toBeNull();
+  });
+
+  it('renders placeholders with a link to the classic dashboard', async () => {
+    const view = await renderPlaceholder(ctx(), { title: 'Discover' });
+    expect(view.querySelector('h1').textContent).toBe('Discover');
+    expect(view.querySelector('a[href="/dashboard"]').textContent).toBe('Open the classic dashboard');
+  });
+});

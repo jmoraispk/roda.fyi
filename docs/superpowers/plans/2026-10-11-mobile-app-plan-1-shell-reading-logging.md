@@ -1552,11 +1552,13 @@ test('shows the navigation and moves between destinations', async ({ page }, tes
   await page.getByRole('link', { name: /Settings/ }).click();
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await page.getByRole('button', { name: 'Português' }).click();
-  await expect(nav.getByRole('link', { name: 'Hoje' })).toBeVisible();
+  await page.goto('/app#/me');
+  const navPt = page.getByRole('navigation', { name: 'Navegação principal' });
+  await expect(navPt.getByRole('link', { name: 'Hoje' })).toBeVisible();
   if (testInfo.project.name.includes('mobile')) {
-    await expect(nav.getByRole('button', { name: 'Criar' })).toBeVisible();
+    await expect(navPt.getByRole('button', { name: 'Criar' })).toBeVisible();
   } else {
-    await expect(nav.getByRole('button', { name: '+ Registar treino' })).toBeVisible();
+    await expect(navPt.getByRole('button', { name: '+ Registar treino' })).toBeVisible();
   }
 });
 
