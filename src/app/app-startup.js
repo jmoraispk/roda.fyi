@@ -1,5 +1,7 @@
-// Startup never hangs: a failing session counts as signed out, and a failing
-// profile load is reported so the app can show a retry instead of a spinner.
+// src/app/app-startup.js
+// Startup never hangs: a failing session counts as signed out, a failing
+// profile load is reported so the app can show a retry, and a failing coach
+// profile load only means "no coaching" until the next start.
 export async function loadStartup({ auth, profile }) {
   let session;
   try {
@@ -9,7 +11,11 @@ export async function loadStartup({ auth, profile }) {
   }
   if (!session) return { status: 'signed-out' };
   try {
-    return { status: 'ready', session, profile: await profile.loadProfile() };
+    const [loaded, coachProfile] = await Promise.all([
+      profile.loadProfile(),
+      Promise.resolve().then(() => profile.loadCoachProfile?.() ?? null).catch(() => null),
+    ]);
+    return { status: 'ready', session, profile: loaded, coachProfile: coachProfile ?? null };
   } catch (error) {
     return { status: 'error', error };
   }

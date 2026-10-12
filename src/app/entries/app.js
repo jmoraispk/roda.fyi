@@ -9,6 +9,7 @@ import { renderMe, renderSettings } from '../screens/me.js';
 import { renderPlaceholder } from '../screens/placeholder.js';
 import { renderToday } from '../screens/today.js';
 import { renderTraining } from '../screens/training.js';
+import { redirectFor } from '../shell/access.js';
 import { createLayout } from '../shell/layout.js';
 import { el } from '../shell/page.js';
 import { createRouter, isDetail, tabFor } from '../shell/router.js';
@@ -16,6 +17,10 @@ import { closeSheet, openSheet } from '../shell/sheet.js';
 
 function localIsoDate(date, timezone) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+
+function zoneFor(profile) {
+  return profile.timezone_override || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 }
 
 async function main() {
@@ -40,16 +45,23 @@ async function main() {
     ]));
     return;
   }
-  const { profile } = startup;
+  const { profile, session } = startup;
+  let isCoach = Boolean(startup.coachProfile);
   services.auth.onAuthStateChange((_event, nextSession) => {
     if (!nextSession) toSignIn();
   });
-  const timezone = profile.timezone_override || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   let termMappings = [];
-  services.catalog.listTermMappings().then((rows) => { termMappings = rows; }).catch(() => {});
+  async function refreshTermMappings() {
+    try {
+      termMappings = await services.catalog.listTermMappings();
+    } catch {
+      // Keep the last mappings; recognition still works with the built-in catalog.
+    }
+  }
+  refreshTermMappings();
 
   const desktop = window.matchMedia('(min-width: 900px)');
-  let lastTopLevel = { name: 'today', path: '/', params: {} };
+  let lastTopLevel = { name: 'today', path: '/', params: {}, query: {} };
   let renderToken = 0;
   const layout = createLayout({ document, i18n, onPlus: () => router.navigate('/log') });
   root.replaceChildren(layout.root);
@@ -58,42 +70,54 @@ async function main() {
   window.addEventListener('offline', () => layout.setOffline(true));
 
   const ctx = {
-    document, window, i18n, services, profile, timezone,
+    document, window, i18n, services, profile, timezone: zoneFor(profile), user: session.user,
     navigate: (path) => router.navigate(path),
+    replace: (path) => router.replace(path),
     back: (fallback = '/') => router.back(fallback),
-    today: () => localIsoDate(new Date(), timezone),
+    today: () => localIsoDate(new Date(), ctx.timezone),
     now: () => new Date(),
     getTermMappings: () => termMappings,
+    refreshTermMappings,
+    isCoach: () => isCoach,
+    markCoach: () => { isCoach = true; },
     openSheet: (options) => openSheet({ document, closeLabel: i18n.t('app.close'), ...options }),
   };
 
-  async function screenFor(route) {
-    if (!profile.completed_at) {
-      return el(document, 'section', { className: 'screen' }, [
-        el(document, 'p', { text: i18n.t('app.completeProfile') }),
-        el(document, 'a', { className: 'button-secondary', text: i18n.t('app.classic'), attrs: { href: '/dashboard' } }),
-      ]);
+  async function meSection(route) {
+    const { section } = route.params;
+    if (section === 'settings') {
+      return renderSettings(ctx, {
+        onLocaleChange: () => { layout.refreshCopy(); show(route); },
+        onSignOut: async () => { await services.auth.signOut(); location.replace('/'); },
+      });
     }
+    return renderPlaceholder(ctx, { title: i18n.t(`app.${section}`) });
+  }
+
+  async function screenFor(route) {
     switch (route.name) {
       case 'today': return renderToday(ctx, route);
       case 'calendar': return renderCalendar(ctx, route);
       case 'training': return renderTraining(ctx, route);
       case 'log': return renderLog(ctx, route);
       case 'me': return renderMe(ctx, route);
-      case 'me-section':
-        if (route.params.section === 'settings') {
-          return renderSettings(ctx, {
-            onLocaleChange: () => { layout.refreshCopy(); show(route); },
-            onSignOut: async () => { await services.auth.signOut(); location.replace('/'); },
-          });
-        }
-        return renderPlaceholder(ctx, { title: i18n.t(`app.${route.params.section}`) });
+      case 'me-section': return meSection(route);
+      case 'welcome':
+        return el(document, 'section', { className: 'screen' }, [
+          el(document, 'p', { text: i18n.t('app.completeProfile') }),
+          el(document, 'a', { className: 'button-secondary', text: i18n.t('app.classic'), attrs: { href: '/dashboard' } }),
+        ]);
       case 'discover': return renderPlaceholder(ctx, { title: i18n.t('app.discover') });
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }
   }
 
   async function show(route) {
+    const redirect = redirectFor(route, { profile, isCoach });
+    if (redirect) {
+      router.replace(redirect);
+      return;
+    }
     const token = ++renderToken;
     closeSheet();
     const detailRoute = isDetail(route);

@@ -18,12 +18,20 @@ describe('app startup', () => {
     })).toEqual({ status: 'error', error });
   });
 
-  it('returns the session and profile when ready', async () => {
+  it('returns the session, profile, and coach profile when ready', async () => {
     const session = { user: { id: 'u' } };
     const profile = { id: 'u' };
     expect(await loadStartup({
       auth: { getSession: vi.fn().mockResolvedValue(session) },
-      profile: { loadProfile: vi.fn().mockResolvedValue(profile) },
-    })).toEqual({ status: 'ready', session, profile });
+      profile: { loadProfile: vi.fn().mockResolvedValue(profile), loadCoachProfile: vi.fn().mockResolvedValue({ profile_id: 'u' }) },
+    })).toEqual({ status: 'ready', session, profile, coachProfile: { profile_id: 'u' } });
+  });
+
+  it('treats a failing coach profile load as no coaching', async () => {
+    const session = { user: { id: 'u' } };
+    expect(await loadStartup({
+      auth: { getSession: vi.fn().mockResolvedValue(session) },
+      profile: { loadProfile: vi.fn().mockResolvedValue({ id: 'u' }), loadCoachProfile: vi.fn().mockRejectedValue(new Error('offline')) },
+    })).toEqual({ status: 'ready', session, profile: { id: 'u' }, coachProfile: null });
   });
 });
