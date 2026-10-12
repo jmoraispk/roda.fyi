@@ -46,6 +46,7 @@ export async function buildBrowserBundles({
     'public-auth': 'src/app/entries/public-auth.js',
     'auth-callback': 'src/app/entries/auth-callback.js',
     dashboard: 'src/app/entries/dashboard.js',
+    app: 'src/app/entries/app.js',
     'public-sequences': 'src/app/entries/public-sequences.js',
   };
 
@@ -71,6 +72,18 @@ export async function buildBrowserBundles({
       __RODA_SUPABASE_URL__: JSON.stringify(publicConfig.supabaseUrl),
       __RODA_SUPABASE_PUBLISHABLE_KEY__: JSON.stringify(publicConfig.supabasePublishableKey),
     },
+  });
+
+  await build({
+    entryPoints: ['src/app/sw/service-worker.js'],
+    outfile: 'app-sw.js',
+    bundle: true,
+    platform: 'browser',
+    format: 'iife',
+    target: ['es2020'],
+    minify: !test,
+    legalComments: 'none',
+    define: { __RODA_SW_VERSION__: JSON.stringify(String(Date.now())) },
   });
 }
 

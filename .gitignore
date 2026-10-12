@@ -15,6 +15,7 @@ coverage
 dev-dist
 .vite
 assets/generated/
+app-sw.js
 test-results/
 playwright-report/
 
