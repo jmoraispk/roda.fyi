@@ -29,3 +29,15 @@ test('on desktop a class opens beside Teaching', async ({ page }, testInfo) => {
   await expect(page.locator('#appDetail h1.training-title')).toHaveText('Group · Roda da Lua');
   await expect(page.locator('#appMain [data-teaching-home]')).toBeVisible();
 });
+
+test('a coach opens a student and leaves feedback on a training', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-22T12:00:00Z'));
+  await page.goto('/app?demo=1#/me/teaching');
+  await page.getByRole('link', { name: /Bia Santos/ }).click();
+  await expect(page).toHaveURL(/#\/me\/teaching\/students\/student-bia$/);
+  await page.locator('[data-occurrence]').first().click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByLabel('Coach feedback').fill('Keep the base low.');
+  await sheet.getByRole('button', { name: 'Add feedback' }).click();
+  await expect(sheet.getByText('Feedback saved.')).toBeVisible();
+});

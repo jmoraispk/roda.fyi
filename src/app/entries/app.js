@@ -8,6 +8,7 @@ import { renderClass } from '../screens/class.js';
 import { renderLog } from '../screens/log.js';
 import { renderMe, renderSettings } from '../screens/me.js';
 import { renderPlan } from '../screens/plan.js';
+import { renderStudent } from '../screens/student.js';
 import { renderTeaching } from '../screens/teaching.js';
 import { renderPlaceholder } from '../screens/placeholder.js';
 import { renderToday } from '../screens/today.js';
@@ -136,6 +137,7 @@ async function main() {
       case 'teaching-record': return renderRecordClass(ctx, route);
       case 'class': return renderClass(ctx, route);
       case 'teaching-plan': return renderPlan(ctx, route);
+      case 'teaching-student': return renderStudent(ctx, route);
       case 'discover': return renderPlaceholder(ctx, { title: i18n.t('app.discover') });
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }
