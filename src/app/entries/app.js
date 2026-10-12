@@ -8,6 +8,7 @@ import { renderProgress } from '../screens/progress.js';
 import { renderRepertoire } from '../screens/repertoire.js';
 import { renderCalendar } from '../screens/calendar.js';
 import { renderClass } from '../screens/class.js';
+import { renderGroups } from '../screens/groups.js';
 import { renderLog } from '../screens/log.js';
 import { renderMe, renderSettings } from '../screens/me.js';
 import { renderPlan } from '../screens/plan.js';
@@ -120,6 +121,7 @@ async function main() {
     if (section === 'teaching') return renderTeaching(ctx, route);
     if (section === 'progress') return renderProgress(ctx, route);
     if (section === 'repertoire') return renderRepertoire(ctx, route);
+    if (section === 'groups') return renderGroups(ctx, route);
     if (section === 'catalog') {
       let curator = false;
       try {
