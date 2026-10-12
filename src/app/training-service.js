@@ -282,6 +282,15 @@ export function createTrainingService(client, options = {}) {
         profile_id: input.profileId ?? null,
       });
     },
+    async listMyCalendar(input) {
+      return call('list_my_calendar', {
+        month_start: requireLocalDate(input.start),
+        month_end: requireLocalDate(input.endExclusive),
+      });
+    },
+    async getScheduledClass(scheduleId) {
+      return call('get_scheduled_class', { schedule_id: scheduleId });
+    },
     async getDay(input) {
       return call('get_training_day', {
         local_date: requireLocalDate(input.localDate),
