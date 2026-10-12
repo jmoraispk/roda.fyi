@@ -1,0 +1,118 @@
+<style>
+  .phones { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+  .phone { width: 300px; height: 620px; border-radius: 34px; background: #17120d; border: 8px solid #2b241c;
+    color: #ecdcc0; font: 13px/1.35 system-ui, sans-serif; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .scr { flex: 1; overflow: hidden; padding: 18px 16px 0; }
+  .hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .hdr b { font-size: 20px; letter-spacing: .5px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: #eba63c; color: #17120d; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+  .muted { color: #a8977c; font-size: 11px; }
+  .card { background: #231c15; border: 1px solid #3a2f23; border-radius: 16px; padding: 12px; margin-bottom: 10px; }
+  .now { background: linear-gradient(135deg,#3a2a15,#231c15); border-color: #eba63c; }
+  .now h4 { margin: 2px 0 4px; font-size: 16px; }
+  .pill { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 10px; border: 1px solid #5a4630; margin: 2px 2px 0 0; }
+  .btn { display: inline-block; background: #eba63c; color: #17120d; font-weight: 700; border-radius: 999px; padding: 6px 12px; font-size: 12px; margin-top: 8px; }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .icons { font-size: 13px; }
+  .feel { font-size: 10px; border-radius: 6px; padding: 1px 6px; }
+  .okay { background: #4a3a17; } .hard { background: #5a2a20; } .easy { background: #24402a; }
+  .tabs { height: 58px; border-top: 1px solid #3a2f23; display: grid; grid-template-columns: repeat(5,1fr); align-items: center; text-align: center; font-size: 10px; color: #a8977c; background: #1b150f; }
+  .tabs .on { color: #eba63c; font-weight: 700; }
+  .plus { width: 44px; height: 44px; border-radius: 50%; background: #eba63c; color: #17120d; font-size: 26px; font-weight: 700; display: grid; place-items: center; margin: -22px auto 0; box-shadow: 0 4px 14px #0008; }
+  .week { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; text-align: center; margin-bottom: 12px; }
+  .week div { border-radius: 10px; padding: 5px 0; background: #231c15; font-size: 11px; }
+  .week .today { background: #eba63c; color: #17120d; font-weight: 700; }
+  .dot { display: block; width: 5px; height: 5px; border-radius: 50%; background: #6fae6a; margin: 3px auto 0; }
+  .tl { border-left: 2px solid #3a2f23; margin-left: 30px; padding-left: 14px; }
+  .tli { position: relative; margin-bottom: 12px; }
+  .tli .t { position: absolute; left: -58px; width: 40px; text-align: right; color: #a8977c; font-size: 11px; top: 2px; }
+  .tli::before { content: ''; position: absolute; left: -20px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #eba63c; }
+  .tli.done::before { background: #6fae6a; }
+  .lbl { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #a8977c; margin: 6px 0 6px; }
+</style>
+
+<h2>Today screen: which layout feels right?</h2>
+<p class="subtitle">All three share the same bottom tab bar and the big + in the middle. Click the one you like (or tell me what to mix).</p>
+
+<div class="options" style="margin-bottom:18px">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)"><div class="letter">A</div><div class="content"><h3>Card stack</h3><p>"Now/next" card on top, then recent trainings. Simple, scrolls like a feed.</p></div></div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)"><div class="letter">B</div><div class="content"><h3>Week strip + day</h3><p>This week across the top; tap a day to see it below. Calendar-like without the full month.</p></div></div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)"><div class="letter">C</div><div class="content"><h3>Timeline</h3><p>Your day and week as a vertical timeline: what's coming, what you did.</p></div></div>
+</div>
+
+<div class="phones">
+  <!-- A -->
+  <div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Today</b><div class="avatar">JM</div></div>
+      <div class="card now">
+        <div class="muted">IN 2 HOURS · YOU TEACH</div>
+        <h4>Grupo Lua · 19:00</h4>
+        <div>Armada ladder · 3 rounds · 60m</div>
+        <div><span class="pill">8 coming</span><span class="pill">planned: Hard</span></div>
+        <span class="btn">Open class</span>
+      </div>
+      <div class="lbl">Recent</div>
+      <div class="card">
+        <div class="row"><b>Yesterday · Alone · 45m</b><span class="icons">🎙️</span></div>
+        <div class="muted">ginga 10 min · 10x (armada, aú)</div>
+        <span class="feel okay">felt Okay</span> <span class="feel hard">armada → aú Hard</span>
+      </div>
+      <div class="card">
+        <div class="row"><b>Thu · Group class · 1h 26m</b><span class="icons">🎥 📄</span></div>
+        <div class="muted">Grupo Lua · 6 attended</div>
+        <span class="feel easy">felt Easy</span>
+      </div>
+      <div class="card">
+        <div class="row"><b>Tue · Personal · 50m</b><span class="icons">🎥</span></div>
+        <div class="muted">with Bia · meia lua de compasso</div>
+      </div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div>
+
+  <!-- B -->
+  <div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>October</b><div class="avatar">JM</div></div>
+      <div class="week">
+        <div>M<br>6<span class="dot"></span></div><div>T<br>7<span class="dot"></span></div><div>W<br>8</div>
+        <div>T<br>9<span class="dot"></span></div><div>F<br>10<span class="dot"></span></div><div class="today">S<br>11</div><div>S<br>12</div>
+      </div>
+      <div class="lbl">Saturday 11</div>
+      <div class="card now">
+        <div class="muted">19:00 · YOU TEACH</div>
+        <h4>Grupo Lua</h4>
+        <div>Armada ladder · 8 coming</div>
+        <span class="btn">Open class</span>
+      </div>
+      <div class="card" style="border-style:dashed;text-align:center;color:#a8977c">Nothing logged today · tap + to log</div>
+      <div class="lbl">Friday 10</div>
+      <div class="card">
+        <div class="row"><b>Alone · 45m</b><span class="icons">🎙️</span></div>
+        <div class="muted">ginga 10 min · 10x (armada, aú)</div>
+        <span class="feel okay">felt Okay</span>
+      </div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div>
+
+  <!-- C -->
+  <div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Today</b><div class="avatar">JM</div></div>
+      <div class="lbl">Coming up</div>
+      <div class="tl">
+        <div class="tli"><span class="t">19:00</span><b>Grupo Lua — you teach</b><div class="muted">Armada ladder · 8 coming</div></div>
+        <div class="tli"><span class="t">Tue</span><b>Personal class with Bia</b><div class="muted">10:00 · plan not set</div></div>
+      </div>
+      <div class="lbl">Done</div>
+      <div class="tl">
+        <div class="tli done"><span class="t">Fri</span><b>Alone · 45m</b> <span class="icons">🎙️</span><div class="muted">ginga 10 min · 10x (armada, aú)</div><span class="feel okay">felt Okay</span></div>
+        <div class="tli done"><span class="t">Thu</span><b>Group class · 1h 26m</b> <span class="icons">🎥 📄</span><div class="muted">6 attended</div></div>
+        <div class="tli done"><span class="t">Tue</span><b>Personal · 50m</b> <span class="icons">🎥</span></div>
+      </div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div>
+</div>
