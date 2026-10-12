@@ -25,7 +25,8 @@ export function pageHeader({ document, title, backLabel, onBack, actions = [] })
       className: 'page-back', text: '‹', attrs: { type: 'button', 'aria-label': backLabel }, on: { click: onBack },
     }));
   }
-  header.append(el(document, 'h1', { className: 'page-title', text: title }));
+  if (title) header.append(el(document, 'h1', { className: 'page-title', text: title }));
+  else header.append(el(document, 'span', { className: 'page-title' }));
   const tools = el(document, 'div', { className: 'page-actions' }, actions);
   header.append(tools);
   return header;
