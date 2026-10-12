@@ -17,6 +17,12 @@ button { font: inherit; color: inherit; }
 .muted { color: var(--muted); font-size: .85rem; }
 .screen { padding: 16px 16px calc(var(--tabbar) + var(--safe-bottom) + 24px); max-width: 720px; margin: 0 auto; }
 .screen-loading { padding: 32px 16px; text-align: center; }
+/* The page areas take focus after each navigation for screen readers; they are not controls, so no ring. */
+.app-main:focus, .app-detail:focus { outline: none; }
+/* Detail screens with a bottom bar fill the screen so the bar rests at the bottom even when content is short. */
+.screen-log, .screen-training { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; padding-bottom: 0; }
+.screen-log > .log-dock, .screen-training > .training-bar { margin-top: auto; }
+.screen-log > :nth-last-child(2), .screen-training > :nth-last-child(2) { margin-bottom: 18px; }
 .page-header { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; }
 .page-title { font: 800 1.5rem/1.1 var(--display); margin: 0; flex: 1; }
 .page-back { border: 0; background: transparent; font-size: 1.8rem; line-height: 1; padding: 0 6px; cursor: pointer; }
@@ -73,6 +79,7 @@ button { font: inherit; color: inherit; }
   .app-panes:has(.app-detail:not(:empty)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .app-detail { border-left: 1px solid var(--line); max-height: 100vh; overflow: auto; position: sticky; top: 0; }
   .screen { padding-bottom: 32px; }
+  .screen-log, .screen-training { padding-bottom: 0; }
   .sheet { left: 50%; right: auto; width: 520px; transform: translateX(-50%); }
 }
 
