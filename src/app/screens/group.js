@@ -1,6 +1,7 @@
 // src/app/screens/group.js
 import { el, pageHeader } from '../shell/page.js';
 import { confirmButton } from './confirm-button.js';
+import { renderOwnerTools } from './group-owner.js';
 import { linkBox } from './link-box.js';
 
 // Ruling R15: links keep pointing at /dashboard until the switch-over.
@@ -120,7 +121,7 @@ export async function renderGroup(ctx, route) {
     group.description ? el(document, 'p', { text: group.description }) : null,
     status,
     ...(isCoach ? [inviteSection(), requestsSection(), rosterSection()] : []),
-    isOwner ? null : confirmButton(document, {
+    isOwner ? renderOwnerTools(ctx, { group, roster, relationships, reload, status }) : confirmButton(document, {
       text: t('groupPage.leave'), confirmText: t('groupPage.confirmLeave'), className: 'button-danger', dataset: { action: 'leave-group' },
       onConfirm: () => act(async () => { await services.group.leaveGroup(groupId); ctx.navigate('/me/groups'); }),
     }),

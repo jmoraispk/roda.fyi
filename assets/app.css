@@ -236,3 +236,7 @@ input, select, textarea { font-size: 16px; }
 .link-box { display: grid; gap: 6px; margin-top: 8px; }
 .link-box:empty { display: none; }
 .screen-group .button-danger { margin-top: 18px; }
+/* Owner tools */
+.owner-tools { margin-top: 10px; }
+.relation-row { display: grid; gap: 8px; margin-bottom: 8px; }
+.owner-tools > .button-danger { margin-top: 18px; }
