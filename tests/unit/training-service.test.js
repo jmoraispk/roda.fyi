@@ -351,4 +351,54 @@ describe('training service', () => {
     expect(page.rounds[0].source_text).toBe('10x (armada, au)');
     await expect(service.getTraining('missing')).rejects.toMatchObject({ kind: 'authorization' });
   });
+
+  it('reads my calendar and one scheduled class', async () => {
+    const { client, calls } = harness();
+    const service = createTrainingService(client);
+    await service.listMyCalendar({ start: '2026-10-01', endExclusive: '2026-11-01' });
+    await service.getScheduledClass('s-1');
+    expect(calls).toEqual([
+      ['list_my_calendar', { month_start: '2026-10-01', month_end: '2026-11-01' }],
+      ['get_scheduled_class', { schedule_id: 's-1' }],
+    ]);
+    await expect(service.listMyCalendar({ start: 'soon', endExclusive: '2026-11-01' }))
+      .rejects.toMatchObject({ code: 'invalid_local_date' });
+  });
+
+  it('lists the classes a coach arranged and serves the class page from the local fake', async () => {
+    const values = new Map([
+      ['roda.e2e.session', JSON.stringify({ user: { id: 'coach-1' } })],
+      ['roda.e2e.coachProfile', JSON.stringify({ profile_id: 'coach-1' })],
+      ['roda.e2e.groupState', JSON.stringify({
+        groups: [{ id: 'g1', name: 'Grupo Lua' }],
+        rosters: { g1: [
+          { profile_id: 'coach-1', display_name: 'Mestre', access_level: 'coach', membership_state: 'active' },
+          { profile_id: 'ana', display_name: 'Ana', access_level: 'member', membership_state: 'active' },
+        ] },
+      })],
+      ['roda.e2e.connectionState', JSON.stringify({ people: { bia: 'Bia' } })],
+    ]);
+    const window = { localStorage: { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) } };
+    const service = createE2ETrainingService({ window });
+    const plan = await service.createPlan({ title: 'Ladder', durationMinutes: 60, rounds: [{ source_text: 'ginga', movements: [] }] });
+    await service.publishPlan(plan.plan_id);
+    const personal = await service.schedulePersonalClass({
+      planVersionId: plan.version_id, studentProfileId: 'bia', connectionId: 'c1',
+      startsAt: '2026-10-20T18:00:00Z', localDate: '2026-10-20', timezone: 'UTC',
+    });
+    const group = await service.scheduleGroupTraining({
+      planVersionId: plan.version_id, groupId: 'g1', startsAt: '2026-10-21T18:00:00Z', localDate: '2026-10-21', timezone: 'UTC',
+    });
+    const rows = await service.listMyCalendar({ start: '2026-10-01', endExclusive: '2026-11-01' });
+    expect(rows.map(({ item_id: id, role }) => [id, role])).toEqual([
+      [personal.schedule_id, 'coach'], [group.schedule_id, 'coach'],
+    ]);
+    expect(rows[0]).toMatchObject({ plan_title: 'Ladder', student_name: 'Bia', resource_kinds: [] });
+    const page = await service.getScheduledClass(group.schedule_id);
+    expect(page).toMatchObject({ kind: 'group', state: 'scheduled', plan_title: 'Ladder', group_name: 'Grupo Lua' });
+    expect(page.people).toEqual([{ profile_id: 'ana', display_name: 'Ana' }]);
+    expect((await service.getScheduledClass(personal.schedule_id)).people).toEqual([{ profile_id: 'bia', display_name: 'Bia' }]);
+    values.set('roda.e2e.session', JSON.stringify({ user: { id: 'ana' } }));
+    await expect(service.getScheduledClass(group.schedule_id)).rejects.toMatchObject({ kind: 'authorization' });
+  });
 });

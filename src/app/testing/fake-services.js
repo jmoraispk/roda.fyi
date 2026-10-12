@@ -654,6 +654,55 @@ export function createE2ETrainingService({ window }) {
     return profile.id === profileId ? profile.display_name ?? null : 'Coach';
   }
 
+  function personName(profileId) {
+    const people = JSON.parse(storage.getItem('roda.e2e.connectionState') ?? '{}').people ?? {};
+    if (people[profileId]) return people[profileId];
+    const rosters = JSON.parse(storage.getItem('roda.e2e.groupState') ?? '{}').rosters ?? {};
+    const member = Object.values(rosters).flat().find(({ profile_id: id }) => id === profileId);
+    return member?.display_name ?? null;
+  }
+
+  function resourceKinds(state, occurrenceId) {
+    return [...new Set(state.resources
+      .filter(({ occurrence_id: id }) => id === occurrenceId).map(({ kind }) => kind))].sort();
+  }
+
+  function calendarRows(state, profileId, input) {
+    const completed = state.participations
+      .filter(({ profile_id: id }) => id === profileId)
+      .map((participation) => {
+        const occurrence = state.occurrences.find(({ id }) => id === participation.occurrence_id);
+        return {
+          item_id: occurrence.id, item_type: 'completed',
+          local_date: occurrence.local_date, kind: occurrence.kind,
+          status: 'completed', starts_at: occurrence.occurred_at,
+          duration_minutes: participation.actual_duration_minutes,
+          group_id: occurrence.group_id,
+          coach_profile_id: occurrence.recorded_by,
+          group_name: groupName(occurrence.group_id),
+        };
+      });
+    const upcoming = state.schedules
+      .filter(({ state: status }) => status === 'scheduled')
+      .filter((schedule) => schedule.student_profile_id === profileId
+        || (schedule.kind === 'group' && groupRoster(schedule.group_id)
+          .some(({ profile_id: id }) => id === profileId)))
+      .map((schedule) => ({
+        item_id: schedule.id, item_type: 'scheduled',
+        local_date: schedule.local_date, kind: schedule.kind,
+        status: schedule.state, starts_at: schedule.starts_at,
+        duration_minutes: schedule.duration_minutes,
+        group_id: schedule.group_id,
+        visible_in_advance: schedule.visible_in_advance,
+        coach_profile_id: schedule.arranged_by,
+        group_name: groupName(schedule.group_id),
+        plan_title: state.plans.find(({ version_id: id }) => id === schedule.plan_version_id)?.title ?? null,
+      }));
+    return [...completed, ...upcoming]
+      .filter(({ local_date: date }) => date >= input.start && date < input.endExclusive)
+      .sort((left, right) => left.starts_at.localeCompare(right.starts_at));
+  }
+
   function roundsFor(plan, override) {
     return structuredClone(override ?? plan?.rounds ?? []);
   }
@@ -1105,39 +1154,71 @@ export function createE2ETrainingService({ window }) {
     async listCalendar(input) {
       const state = readState();
       guard(state, 'listCalendar', { read: true });
-      const profileId = input.profileId ?? actorId();
-      const completed = state.participations
-        .filter(({ profile_id: id }) => id === profileId)
-        .map((participation) => {
-          const occurrence = state.occurrences.find(({ id }) => id === participation.occurrence_id);
-          return {
-            item_id: occurrence.id, item_type: 'completed',
-            local_date: occurrence.local_date, kind: occurrence.kind,
-            status: 'completed', starts_at: occurrence.occurred_at,
-            duration_minutes: participation.actual_duration_minutes,
-            group_id: occurrence.group_id,
-            coach_profile_id: occurrence.recorded_by,
-            group_name: groupName(occurrence.group_id),
-          };
-        });
-      const upcoming = state.schedules
-        .filter(({ state: status }) => status === 'scheduled')
-        .filter((schedule) => schedule.student_profile_id === profileId
-          || (schedule.kind === 'group' && groupRoster(schedule.group_id)
-            .some(({ profile_id: id }) => id === profileId)))
+      return calendarRows(state, input.profileId ?? actorId(), input);
+    },
+
+    async listMyCalendar(input) {
+      const state = readState();
+      guard(state, 'listMyCalendar', { read: true });
+      const me = actorId();
+      const inRange = (date) => date >= input.start && date < input.endExclusive;
+      const own = calendarRows(state, me, input).map((row) => ({
+        ...row,
+        role: row.item_type === 'scheduled' && row.coach_profile_id === me ? 'coach' : 'participant',
+        resource_kinds: row.item_type === 'completed' ? resourceKinds(state, row.item_id) : [],
+      }));
+      const listed = new Set(own.map(({ item_id: id }) => id));
+      const arranged = state.schedules
+        .filter((schedule) => schedule.state === 'scheduled' && schedule.arranged_by === me
+          && !listed.has(schedule.id) && inRange(schedule.local_date))
         .map((schedule) => ({
-          item_id: schedule.id, item_type: 'scheduled',
-          local_date: schedule.local_date, kind: schedule.kind,
-          status: schedule.state, starts_at: schedule.starts_at,
-          duration_minutes: schedule.duration_minutes,
-          group_id: schedule.group_id,
+          item_id: schedule.id, item_type: 'scheduled', local_date: schedule.local_date,
+          kind: schedule.kind, status: 'scheduled', starts_at: schedule.starts_at,
+          duration_minutes: schedule.duration_minutes, group_id: schedule.group_id,
+          group_name: groupName(schedule.group_id), coach_profile_id: me, coach_name: coachName(me),
           visible_in_advance: schedule.visible_in_advance,
-          coach_profile_id: schedule.arranged_by,
-          group_name: groupName(schedule.group_id),
+          plan_title: state.plans.find(({ version_id: id }) => id === schedule.plan_version_id)?.title ?? null,
+          student_name: schedule.student_profile_id ? personName(schedule.student_profile_id) : null,
+          role: 'coach', resource_kinds: [],
         }));
-      return [...completed, ...upcoming]
-        .filter(({ local_date: date }) => date >= input.start && date < input.endExclusive)
-        .sort((left, right) => left.starts_at.localeCompare(right.starts_at));
+      const taught = state.occurrences
+        .filter((occurrence) => occurrence.recorded_by === me && occurrence.kind !== 'alone'
+          && !listed.has(occurrence.id) && inRange(occurrence.local_date)
+          && state.participations.some(({ occurrence_id: id }) => id === occurrence.id)
+          && !state.participations.some(({ occurrence_id: id, profile_id: who }) => id === occurrence.id && who === me))
+        .map((occurrence) => ({
+          item_id: occurrence.id, item_type: 'completed', local_date: occurrence.local_date,
+          kind: occurrence.kind, status: 'completed', starts_at: occurrence.occurred_at,
+          duration_minutes: occurrence.default_duration_minutes, group_id: occurrence.group_id,
+          group_name: groupName(occurrence.group_id), coach_profile_id: me, coach_name: coachName(me),
+          visible_in_advance: true, plan_title: null, student_name: null, role: 'coach',
+          resource_kinds: resourceKinds(state, occurrence.id),
+        }));
+      return [...own, ...arranged, ...taught].sort((left, right) => left.starts_at.localeCompare(right.starts_at));
+    },
+
+    async getScheduledClass(scheduleId) {
+      const state = readState();
+      guard(state, 'getScheduledClass', { read: true });
+      const schedule = state.schedules.find(({ id }) => id === scheduleId);
+      if (!schedule || schedule.arranged_by !== actorId()) throw new AppError('authorization', 'not_authorized');
+      const plan = state.plans.find(({ version_id: id }) => id === schedule.plan_version_id);
+      const people = schedule.kind === 'group'
+        ? groupRoster(schedule.group_id)
+          .filter((member) => member.access_level === 'member' && member.profile_id !== actorId()
+            && (member.membership_state ?? 'active') === 'active')
+          .map(({ profile_id: profileId, display_name: displayName }) => ({ profile_id: profileId, display_name: displayName }))
+        : [{ profile_id: schedule.student_profile_id, display_name: personName(schedule.student_profile_id) }];
+      return {
+        schedule_id: schedule.id, kind: schedule.kind, state: schedule.state,
+        local_date: schedule.local_date, timezone: schedule.timezone, starts_at: schedule.starts_at,
+        duration_minutes: schedule.duration_minutes, visible_in_advance: schedule.visible_in_advance,
+        group_id: schedule.group_id, group_name: groupName(schedule.group_id),
+        student_profile_id: schedule.student_profile_id, student_name: personName(schedule.student_profile_id),
+        plan_id: plan?.plan_id ?? null, plan_title: plan?.title ?? null, plan_version_id: schedule.plan_version_id,
+        instructions: plan?.instructions ?? null, rounds: structuredClone(plan?.rounds ?? []), people,
+        occurrence_id: state.occurrences.find(({ schedule_id: id }) => id === schedule.id)?.id ?? null,
+      };
     },
 
     async getDay(input) {
