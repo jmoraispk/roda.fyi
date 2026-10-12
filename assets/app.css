@@ -210,3 +210,7 @@ input, select, textarea { font-size: 16px; }
 .screen-class .training-bar button { border: 1px solid #5a4630; border-radius: 999px; padding: 10px 0; }
 .screen-class .training-bar [data-action="finish"] { background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 700; }
 .screen-class .training-bar [data-action="finish"]:disabled { opacity: .5; }
+/* Teaching */
+.list-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-decoration: none; }
+.section-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
