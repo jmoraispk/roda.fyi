@@ -1,0 +1,336 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Plan 3 · Discover</title><link rel="stylesheet" href="mock.css">
+<style>
+  /* Small local helpers for this page only */
+  .mapscr { flex: 1; position: relative; overflow: hidden; }
+  .zoom { position: absolute; right: 8px; display: grid; gap: 2px; }
+  .zoom span { width: 24px; height: 24px; background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; display: grid; place-items: center; font-size: 14px; }
+  .sum { text-align: center; font-size: 12px; font-weight: 700; }
+  .rows > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 2px; border-bottom: 1px solid var(--frame); }
+  .rows b { font-size: 13px; }
+  .priv { font-size: 9.5px; color: var(--muted); margin-top: 8px; line-height: 1.35; }
+  .results { position: absolute; left: 12px; right: 12px; top: 52px; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 2px 10px; box-shadow: 0 4px 14px #000a; }
+  .search.typed { color: var(--text); }
+  .back { font-size: 22px; line-height: 1; color: var(--text); }
+  .kind { font-size: 9px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; margin-right: 4px; }
+  .self { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; margin: 8px 0; font-size: 12px; }
+  .glist div { padding: 4px 0; }
+  .glist a, .clist a { color: var(--gold); text-decoration: none; }
+  .clist div { padding: 3px 0; font-size: 12px; }
+  .inrow { display: flex; gap: 6px; }
+  .inrow .input { flex: 1; }
+  .sbtn { border: 1px solid #5a4630; border-radius: 999px; padding: 7px 12px; font-size: 12px; background: var(--card); }
+  .quiet { color: var(--sand); font-size: 12px; padding: 4px 0; display: inline-block; }
+  .stub { display: flex; justify-content: space-between; padding: 8px 2px; border-bottom: 1px solid var(--frame); color: var(--muted); font-size: 12px; }
+  .prog { font-size: 11px; color: var(--muted); }
+  .deskmap { position: relative; padding: 0; overflow: hidden; }
+</style></head><body>
+<div class="top"><a class="back" href="index.html">← All screens</a><h1>Plan 3 · Discover</h1></div>
+<p class="subtitle">Discover v1: people shown per city and discoverable groups on an OpenStreetMap map, search, person and group cards, Discover settings, the owner's group place, and welcome step 3. Only city-level places are stored. Train-mode people stay hidden until they choose otherwise. The map is drawn with shapes here; the app shows real OpenStreetMap tiles. Sample viewer: João Morais (Both, Lisbon).</p>
+
+<h2>The map</h2>
+<div class="phones">
+
+  <div class="shot"><div class="phone">
+    <div class="mapscr">
+      <div class="map">
+        <div class="road" style="left:5%;top:30%;width:70%;transform:rotate(18deg)"></div>
+        <div class="road" style="left:20%;top:70%;width:80%;transform:rotate(-25deg)"></div>
+        <div class="road" style="left:40%;top:10%;width:60%;transform:rotate(70deg)"></div>
+      </div>
+      <div class="search">Search people, groups, or cities</div>
+      <div class="pin" style="left:52%;top:13%">Porto · 4</div>
+      <div class="pin group" style="left:74%;top:17%">Roda do Porto</div>
+      <div class="pin" style="left:60%;top:23%">Coimbra · 2</div>
+      <div class="pin" style="left:30%;top:31%">Lisbon · 12</div>
+      <div class="pin group" style="left:52%;top:37%">Grupo Lua</div>
+      <div class="zoom" style="top:120px"><span>+</span><span>−</span></div>
+    </div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="sum">18 people · 2 groups</div>
+      <div class="rows small">
+        <div><b>Lisbon · 12</b><span class="muted">Lisbon, Portugal</span></div>
+        <div><b>Porto · 4</b><span class="muted">Porto, Portugal</span></div>
+        <div><b>Coimbra · 2</b><span class="muted">Coimbra, Portugal</span></div>
+        <div><b>Grupo Lua</b><span class="muted">Arroios, Lisbon</span></div>
+        <div><b>Roda do Porto</b><span class="muted">Porto, Portugal</span></div>
+      </div>
+      <div class="priv">Map images and city search come from OpenStreetMap. Your browser contacts their servers directly, so they see your IP address and the area you look at, never your name or account.</div>
+      <div class="attrib" style="top:-16px;bottom:auto">Leaflet | © OpenStreetMap contributors</div>
+    </div>
+    <div class="tabs"><div>Today</div><div>Calendar</div><div><div class="plus">+</div></div><div class="on">Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 7</span><span class="task">Task 5</span><b>Discover, "in view" open.</b> Gold pins are cities with a count of visible people; teal pins are discoverable groups. The sheet lists what is in view, biggest cities first, and refreshes 250 ms after the map stops moving.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="mapscr">
+      <div class="map">
+        <div class="road" style="left:0;top:40%;width:100%;transform:rotate(-8deg)"></div>
+        <div class="road" style="left:30%;top:5%;width:80%;transform:rotate(60deg)"></div>
+      </div>
+      <div class="search">Search people, groups, or cities</div>
+      <div class="pin" style="left:42%;top:26%">Lisbon · 12</div>
+      <div class="pin group" style="left:64%;top:20%">Grupo Lua</div>
+    </div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="sum">12 people · 1 group</div>
+      <div class="lbl">People in Lisbon</div>
+      <div class="rows">
+        <div><b>João Morais (you)</b><span class="muted">Trains and teaches</span></div>
+        <div><b>Bia Santos</b><span class="muted">Trains</span></div>
+        <div><b>Eva Costa</b><span class="muted">Trains</span></div>
+        <div><b>Mestre Lua</b><span class="muted">Teaches</span></div>
+        <div><b>Rui Alves</b><span class="muted">Trains and teaches</span></div>
+      </div>
+      <div class="quiet">‹ Everything in view</div>
+      <div class="attrib" style="top:-16px;bottom:auto">Leaflet | © OpenStreetMap contributors</div>
+    </div>
+    <div class="tabs"><div>Today</div><div>Calendar</div><div><div class="plus">+</div></div><div class="on">Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 7</span><b>A city tapped.</b> Tapping "Lisbon · 12" lists the people in that city: you first, then by name. Hidden people are not listed and not counted. Tapping a name opens their card.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="mapscr">
+      <div class="map">
+        <div class="road" style="left:5%;top:30%;width:70%;transform:rotate(18deg)"></div>
+      </div>
+      <div class="search typed">lis</div>
+      <div class="results">
+        <div class="rows">
+          <div><b><span class="kind">city</span>Lisbon · 12</b><span class="muted">Lisbon, Portugal</span></div>
+          <div><b><span class="kind">person</span>Elisa Prado</b><span class="muted">Porto, Portugal</span></div>
+          <div><b><span class="kind">group</span>Grupo Lua</b><span class="muted">Lisbon, Portugal</span></div>
+          <div><b><span class="kind">person</span>Lis Ferreira</b><span class="muted">Coimbra, Portugal</span></div>
+          <div style="border-bottom:0"><b style="color:var(--gold)">Find “lis” on the map</b></div>
+        </div>
+      </div>
+      <div class="pin" style="left:34%;top:62%">Lisbon · 12</div>
+      <div class="pin" style="left:58%;top:52%">Porto · 4</div>
+    </div>
+    <div class="tabs"><div>Today</div><div>Calendar</div><div><div class="plus">+</div></div><div class="on">Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 7</span><b>Search results.</b> Typing searches our own people, groups, and cities (at least 2 letters). The last row asks OpenStreetMap once, only when tapped, to pan to a city nobody has added yet. The "city/person/group" labels are only in this mockup; the app shows the name and place.</div></div>
+
+</div>
+
+<h2>Cards</h2>
+<div class="phones">
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span></span></div>
+      <div class="row"><div class="ava lg teal">MV</div><div><h4>Marta Vieira</h4><div class="muted">Trains and teaches · Lisbon, Portugal</div></div></div>
+      <div class="lbl">Trains in</div>
+      <div class="glist small"><div><a>Roda do Porto</a></div></div>
+      <div class="lbl">Teaches in</div>
+      <div class="glist small"><div><a>Grupo Lua</a> <span class="muted">· coach</span></div></div>
+      <div class="lbl">Contacts</div>
+      <div class="clist">
+        <div><span class="muted">Instagram</span> <a>@marta.capoeira</a></div>
+        <div><span class="muted">Website</span> <a>martavieira.pt</a></div>
+        <div><span class="muted">WhatsApp</span> <a>+351 912 345 678</a></div>
+        <div><span class="muted">Email</span> <a>marta@example.com</a></div>
+      </div>
+    </div>
+  </div><div class="cap"><span class="task">Task 8</span><b>Person card.</b> Photo (or initials), name, mode, city, the discoverable groups they train in and teach in, and their contacts. Websites must be https. The card exists only if you may see this person.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span></span></div>
+      <div class="row"><div class="ava lg">GL</div><div><h4>Grupo Lua</h4><div class="muted">Arroios, Lisbon</div></div></div>
+      <div class="lbl">Coaches</div>
+      <div class="glist small"><div><a>Mestre Lua</a> <span class="muted">· owner</span></div><div><a>Marta Vieira</a></div></div>
+      <div class="lbl">Contacts</div>
+      <div class="clist">
+        <div><span class="muted">Instagram</span> <a>@grupolua</a></div>
+        <div><span class="muted">Email</span> <a>ola@grupolua.pt</a></div>
+      </div>
+      <span class="btn main block" style="margin-top:14px">Ask to join</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 8</span><b>Group card, not a member.</b> Name, picture, place, the coaches you may see, and contacts. "Ask to join" sends the existing join request. Members, coaches, and owners see plan 2's group page instead.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span></span></div>
+      <div class="row"><div class="ava lg">GL</div><div><h4>Grupo Lua</h4><div class="muted">Arroios, Lisbon</div></div></div>
+      <div class="lbl">Coaches</div>
+      <div class="glist small"><div><a>Mestre Lua</a> <span class="muted">· owner</span></div><div><a>Marta Vieira</a></div></div>
+      <div class="lbl">Contacts</div>
+      <div class="clist">
+        <div><span class="muted">Instagram</span> <a>@grupolua</a></div>
+        <div><span class="muted">Email</span> <a>ola@grupolua.pt</a></div>
+      </div>
+      <span class="btn block" style="margin-top:14px">Cancel request</span>
+      <p class="muted" style="font-size:12px">Request sent. The group will reply.</p>
+    </div>
+  </div><div class="cap"><span class="task">Task 8</span><b>After asking.</b> The card shows the pending request with "Cancel request". Cancelling brings back "Ask to join". Requests you sent are also listed in Me → Groups (Task 9).</div></div>
+
+</div>
+
+<h2>Settings → Discover</h2>
+<div class="phones">
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span class="title">Settings</span><span></span></div>
+      <div class="stub"><span>Profile · name, photo, timezone</span><span>…</span></div>
+      <div class="lbl">Discover</div>
+      <div class="small" style="color:var(--muted)">Your city</div>
+      <div style="font-weight:600;margin:2px 0 4px">No city yet.</div>
+      <div class="inrow"><div class="input">Coimbra</div><span class="sbtn">Search</span></div>
+      <div class="rows small" style="margin-top:2px">
+        <div><b>Coimbra, Portugal</b></div>
+        <div><b>Coimbra, Minas Gerais, Brazil</b></div>
+      </div>
+      <span class="quiet">Pick on the map</span>
+      <div class="priv" style="margin-top:2px">Map images and city search come from OpenStreetMap. Your browser contacts their servers directly, so they see your IP address and the area you look at, never your name or account.</div>
+      <div class="lbl">Who can find you</div>
+      <div class="radio small">
+        <div><i></i>Everyone</div>
+        <div><i></i>Signed-in people</div>
+        <div><i class="on"></i>Nobody</div>
+      </div>
+      <div class="muted">You haven't chosen yet, so this follows your mode.</div>
+    </div>
+  </div><div class="cap"><span class="task">Task 6</span><b>Your city and who can find you.</b> City search runs once when you press Search or Enter, never while typing. Pick a result to keep only the city, region, country, and a rounded coordinate. A Train person who never chose starts as Nobody.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span class="title">Settings</span><span></span></div>
+      <div class="small" style="color:var(--muted)">Your city</div>
+      <div style="font-weight:600">Coimbra, Portugal <span class="quiet" style="margin-left:6px">Remove city</span></div>
+      <div class="lbl">Who can find you</div>
+      <div class="radio small">
+        <div><i class="on"></i>Everyone</div>
+        <div><i></i>Signed-in people</div>
+        <div><i></i>Nobody</div>
+      </div>
+      <div class="lbl">Contacts</div>
+      <div class="muted">Shown on your card to people who can find you.</div>
+      <div class="field"><label>Instagram handle</label><div class="input">@eva.costa</div></div>
+      <div class="field"><label>Website (https)</label><div class="input err">http://evacosta.pt</div><div class="err-msg">Use a full address starting with https://.</div></div>
+      <div class="field"><label>WhatsApp number</label><div class="input ph"></div></div>
+      <div class="field"><label>Contact email</label><div class="input ph"></div></div>
+      <span class="btn main" style="margin-top:12px;flex:none">Save</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 6</span><b>Contacts, one error.</b> All contacts are optional. Save is stopped until the website starts with https://, and the cursor jumps to that field. A leading @ is fine; it is removed.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span class="title">Settings</span><span></span></div>
+      <div class="lbl">Discover</div>
+      <div class="small" style="color:var(--muted)">Your city</div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet full">
+      <div class="grab"></div>
+      <div class="hdr"><b style="font-size:15px">Tap your city on the map</b><span>×</span></div>
+      <div style="position:relative;height:300px;border-radius:12px;overflow:hidden">
+        <div class="map">
+          <div class="road" style="left:5%;top:35%;width:90%;transform:rotate(12deg)"></div>
+          <div class="road" style="left:30%;top:5%;width:70%;transform:rotate(75deg)"></div>
+        </div>
+        <div style="position:absolute;left:55%;top:42%;width:14px;height:14px;border-radius:50%;border:3px solid var(--gold);transform:translate(-50%,-50%)"></div>
+        <div class="attrib">Leaflet | © OpenStreetMap contributors</div>
+      </div>
+      <p class="muted" style="font-size:12px">Searching…</p>
+    </div>
+  </div><div class="cap"><span class="task">Task 6</span><b>Pick on the map.</b> A tap looks up the city at that spot (one request per tap) and closes the sheet with that city chosen.</div></div>
+
+</div>
+
+<h2>Owner and first sign-in</h2>
+<div class="phones">
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span class="title">Roda da Lua</span><span></span></div>
+      <div class="stub"><span>Members, invitations, hierarchy</span><span>…</span></div>
+      <div class="lbl">On the Discover map</div>
+      <div class="small" style="color:var(--muted)">Group city</div>
+      <div style="font-weight:600">Lisbon, Portugal <span class="quiet" style="margin-left:6px">Remove city</span></div>
+      <div class="inrow" style="margin-top:4px"><div class="input ph">Search a city</div><span class="sbtn">Search</span></div>
+      <span class="quiet">Pick on the map</span>
+      <div class="field"><label>Instagram handle</label><div class="input">rodadalua</div></div>
+      <div class="field"><label>Website (https)</label><div class="input">https://rodadalua.pt</div></div>
+      <div class="field"><label>Contact email</label><div class="input">ola@rodadalua.pt</div></div>
+      <span class="btn main" style="margin-top:12px">Save</span>
+      <p class="muted" style="font-size:12px">Saved.</p>
+    </div>
+  </div><div class="cap"><span class="task">Task 9</span><b>Owner's place and contacts.</b> On the group page (opened from Me → Groups), the owner sets the group's city and contacts. Only the owner sees this. A group that is not discoverable gets a note and no pin.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="title">Welcome to roda</div>
+      <div class="prog">Step 3 of 3</div>
+      <h4 style="margin-top:8px">Where do you train?</h4>
+      <div class="muted">Optional. Only your city is shared, never an address. You can change this later in Settings.</div>
+      <div class="small" style="color:var(--muted);margin-top:10px">Your city</div>
+      <div style="font-weight:600">Porto, Portugal <span class="quiet" style="margin-left:6px">Remove city</span></div>
+      <div class="inrow" style="margin-top:4px"><div class="input ph">Search a city</div><span class="sbtn">Search</span></div>
+      <span class="quiet">Pick on the map</span>
+      <div class="lbl">Who can find you</div>
+      <div class="radio small">
+        <div><i class="on"></i>Everyone</div>
+        <div><i></i>Signed-in people</div>
+        <div><i></i>Nobody</div>
+      </div>
+      <div class="muted">You haven't chosen yet, so this follows your mode.</div>
+    </div>
+    <div class="bar"><span class="b">Back</span><span class="b main">Finish</span></div>
+  </div><div class="cap"><span class="task">Task 10</span><b>Welcome step 3.</b> After name and mode (plan 2), an optional city and "Who can find you". Teach was chosen, so Everyone is the default. Finish with nothing chosen saves nothing.</div></div>
+
+</div>
+
+<h2>Hidden people</h2>
+<div class="phones">
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span></span></div>
+      <div class="row"><div class="ava lg clay">CL</div><div><h4>Caio Lima</h4><div class="muted">Trains · Coimbra, Portugal</div></div></div>
+      <div class="self">Only you can see your card. <a>Change in Settings</a></div>
+      <div class="lbl">Trains in</div>
+      <div class="glist small"><div><a>Grupo Lua</a></div></div>
+    </div>
+  </div><div class="cap"><span class="task">Task 8</span><b>Hidden, seen by themself.</b> Caio trains and never chose, so nobody else can find him. He still sees himself on the map ("Coimbra · 3" for him, "Coimbra · 2" for others) and on his own card, with this reminder.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="back">‹</span><span></span></div>
+      <p class="muted" style="font-size:13px">This person isn't available.</p>
+    </div>
+  </div><div class="cap"><span class="task">Task 8</span><b>Hidden, seen by anyone else.</b> A link to Caio's card shows only this. He is not in city counts, city lists, or search, and his photo and contacts are never sent.</div></div>
+
+</div>
+
+<h2>Desktop (900 px and wider)</h2>
+<div class="desk">
+  <div class="side">
+    <div style="color:var(--gold);font-weight:800;font-size:18px;padding:4px 10px 12px">RODA</div>
+    <div style="background:var(--gold);color:var(--bg);font-weight:700;text-align:center;border-radius:999px;margin-bottom:10px">+ Create</div>
+    <div>Today</div><div>Calendar</div><div class="on">Discover</div><div>Me</div>
+  </div>
+  <div class="pane deskmap">
+    <div class="map">
+      <div class="road" style="left:5%;top:30%;width:80%;transform:rotate(15deg)"></div>
+      <div class="road" style="left:15%;top:75%;width:80%;transform:rotate(-20deg)"></div>
+      <div class="road" style="left:45%;top:5%;width:60%;transform:rotate(72deg)"></div>
+    </div>
+    <div class="search">Search people, groups, or cities</div>
+    <div class="pin" style="left:55%;top:22%">Porto · 4</div>
+    <div class="pin" style="left:62%;top:38%">Coimbra · 2</div>
+    <div class="pin" style="left:38%;top:55%">Lisbon · 12</div>
+    <div class="pin group" style="left:52%;top:62%">Grupo Lua</div>
+    <div class="zoom" style="bottom:24px"><span>+</span><span>−</span></div>
+    <div class="attrib">Leaflet | © OpenStreetMap contributors</div>
+  </div>
+  <div class="pane" style="border-right:0">
+    <div class="row"><div class="ava lg teal">BS</div><div><h4>Bia Santos</h4><div class="muted">Trains · Lisbon, Portugal</div></div></div>
+    <div class="lbl">Trains in</div>
+    <div class="glist small"><div><a>Grupo Lua</a></div></div>
+    <div class="lbl">Contacts</div>
+    <div class="clist"><div><span class="muted">Instagram</span> <a>@bia.santos</a></div></div>
+  </div>
+</div>
+<div class="cap" style="max-width:900px"><span class="task">Task 7</span><span class="task">Task 8</span><b>Desktop with a card open.</b> Without a card, a 340 px column holds the search and the "in view" list beside the map. When a person or group card opens from Discover, it fills the right pane, and the list hides so the map keeps its width.</div>
+
+</body></html>

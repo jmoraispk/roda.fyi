@@ -31,9 +31,9 @@ This is plan 2 of 4. Plan 1 (`docs/superpowers/plans/2026-10-11-mobile-app-plan-
 
 Decisions made where the spec is silent or disagrees with the code. Each is restated in the task that implements it.
 
-- **R1 — Welcome steps.** `#/welcome` shows steps 1–2 (name and photo; Train · Both · Teach). City and "Who can find you" need Plan 3's Discover columns, so the welcome is built from an exported, ordered step list (`welcomeSteps()`); each step may define `validate(state)` and an async `save(state, ctx)` hook that runs before the profile is completed. Plan 3 appends its step to that list.
+- **R1 — Welcome steps.** `#/welcome` shows steps 1–2 (name and photo; Train · Both · Teach, with one line under the slider saying what the chosen position changes). City and "Who can find you" need Plan 3's Discover columns, so the welcome is built from an exported, ordered step list (`welcomeSteps()`); each step may define `validate(state)` and an async `save(state, ctx)` hook that runs before the profile is completed. Plan 3 appends its step to that list.
 - **R2 — Backfill.** Coach profiles are rows in `public.coach_profiles`. Existing profiles with a row there get `usage_mode = 'both'`; all others keep the default `'train'`.
-- **R3 — Coach's own classes.** `list_training_calendar` misses personal classes a coach arranged and completed classes the coach taught but did not attend. Instead of changing that function (the classic dashboard and its tests depend on its exact shape), a new `public.list_my_calendar(month_start, month_end)` returns the caller's own calendar plus those coaching items, with a `role` (`participant` | `coach`) and `resource_kinds` column. `/app` Today, Calendar, and Teaching use it.
+- **R3 — Coach's own classes.** `list_training_calendar` misses personal classes a coach arranged and completed classes the coach taught but did not attend. Instead of changing that function (the classic dashboard and its tests depend on its exact shape), a new `public.list_my_calendar(month_start, month_end)` returns the caller's own calendar plus those coaching items, with `student_name` (so a personal class reads "Personal class · with Bia Santos"), `role` (`participant` | `coach`), and `resource_kinds` columns. `/app` Today, Calendar, and Teaching use it.
 - **R4 — Class page data.** A new `public.get_scheduled_class(schedule_id)` returns the schedule, plan, plan rounds, and the people who may attend. Only the coach who arranged it may read it (the same rule as `private.can_manage_schedule`); everyone else gets "This class isn't available."
 - **R5 — Finishing rules.** Finish class is enabled once the class has started. Everyone checked is recorded with the planned duration. A group class needs at least one checked person; a personal class whose student is unchecked cannot be finished (the page suggests Cancel class).
 - **R6 — Add resources after Finish.** Finishing replaces the class page with `#/training/<occurrence-id>?add=1` (so Back skips the finished class); the training page opens its Add resources sheet once and strips the query. The router gains query parsing and `replace(path)`.
@@ -53,6 +53,7 @@ Decisions made where the spec is silent or disagrees with the code. Each is rest
 - **R20 — Teaching access.** Teaching routes redirect to Me only when the mode is Train **and** the person has no coach profile. Me lists Teaching only in Both and Teach.
 - **R21 — Students** are active coaching connections where the person is the coach (direct or through a group) plus active members of groups the person coaches, without the person themself. A personal class uses the direct connection when there is one, otherwise the group.
 - **R22 — Welcome is a detail screen**: the tab bar is hidden on phones and there is no back button.
+- **R23 — Teaching on desktop.** At 900 px and wider, a class, plan, or student opened from the Teaching home appears in the right pane while Teaching stays on the left, matching how Today and Calendar show trainings. Deep links and phones open them full-screen as before.
 
 ## Review Focus
 
@@ -422,7 +423,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Test: `tests/unit/training-service.test.js`
 
 **Interfaces:**
-- Produces (SQL): `public.list_my_calendar(month_start date, month_end date)` returning the 13 columns of `list_training_calendar` (`item_id, item_type, local_date, kind, status, starts_at, duration_minutes, group_id, group_name, coach_profile_id, coach_name, visible_in_advance, plan_title`) plus `role text` (`'participant'|'coach'`) and `resource_kinds jsonb` (sorted kinds for completed items, `[]` for scheduled). Rows: the caller's own calendar, plus scheduled classes the caller arranged that the own calendar does not already list, plus completed non-alone occurrences the caller recorded but did not attend. Ordered by `local_date, starts_at, item_id`.
+- Produces (SQL): `public.list_my_calendar(month_start date, month_end date)` returning the 13 columns of `list_training_calendar` (`item_id, item_type, local_date, kind, status, starts_at, duration_minutes, group_id, group_name, coach_profile_id, coach_name, visible_in_advance, plan_title`) plus `student_name text` (the student of a personal class the caller teaches, otherwise null), `role text` (`'participant'|'coach'`), and `resource_kinds jsonb` (sorted kinds for completed items, `[]` for scheduled). Rows: the caller's own calendar, plus scheduled classes the caller arranged that the own calendar does not already list, plus completed non-alone occurrences the caller recorded but did not attend. Ordered by `local_date, starts_at, item_id`.
 - Produces (SQL): `public.get_scheduled_class(schedule_id uuid) → jsonb` `{ schedule_id, kind, state, local_date, timezone, starts_at, duration_minutes, visible_in_advance, group_id, group_name, student_profile_id, student_name, plan_id, plan_title, plan_version_id, instructions, rounds, people: [{ profile_id, display_name }], occurrence_id }`; `PT403 not_authorized` unless `private.can_manage_schedule(caller, schedule)`. `people` = active `member` memberships of the group without the caller, or the one student.
 - Produces (JS, real and fake): `training.listMyCalendar({ start, endExclusive })`, `training.getScheduledClass(scheduleId)`.
 
@@ -493,6 +494,8 @@ select is((select role from public.list_my_calendar('2026-10-01', '2026-11-01') 
   'coach', 'the group class they arranged is listed as coaching');
 select is((select plan_title from public.list_my_calendar('2026-10-01', '2026-11-01') where item_id = :'personal_id'),
   'Armada ladder', 'coaching items carry the plan title');
+select is((select student_name from public.list_my_calendar('2026-10-01', '2026-11-01') where item_id = :'personal_id'),
+  'Ana Dezoito', 'a personal class the coach teaches names its student');
 select is((select item_type from public.list_my_calendar('2026-10-01', '2026-11-01') where item_id = :'class_id'),
   'completed', 'the taught class is a completed item');
 select is((select resource_kinds from public.list_my_calendar('2026-10-01', '2026-11-01') where item_id = :'class_id'),
@@ -575,6 +578,7 @@ returns table (
   coach_name text,
   visible_in_advance boolean,
   plan_title text,
+  student_name text,
   role text,
   resource_kinds jsonb
 )
@@ -591,7 +595,7 @@ begin
   return query
   select own.item_id, own.item_type, own.local_date, own.kind, own.status, own.starts_at,
          own.duration_minutes, own.group_id, own.group_name, own.coach_profile_id,
-         own.coach_name, own.visible_in_advance, own.plan_title,
+         own.coach_name, own.visible_in_advance, own.plan_title, null::text,
          case when own.item_type = 'scheduled' and own.coach_profile_id = actor_id
               then 'coach'::text else 'participant'::text end,
          case when own.item_type = 'completed'
@@ -603,12 +607,13 @@ begin
   select schedule.id, 'scheduled'::text, schedule.local_date, schedule.kind::text,
          schedule.state::text, schedule.starts_at, schedule.expected_duration_minutes,
          schedule.group_id, target_group.name, schedule.arranged_by, coach.display_name,
-         schedule.visible_in_advance, plan.title, 'coach'::text, '[]'::jsonb
+         schedule.visible_in_advance, plan.title, student.display_name, 'coach'::text, '[]'::jsonb
     from public.scheduled_trainings schedule
     join public.workout_plan_versions version on version.id = schedule.plan_version_id
     join public.workout_plans plan on plan.id = version.plan_id
     left join public.groups target_group on target_group.id = schedule.group_id
     left join public.profiles coach on coach.id = schedule.arranged_by
+    left join public.profiles student on student.id = schedule.student_profile_id
    where schedule.arranged_by = actor_id
      and schedule.state = 'scheduled'
      and schedule.local_date >= range_start
@@ -624,10 +629,11 @@ begin
   select occurrence.id, 'completed'::text, occurrence.local_date, occurrence.kind::text,
          'completed'::text, occurrence.occurred_at, occurrence.default_duration_minutes,
          occurrence.group_id, target_group.name, occurrence.recorded_by, coach.display_name,
-         true, plan.title, 'coach'::text, private.occurrence_resource_kinds(occurrence.id)
+         true, plan.title, student.display_name, 'coach'::text, private.occurrence_resource_kinds(occurrence.id)
     from public.training_occurrences occurrence
     left join public.groups target_group on target_group.id = occurrence.group_id
     left join public.profiles coach on coach.id = occurrence.recorded_by
+    left join public.profiles student on student.id = occurrence.student_profile_id
     left join public.scheduled_trainings schedule on schedule.id = occurrence.schedule_id
     left join public.workout_plan_versions version on version.id = schedule.plan_version_id
     left join public.workout_plans plan on plan.id = version.plan_id
@@ -729,6 +735,7 @@ returns table (
   coach_name text,
   visible_in_advance boolean,
   plan_title text,
+  student_name text,
   role text,
   resource_kinds jsonb
 )
@@ -806,7 +813,7 @@ Add to `tests/unit/training-service.test.js` (inside the top-level `describe`; `
     expect(rows.map(({ item_id: id, role }) => [id, role])).toEqual([
       [personal.schedule_id, 'coach'], [group.schedule_id, 'coach'],
     ]);
-    expect(rows[0]).toMatchObject({ plan_title: 'Ladder', resource_kinds: [] });
+    expect(rows[0]).toMatchObject({ plan_title: 'Ladder', student_name: 'Bia', resource_kinds: [] });
     const page = await service.getScheduledClass(group.schedule_id);
     expect(page).toMatchObject({ kind: 'group', state: 'scheduled', plan_title: 'Ladder', group_name: 'Grupo Lua' });
     expect(page.people).toEqual([{ profile_id: 'ana', display_name: 'Ana' }]);
@@ -922,6 +929,7 @@ Replace the whole body of the existing `async listCalendar(input) { ... }` with:
           group_name: groupName(schedule.group_id), coach_profile_id: me, coach_name: coachName(me),
           visible_in_advance: schedule.visible_in_advance,
           plan_title: state.plans.find(({ version_id: id }) => id === schedule.plan_version_id)?.title ?? null,
+          student_name: schedule.student_profile_id ? personName(schedule.student_profile_id) : null,
           role: 'coach', resource_kinds: [],
         }));
       const taught = state.occurrences
@@ -934,7 +942,7 @@ Replace the whole body of the existing `async listCalendar(input) { ... }` with:
           kind: occurrence.kind, status: 'completed', starts_at: occurrence.occurred_at,
           duration_minutes: occurrence.default_duration_minutes, group_id: occurrence.group_id,
           group_name: groupName(occurrence.group_id), coach_profile_id: me, coach_name: coachName(me),
-          visible_in_advance: true, plan_title: null, role: 'coach',
+          visible_in_advance: true, plan_title: null, student_name: null, role: 'coach',
           resource_kinds: resourceKinds(state, occurrence.id),
         }));
       return [...own, ...arranged, ...taught].sort((left, right) => left.starts_at.localeCompare(right.starts_at));
@@ -1501,7 +1509,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Consumes: `MODES`, `modeOf` (Task 3); `profileService.setUsageMode` (Task 1); existing `profilePrefill`, `completeProfile`, `uploadProfilePicture`, `loadProfile`.
 - Produces: `createModeSlider({ document, i18n, value, onChange }) → { element, value(), set(mode) }` — a `role="radiogroup"` labelled "How I use roda" with three `role="radio"` buttons (`data-mode`), arrow-key navigation, and the hints "log my training" / "teach classes".
 - Produces: `createProfileForm({ document, i18n, user, profile, withSettings }) → { element, values() }` where `values()` is `{ displayName, file, timezoneChoice, leaderboardVisible }`; inputs are named `displayName`, `photo`, and (with settings) `timezone`, `leaderboardVisible`. `nameProblem(value) → i18n key | null`. `saveProfile(ctx, values, memo) → fresh profile` (uploads the photo once per chosen file using `memo.uploaded`, then `completeProfile`, then `loadProfile`).
-- Produces: `welcomeSteps() → [profileStep, modeStep]`, each `{ id, title, render(state, ctx), validate?(state, ctx), save?(state, ctx) }`; `renderWelcome(ctx, route, { steps = welcomeSteps(), onDone(freshProfile, mode) })`. Finish order: `setUsageMode(mode)` → every step's `save` → `saveProfile` (which sets `completed_at`).
+- Produces: `welcomeSteps() → [profileStep, modeStep]` (the mode step shows `p.mode-means`, one line saying what the chosen position changes), each `{ id, title, render(state, ctx), validate?(state, ctx), save?(state, ctx) }`; `renderWelcome(ctx, route, { steps = welcomeSteps(), onDone(freshProfile, mode) })`. Finish order: `setUsageMode(mode)` → every step's `save` → `saveProfile` (which sets `completed_at`).
 - Produces: `renderSettings(ctx, { onLocaleChange, onSignOut, onProfileSaved })` with a Profile section (`button[data-action="save-profile"]`, status `[data-profile-status]`).
 
 Ruling R1: the welcome shows steps 1–2 and Plan 3 appends its city and visibility step to `welcomeSteps()`. Ruling R18: photos get a local preview only. Ruling R19: Settings gains Profile and a timezone change applies immediately.
@@ -1523,6 +1531,9 @@ Ruling R1: the welcome shows steps 1–2 and Plan 3 appends its city and visibil
     'welcome.profileTitle': 'Your name and photo',
     'welcome.modeTitle': 'How will you use roda?',
     'welcome.modeNote': 'Choosing Both or Teach adds coaching to your profile. You can change this any time in Me.',
+    'welcome.means.train': 'The + button opens Log training. Teaching stays out of Me.',
+    'welcome.means.both': 'The + button lets you log your training, schedule a class, or record a past class. Teaching appears in Me.',
+    'welcome.means.teach': 'The + button schedules or records classes, and Today puts your classes first.',
     'welcome.next': 'Next',
     'welcome.back': 'Back',
     'welcome.finish': 'Finish',
@@ -1555,6 +1566,9 @@ Ruling R1: the welcome shows steps 1–2 and Plan 3 appends its city and visibil
     'welcome.profileTitle': 'O teu nome e foto',
     'welcome.modeTitle': 'Como vais usar a roda?',
     'welcome.modeNote': 'Escolher Ambos ou Ensinar acrescenta a função de treinador ao teu perfil. Podes mudar isto a qualquer momento em Eu.',
+    'welcome.means.train': 'O botão + abre Registar treino. Ensino não aparece em Eu.',
+    'welcome.means.both': 'O botão + deixa-te registar o teu treino, agendar uma aula ou registar uma aula passada. Ensino aparece em Eu.',
+    'welcome.means.teach': 'O botão + agenda ou regista aulas, e Hoje mostra primeiro as tuas aulas.',
     'welcome.next': 'Seguinte',
     'welcome.back': 'Voltar',
     'welcome.finish': 'Concluir',
@@ -1654,7 +1668,9 @@ describe('welcome', () => {
     name.value = 'Ana Silva';
     press(view, 'welcome-next');
     expect(view.querySelector('.welcome-progress').textContent).toBe('Step 2 of 2');
+    expect(view.querySelector('.mode-means').textContent).toBe('The + button opens Log training. Teaching stays out of Me.');
     view.querySelector('[data-mode="teach"]').click();
+    expect(view.querySelector('.mode-means').textContent).toBe('The + button schedules or records classes, and Today puts your classes first.');
     press(view, 'welcome-next');
     await vi.waitFor(() => expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ usage_mode: 'teach' }), 'teach'));
     expect(services.setUsageMode).toHaveBeenCalledWith('teach');
@@ -1893,11 +1909,19 @@ const modeStep = {
   id: 'mode',
   title: 'welcome.modeTitle',
   render(state, ctx) {
+    // One line under the slider says what the chosen position changes.
+    state.means ??= el(ctx.document, 'p', { className: 'card mode-means' });
     state.slider ??= createModeSlider({
-      document: ctx.document, i18n: ctx.i18n, value: state.mode, onChange: (mode) => { state.mode = mode; },
+      document: ctx.document, i18n: ctx.i18n, value: state.mode,
+      onChange: (mode) => {
+        state.mode = mode;
+        state.means.textContent = ctx.i18n.t(`welcome.means.${mode}`);
+      },
     });
+    state.means.textContent = ctx.i18n.t(`welcome.means.${state.mode}`);
     return el(ctx.document, 'div', {}, [
       state.slider.element,
+      state.means,
       el(ctx.document, 'p', { className: 'muted', text: ctx.i18n.t('welcome.modeNote') }),
     ]);
   },
@@ -2246,7 +2270,7 @@ const items = [
   { item_id: 's1', item_type: 'scheduled', status: 'scheduled', kind: 'group', local_date: '2026-10-15', starts_at: '2026-10-15T19:00:00Z',
     duration_minutes: 60, coach_profile_id: 'other', role: 'participant', resource_kinds: [] },
   { item_id: 's2', item_type: 'scheduled', status: 'scheduled', kind: 'personal_class', local_date: '2026-10-16', starts_at: '2026-10-16T19:00:00Z',
-    duration_minutes: 60, coach_profile_id: 'me', role: 'coach', resource_kinds: [] },
+    duration_minutes: 60, coach_profile_id: 'me', role: 'coach', student_name: 'Bia Santos', resource_kinds: [] },
 ];
 ```
 
@@ -2258,6 +2282,7 @@ In the first test use `const training = { listMyCalendar: vi.fn().mockResolvedVa
     const view = await renderCalendar(context, { name: 'calendar', params: { month: null, day: null } });
     document.body.replaceChildren(view);
     view.querySelector('[data-date="2026-10-16"]').click();
+    expect(document.querySelector('[role="dialog"] .day-item strong').textContent).toBe('Personal class · with Bia Santos');
     document.querySelector('[role="dialog"] .day-item').click();
     expect(context.navigate).toHaveBeenCalledWith('/class/s2');
   });
@@ -2418,7 +2443,8 @@ function dayItem(ctx, item) {
   const time = new Intl.DateTimeFormat(i18n.locale() === 'pt' ? 'pt-PT' : 'en-US', {
     hour: '2-digit', minute: '2-digit', timeZone: ctx.timezone,
   }).format(new Date(item.starts_at));
-  const title = [kindLabel(i18n, item.kind), item.group_name].filter(Boolean).join(' · ');
+  const who = item.group_name ?? (item.student_name ? i18n.t('trainingPage.with', { name: item.student_name }) : null);
+  const title = [kindLabel(i18n, item.kind), who].filter(Boolean).join(' · ');
   const meta = [time, i18n.formatDuration(item.duration_minutes), upcoming ? i18n.t('cal.upcoming') : null].filter(Boolean).join(' · ');
   const target = upcoming
     ? (item.role === 'coach' ? `/class/${item.item_id}` : null)
@@ -4278,7 +4304,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `loadTeaching` (Task 7), `openScheduleSheet` (Task 7), `training.listMyCalendar` (Task 2), `training.listPlans`, `createPlan`, `savePlanDraft`, `publishPlan`, `createPlanDraft`, `serializePlanDraft`, `roundText` (`src/app/training-plan-state.js`), `createRoundEditor`.
-- Produces: `renderTeaching(ctx)` at `#/me/teaching` — `button[data-action="schedule"]`, a link to `#/me/teaching/record`, a `p.form-status[role="status"]` under the actions, upcoming classes I teach for the next 60 days (`a[href="#/class/<id>"]`), plans (`a[href="#/me/teaching/plans/<plan-id>"]` plus "New plan" → `#/me/teaching/plans/new`), students (`a[href="#/me/teaching/students/<profile-id>"]`).
+- Produces: `renderTeaching(ctx)` at `#/me/teaching` — `button[data-action="schedule"]`, a link to `#/me/teaching/record`, a `p.form-status[role="status"]` under the actions, upcoming classes I teach for the next 60 days (`a[href="#/class/<id>"]`), plans (`a[href="#/me/teaching/plans/<plan-id>"]` plus "New plan" → `#/me/teaching/plans/new`), students (`a[href="#/me/teaching/students/<profile-id>"]`). The screen is marked `data-teaching-home` so the entry can keep it on the left on desktop (Ruling R23).
 - Produces: `renderPlan(ctx, route)` at `#/me/teaching/plans/<plan-id|new>` — editable drafts (`input[name="title"]`, `textarea[name="description"]`, `input[name="duration"]`, `textarea[name="instructions"]`, the round editor, `button[data-action="save-plan"]`, `button[data-action="publish-plan"]`), read-only published plans with `button[data-action="schedule-plan"]`. Saving a new plan replaces the route with its id; Publish saves first.
 
 - [ ] **Step 1: Add i18n keys**
@@ -4330,6 +4356,7 @@ function teachingServices(extra = {}) {
       listMyCalendar: vi.fn().mockResolvedValue([
         { item_id: 's1', item_type: 'scheduled', role: 'coach', kind: 'group', group_name: 'Grupo Lua', starts_at: '2026-10-14T18:00:00Z', local_date: '2026-10-14', plan_title: 'Armada ladder' },
         { item_id: 's2', item_type: 'scheduled', role: 'participant', kind: 'group', group_name: 'Other', starts_at: '2026-10-15T18:00:00Z', local_date: '2026-10-15' },
+        { item_id: 's3', item_type: 'scheduled', role: 'coach', kind: 'personal_class', group_name: null, student_name: 'Bia Santos', starts_at: '2026-10-17T09:00:00Z', local_date: '2026-10-17' },
         { item_id: 'o1', item_type: 'completed', role: 'coach', kind: 'group', starts_at: '2026-10-11T08:00:00Z', local_date: '2026-10-11' },
       ]),
     },
@@ -4351,7 +4378,8 @@ describe('teaching screen', () => {
     const view = await renderTeaching(appCtx({ services }));
     document.body.replaceChildren(view);
     expect(services.training.listMyCalendar).toHaveBeenCalledWith({ start: '2026-10-11', endExclusive: '2026-12-10' });
-    expect([...view.querySelectorAll('a[href^="#/class/"]')].map((link) => link.getAttribute('href'))).toEqual(['#/class/s1']);
+    expect([...view.querySelectorAll('a[href^="#/class/"]')].map((link) => link.getAttribute('href'))).toEqual(['#/class/s1', '#/class/s3']);
+    expect(view.querySelector('a[href="#/class/s3"]').textContent).toContain('Personal class · with Bia Santos');
     expect([...view.querySelectorAll('a[href^="#/me/teaching/plans/"]')].map((link) => link.getAttribute('href')))
       .toEqual(['#/me/teaching/plans/new', '#/me/teaching/plans/p1', '#/me/teaching/plans/p2']);
     expect(view.querySelector('a[href="#/me/teaching/plans/p2"]').textContent).toContain('Draft');
@@ -4505,7 +4533,8 @@ export async function renderTeaching(ctx) {
     el(document, 'h2', { className: 'section-label', text: i18n.t('teaching.upcoming') }),
     listOrEmpty(document, classes.map((item) => row(document, {
       href: `#/class/${item.item_id}`,
-      title: [kindLabel(i18n, item.kind), item.group_name].filter(Boolean).join(' · '),
+      title: [kindLabel(i18n, item.kind), item.group_name
+        ?? (item.student_name ? i18n.t('trainingPage.with', { name: item.student_name }) : null)].filter(Boolean).join(' · '),
       meta: [i18n.formatDate(item.starts_at, {
         weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: ctx.timezone,
       }), item.plan_title].filter(Boolean).join(' · '),
@@ -4530,6 +4559,8 @@ export async function renderTeaching(ctx) {
       href: `#/me/teaching/students/${student.profileId}`, title: student.name,
     })), i18n.t('coach.noStudents')),
   );
+  // Ruling R23: on desktop, pages opened from here appear beside this list.
+  screen.dataset.teachingHome = '';
   return screen;
 }
 ```
@@ -4701,6 +4732,21 @@ In `screenFor`, before `case 'discover':`, add:
       case 'teaching-plan': return renderPlan(ctx, route);
 ```
 
+In `show`, replace the line `const sideBySide = desktop.matches && route.name === 'training';` with:
+
+```js
+    // Ruling R23: a class, plan, or student opened from Teaching appears beside it on desktop.
+    const besideTeaching = desktop.matches && ['class', 'teaching-plan', 'teaching-student'].includes(route.name)
+      && layout.main.firstElementChild?.dataset.teachingHome !== undefined;
+    const sideBySide = (desktop.matches && route.name === 'training') || besideTeaching;
+```
+
+and change `if (sideBySide && layout.main.firstElementChild?.dataset.screen !== lastTopLevel.name) {` to:
+
+```js
+    if (sideBySide && !besideTeaching && layout.main.firstElementChild?.dataset.screen !== lastTopLevel.name) {
+```
+
 Append to `assets/app.css`:
 
 ```css
@@ -4739,6 +4785,15 @@ test('a coach writes and publishes a plan, then schedules it', async ({ page }) 
   await sheet.getByRole('button', { name: 'Schedule', exact: true }).click();
   await expect(page).toHaveURL(/#\/class\/schedule-\d+$/);
   await expect(page.locator('h1.training-title')).toHaveText('Group · Roda da Lua');
+});
+
+test('on desktop a class opens beside Teaching', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.includes('mobile'), 'desktop side-by-side only');
+  await page.clock.setFixedTime(new Date('2026-10-22T12:00:00Z'));
+  await page.goto('/app?demo=1#/me/teaching');
+  await page.locator('a[href="#/class/demo-schedule"]').click();
+  await expect(page.locator('#appDetail h1.training-title')).toHaveText('Group · Roda da Lua');
+  await expect(page.locator('#appMain [data-teaching-home]')).toBeVisible();
 });
 ```
 

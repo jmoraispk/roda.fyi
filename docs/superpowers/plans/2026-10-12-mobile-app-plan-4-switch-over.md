@@ -31,9 +31,9 @@ Decisions the spec leaves open, made here so tasks do not re-decide them:
 - **Ruling 1 — `/app` forwards client-side.** `app.html` becomes a stub that runs `location.replace('/dashboard' + location.search + location.hash)`. No `vercel.json` redirect: the hash never reaches a server, `tools/serve.py` (unchangeable) cannot redirect, and one mechanism tested by Playwright beats two. `vercel.json` is unchanged; `cleanUrls` already serves `dashboard.html` at `/dashboard` and forwards `/app.html` to `/app`.
 - **Ruling 2 — names stay.** The bundle stays `assets/generated/app.js` (entry `app`); the `dashboard` entry is deleted. `src/app/dashboard-i18n.js` and the `roda.dashboard.locale` storage key keep their names because `/dashboard` remains the app's home.
 - **Ruling 3 — service workers.** The app's worker moves to `/dashboard-sw.js` with scope `/dashboard` and cache prefix `roda-dashboard-`. `/app-sw.js` stays as a retirement worker with no fetch handler: on its next update check it deletes `roda-app-*` caches and unregisters itself. The app page also unregisters any registration whose scope is `/app` and deletes `roda-app-*` caches.
-- **Ruling 4 — manifest.** `"id": "/app"` (the identity Chrome derived from the old `start_url`, so already-installed Android apps update in place instead of becoming a second app), `"start_url": "/dashboard"`, `"scope": "/"` (sign-in at `/` and `/auth/callback` stays inside the installed window). Home-screen icons that cannot update their `start_url` (iOS) keep opening `/app`, which forwards.
+- **Ruling 4 — manifest.** `"id": "/app"` (the identity Chrome derived from the old `start_url`, so already-installed Android apps update in place instead of becoming a second app), `"start_url": "/dashboard"`, `"scope": "/"` (sign-in at `/` and `/auth/callback` stays inside the installed window). Home-screen icons that cannot update their `start_url` (iOS) keep opening `/app`, which forwards; the product owner confirmed (2026-10-12) that an iOS browser bar on such icons is acceptable until they are re-added.
 - **Ruling 5 — invitation and group links** keep their format (`/dashboard?member_invite=…`, `/dashboard?group_link=…`). The signed-out check runs first (so the token survives sign-in through `next=`); then the token leaves the address bar, waits in this tab's `sessionStorage` (`roda.entryLinks`), and opens as a bottom sheet on the first screen that is not `#/welcome`. One link at a time; an invitation wins over a group link.
-- **Ruling 6 — sign-out.** An explicit sign-out counts unsynced work (a non-empty `roda.logDraft:<own profile>` draft counts 1, each queued item in every `roda.pendingResources:*` counts 1). With nothing unsynced it signs out at once; otherwise a sheet warns and offers "Stay signed in" or "Sign out and delete". Signing out deletes every `roda.logDraft:*` and `roda.pendingResources:*` key. A session that merely expires deletes nothing, so the work syncs after signing back in. The old dashboard's `roda.dashboard.mode` and `roda.dashboard.group` keys are removed at startup.
+- **Ruling 6 — sign-out never drops a waiting resource (product owner, 2026-10-12).** Resources are text and save as soon as they are submitted; the local waiting queue stays only as the fallback for a failed save. Sign-out first sends everything in that queue (normally instant) and then signs out. If anything still cannot be sent (offline or an error), sign-out stops, deletes nothing, and shows "N items are still waiting to sync — connect to the internet and try again" with Try again; there is no "discard and sign out". An unsent Log training draft was never submitted, so it is not waiting to sync: it stays on the device for that profile only. A session that merely expires sends and deletes nothing. The old dashboard's `roda.dashboard.mode` and `roda.dashboard.group` keys are removed at startup.
 - **Ruling 7 — "How did it go?"** appears for an attended (non-Alone) class in the last 12 hours that has no felt (whole-round) rating, whatever its part ratings — the spec's "without a felt rating". The rule reads `felt`, not `has_rating`.
 - **Ruling 8 — invalid calendar URLs.** An impossible month (`#/calendar/2026-13`) becomes `#/calendar` (current month); an impossible day (`#/calendar/2026-02-30`) becomes that month. The address bar is rewritten.
 - **Ruling 9 — resource idempotency.** Each resource carries a client key (a UUID made when it is staged or queued). The database keeps one resource per person and key; repeating a key returns the first resource; reusing a key on another training fails with `idempotency_conflict`. The five-argument `add_training_resource` is replaced by a six-argument one whose key defaults to null, so a client still on the old code keeps working during deploy.
@@ -47,7 +47,7 @@ Decisions the spec leaves open, made here so tasks do not re-decide them:
 1. **An old `/app` link or home-screen icon opened after the switch** (with `?demo=1` and a hash such as `#/training/<id>`) — lands on the same screen under `/dashboard`, and the retired `/app` worker never answers a request. Pinned in Task 9 (`app-redirect.spec.js`) and Task 10 (the retirement worker has no fetch handler).
 2. **An invitation or unlisted-group link opened while signed out** — survives sign-in, opens once, and the token is gone from the address bar right after capture. Pinned in Task 7.
 3. **A bad deploy, captive portal, or redirect answering the app page** (404, 500, redirected response) — never replaces the cached app page used offline. Pinned in Task 3 and re-run at `/dashboard` in Task 10.
-4. **Signing out on a shared phone with unsynced work** — warned first; after confirming, no training text remains in browser storage; an expired session (not a sign-out) keeps the work. Pinned in Task 6.
+4. **Signing out while a resource is still waiting to sync** (offline, or a failed save) — the resource is sent first; if it cannot be, the person stays signed in, nothing is deleted, and Try again is the only way forward; an expired session keeps everything. Pinned in Task 6.
 5. **A hand-edited or stale hash** (`#/calendar/2026-13`, `#/calendar/2026-02-30`) — opens a real screen, never stuck on "Loading…". Pinned in Task 2.
 
 ---
@@ -63,8 +63,8 @@ Decisions the spec leaves open, made here so tasks do not re-decide them:
 | `tests/unit/dead-code.test.js` | Every `src/` file is loaded by some page or worker |
 | `tests/unit/i18n-usage.test.js` | Every copy key is used |
 | `tests/unit/pages.test.js` | `dashboard.html` is the app shell, `app.html` forwards, stylesheets are used |
-| `src/app/local-data.js` | Count and clear drafts and queued resources; remove old dashboard keys |
-| `src/app/screens/sign-out.js` | `confirmSignOut` warning sheet |
+| `src/app/local-data.js` | Count and send waiting resources; remove old dashboard keys |
+| `src/app/screens/sign-out.js` | `signOutSafely`: send waiting resources, then sign out or ask to try again |
 | `src/app/shell/entry-links.js` | Capture, scrub, and open invitation and group links |
 | `src/app/sw/retire-app-worker.js` | Built to `/app-sw.js`: deletes old caches, unregisters |
 | `src/app/sw/register.js` | Registers `/dashboard-sw.js`, retires `/app` registrations |
@@ -284,7 +284,8 @@ const BROWSER_TESTS = [
   done('auth-dashboard.spec.js › keeps a coach in My Training by default and clears private UI on expiry',
     'app-navigation.spec.js › a session that ends while the app is open goes to sign-in'),
   here('auth-dashboard.spec.js › signs out from the dashboard and removes persisted private state',
-    'app-hardening.spec.js › signing out warns about unsaved work and then deletes it'),
+    'app-hardening.spec.js › signing out sends waiting resources first',
+    'app-hardening.spec.js › signing out offline keeps waiting resources and asks to try again'),
   later('plan-2', 'auth-dashboard.spec.js › keeps private feature workspaces blocked behind required profile completion'),
   later('plan-2', 'auth-dashboard.spec.js › localizes dashboard modes, tabs, and coach planning in Portuguese'),
   done('training-calendar.spec.js › records Alone training and opens its calendar details',
@@ -1276,7 +1277,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 6: Signing out clears local training data
+### Task 6: Signing out never loses a waiting resource
+
+Resources are text and save the moment they are submitted (on the training page, or in the same Save as the training in Log training). The local waiting queue (`roda.pendingResources:<occurrence>`) exists only as the fallback for a save that failed. Signing out first sends anything in that queue; normally that takes milliseconds and sign-out goes ahead. If something still cannot be sent, sign-out stops, deletes nothing, and says so, with Try again. There is no "discard and sign out".
 
 **Files:**
 - Create: `src/app/local-data.js`, `src/app/screens/sign-out.js`
@@ -1284,17 +1287,18 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Test: `tests/unit/local-data.test.js`, `tests/unit/sign-out.test.js`, `tests/e2e/app-hardening.spec.js`
 
 **Interfaces:**
-- Produces (`local-data.js`): `unsyncedCount(storage, profileId) → number`, `clearLocalTrainingData(storage) → void`, `clearLegacyDashboardKeys(storage) → void`; all tolerate missing or throwing storage.
-- Produces (`sign-out.js`): `confirmSignOut(ctx, { signOut: () => Promise<void> }) → Promise<void>`; uses `ctx.document`, `ctx.window`, `ctx.i18n`, `ctx.profile.id`, `ctx.openSheet`.
-- Produces (copy): `signOut.title`, `signOut.unsyncedOne`, `signOut.unsyncedMany` (`{count}`), `signOut.stay`, `signOut.confirm`.
+- Consumes: `training.addResource(input)` and `training.createIdempotencyKey()` (Task 5: queued items carry `clientKey`, so a resend never duplicates).
+- Produces (`local-data.js`): `waitingCount(storage) → number` (items across every `roda.pendingResources:*` queue), `sendWaitingResources(storage, training) → Promise<number>` (sends every queued item in order, removes each one that saves, returns how many are still waiting; never throws), `clearLegacyDashboardKeys(storage) → void`. All tolerate missing or throwing storage.
+- Produces (`sign-out.js`): `signOutSafely(ctx, { signOut: () => Promise<void> }) → Promise<boolean>` (true when it signed out); uses `ctx.document`, `ctx.window`, `ctx.i18n`, `ctx.services.training`, `ctx.openSheet`.
+- Produces (copy): `signOut.waitingTitle`, `signOut.waitingOne`, `signOut.waitingMany` (`{count}`); the button reuses `app.retry`.
 
 - [ ] **Step 1: Write the failing unit tests**
 
 ```js
 // tests/unit/local-data.test.js
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { clearLegacyDashboardKeys, clearLocalTrainingData, unsyncedCount } from '../../src/app/local-data.js';
+import { clearLegacyDashboardKeys, sendWaitingResources, waitingCount } from '../../src/app/local-data.js';
 
 function memory(initial = {}) {
   const values = new Map(Object.entries(initial));
@@ -1308,46 +1312,48 @@ function memory(initial = {}) {
   };
 }
 
-const draft = (overrides = {}) => JSON.stringify({ rounds: [], notes: '', resources: [], ...overrides });
+const item = (occurrenceId, clientKey) => ({ occurrenceId, kind: 'summary', title: '', url: null, body: '# Notes', clientKey });
 
-describe('local training data', () => {
-  it('counts the own draft once and every waiting resource', () => {
+describe('waiting resources', () => {
+  it('counts every queued item and ignores drafts and broken values', () => {
     const storage = memory({
-      'roda.logDraft:p1': draft({ rounds: [{ sourceText: 'ginga' }], resources: [{ kind: 'video' }] }),
-      'roda.logDraft:p2': draft({ notes: 'someone else' }),
-      'roda.pendingResources:o1': JSON.stringify([{ kind: 'video' }, { kind: 'voice' }]),
-      'roda.dashboard.locale': 'pt',
+      'roda.pendingResources:o1': JSON.stringify([item('o1', 'a'), item('o1', 'b')]),
+      'roda.pendingResources:o2': '{broken',
+      'roda.logDraft:p1': JSON.stringify({ rounds: [{ sourceText: 'ginga' }] }),
     });
-    expect(unsyncedCount(storage, 'p1')).toBe(3);
+    expect(waitingCount(storage)).toBe(2);
   });
 
-  it('does not count an empty draft or broken values', () => {
-    const storage = memory({
-      'roda.logDraft:p1': draft({ rounds: [{ sourceText: '   ' }] }),
-      'roda.pendingResources:o1': '{broken',
-    });
-    expect(unsyncedCount(storage, 'p1')).toBe(0);
+  it('sends everything waiting and empties the queues', async () => {
+    const storage = memory({ 'roda.pendingResources:o1': JSON.stringify([item('o1', 'a'), item('o1', 'b')]) });
+    const training = { addResource: vi.fn().mockResolvedValue({ status: 'saved' }), createIdempotencyKey: vi.fn() };
+    expect(await sendWaitingResources(storage, training)).toBe(0);
+    expect(training.addResource.mock.calls.map(([input]) => input.clientKey)).toEqual(['a', 'b']);
+    expect(storage.getItem('roda.pendingResources:o1')).toBeNull();
   });
 
-  it('clears drafts and waiting resources for everyone and keeps other settings', () => {
-    const storage = memory({
-      'roda.logDraft:p1': draft(), 'roda.logDraft:p2': draft(),
-      'roda.pendingResources:o1': '[]', 'roda.dashboard.locale': 'pt', 'roda.seqs': '[]',
-    });
-    clearLocalTrainingData(storage);
-    expect([...storage.values.keys()].sort()).toEqual(['roda.dashboard.locale', 'roda.seqs']);
+  it('keeps what could not be sent, in order', async () => {
+    const storage = memory({ 'roda.pendingResources:o1': JSON.stringify([item('o1', 'a'), item('o1', 'b')]) });
+    const training = { addResource: vi.fn().mockResolvedValueOnce({ status: 'saved' }).mockRejectedValue(new Error('offline')) };
+    expect(await sendWaitingResources(storage, training)).toBe(1);
+    expect(JSON.parse(storage.getItem('roda.pendingResources:o1'))).toEqual([item('o1', 'b')]);
   });
 
-  it('removes the old dashboard keys', () => {
+  it('gives an item queued before keys existed a key before sending it', async () => {
+    const storage = memory({ 'roda.pendingResources:o1': JSON.stringify([item('o1', undefined)]) });
+    const training = { addResource: vi.fn().mockRejectedValue(new Error('offline')), createIdempotencyKey: vi.fn(() => 'new-key') };
+    await sendWaitingResources(storage, training);
+    expect(training.addResource).toHaveBeenCalledWith(expect.objectContaining({ clientKey: 'new-key' }));
+    expect(JSON.parse(storage.getItem('roda.pendingResources:o1'))[0].clientKey).toBe('new-key');
+  });
+
+  it('removes the old dashboard keys and survives blocked storage', async () => {
     const storage = memory({ 'roda.dashboard.mode': 'coaching', 'roda.dashboard.group': 'g1', 'roda.dashboard.locale': 'en' });
     clearLegacyDashboardKeys(storage);
     expect([...storage.values.keys()]).toEqual(['roda.dashboard.locale']);
-  });
-
-  it('survives blocked storage', () => {
-    const blocked = { get length() { throw new Error('blocked'); }, getItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } };
-    expect(unsyncedCount(blocked, 'p1')).toBe(0);
-    expect(() => clearLocalTrainingData(blocked)).not.toThrow();
+    const blocked = { get length() { throw new Error('blocked'); }, getItem() { throw new Error('blocked'); } };
+    expect(waitingCount(blocked)).toBe(0);
+    expect(await sendWaitingResources(blocked, { addResource: vi.fn() })).toBe(0);
     expect(() => clearLegacyDashboardKeys(null)).not.toThrow();
   });
 });
@@ -1359,16 +1365,14 @@ describe('local training data', () => {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
-import { confirmSignOut } from '../../src/app/screens/sign-out.js';
+import { signOutSafely } from '../../src/app/screens/sign-out.js';
 import { openSheet } from '../../src/app/shell/sheet.js';
 
 const i18n = createDashboardI18n({ document, storage: { getItem: () => 'en', setItem() {} }, navigator: { languages: ['en'] } });
-const ctx = () => ({ document, window, i18n, profile: { id: 'p1' }, openSheet: (options) => openSheet({ document, ...options }) });
-
-function seedWork() {
-  localStorage.setItem('roda.logDraft:p1', JSON.stringify({ rounds: [{ sourceText: 'ginga' }], notes: '', resources: [] }));
-  localStorage.setItem('roda.pendingResources:o1', JSON.stringify([{ kind: 'video' }]));
-}
+const ctx = (training) => ({ document, window, i18n, services: { training }, openSheet: (options) => openSheet({ document, ...options }) });
+const queue = () => localStorage.setItem('roda.pendingResources:o1', JSON.stringify([
+  { occurrenceId: 'o1', kind: 'summary', title: '', url: null, body: '# Notes', clientKey: 'a' },
+]));
 
 describe('sign out', () => {
   beforeEach(() => {
@@ -1376,60 +1380,89 @@ describe('sign out', () => {
     document.body.replaceChildren();
   });
 
-  it('signs out at once when nothing is waiting', async () => {
+  it('signs out at once when nothing is waiting, and keeps an unsent draft', async () => {
+    localStorage.setItem('roda.logDraft:p1', JSON.stringify({ rounds: [{ sourceText: 'ginga' }] }));
     const signOut = vi.fn().mockResolvedValue();
-    localStorage.setItem('roda.logDraft:p1', JSON.stringify({ rounds: [], notes: '', resources: [] }));
-    await confirmSignOut(ctx(), { signOut });
+    expect(await signOutSafely(ctx({ addResource: vi.fn() }), { signOut })).toBe(true);
     expect(signOut).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('roda.logDraft:p1')).toBeNull();
-  });
-
-  it('warns about unsynced work, and staying keeps it', async () => {
-    const signOut = vi.fn().mockResolvedValue();
-    seedWork();
-    await confirmSignOut(ctx(), { signOut });
-    const sheet = document.querySelector('[role="dialog"]');
-    expect(sheet.getAttribute('aria-label')).toBe('Sign out?');
-    expect(sheet.textContent).toContain("2 items on this device haven't been saved to your account yet.");
-    sheet.querySelector('[data-action="stay"]').click();
-    expect(signOut).not.toHaveBeenCalled();
     expect(localStorage.getItem('roda.logDraft:p1')).not.toBeNull();
   });
 
-  it('deletes the work and signs out when confirmed', async () => {
+  it('sends waiting resources first, then signs out', async () => {
+    queue();
+    const training = { addResource: vi.fn().mockResolvedValue({ status: 'saved' }) };
     const signOut = vi.fn().mockResolvedValue();
-    seedWork();
-    await confirmSignOut(ctx(), { signOut });
-    document.querySelector('[data-action="confirm-sign-out"]').click();
+    expect(await signOutSafely(ctx(training), { signOut })).toBe(true);
+    expect(training.addResource).toHaveBeenCalledTimes(1);
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('stays signed in, keeps the items, and offers only Try again when they cannot be sent', async () => {
+    queue();
+    const training = { addResource: vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ status: 'saved' }) };
+    const signOut = vi.fn().mockResolvedValue();
+    expect(await signOutSafely(ctx(training), { signOut })).toBe(false);
+    const sheet = document.querySelector('[role="dialog"]');
+    expect(sheet.getAttribute('aria-label')).toBe('Waiting to sync');
+    expect(sheet.textContent).toContain('One item is still waiting to sync — connect to the internet and try again.');
+    expect([...sheet.querySelectorAll('button:not([data-sheet-close])')].map((button) => button.textContent)).toEqual(['Try again']);
+    expect(signOut).not.toHaveBeenCalled();
+    expect(localStorage.getItem('roda.pendingResources:o1')).not.toBeNull();
+    sheet.querySelector('[data-action="retry-sign-out"]').click();
     await vi.waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
-    expect(localStorage.getItem('roda.logDraft:p1')).toBeNull();
     expect(localStorage.getItem('roda.pendingResources:o1')).toBeNull();
   });
 });
 ```
 
+- [ ] **Step 2: Write the failing browser tests**
+
 Add to `tests/e2e/app-hardening.spec.js`:
 
 ```js
-test('signing out warns about unsaved work and then deletes it', async ({ page }) => {
-  await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
+async function trainingWithWaitingResource(page) {
   await page.goto('/app#/log');
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('roda.dashboard.mode'))).toBeNull();
   const box = page.getByLabel('Write a round');
   await box.fill('ginga 10 min');
   await box.press('Enter');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page).toHaveURL(/#\/training\//);
+  const occurrenceId = page.url().split('#/training/')[1];
+  await page.evaluate((id) => localStorage.setItem(`roda.pendingResources:${id}`, JSON.stringify([
+    { occurrenceId: id, kind: 'summary', title: 'Notes', url: null, body: '# Class notes', clientKey: 'waiting-1' },
+  ])), occurrenceId);
+}
+
+const savedResources = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('roda.e2e.trainingState')).resources.length);
+
+test('signing out sends waiting resources first', async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
+  await trainingWithWaitingResource(page);
+  expect(await page.evaluate(() => localStorage.getItem('roda.dashboard.mode'))).toBeNull();
   await page.goto('/app#/me/settings');
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  const sheet = page.getByRole('dialog', { name: 'Sign out?' });
-  await expect(sheet).toContainText("One item on this device hasn't been saved to your account yet.");
-  await sheet.getByRole('button', { name: 'Stay signed in' }).click();
-  await expect(sheet).toBeHidden();
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Sign out?' }).getByRole('button', { name: 'Sign out and delete' }).click();
   await expect(page).toHaveURL(/\/$/);
-  expect(await page.evaluate(() => Object.keys(localStorage)
-    .filter((key) => key.startsWith('roda.logDraft:') || key.startsWith('roda.pendingResources:')))).toEqual([]);
+  expect(await savedResources(page)).toBe(1);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('roda.pendingResources:')))).toEqual([]);
   expect(await page.evaluate(() => localStorage.getItem('roda.e2e.session'))).toBeNull();
+});
+
+test('signing out offline keeps waiting resources and asks to try again', async ({ page }) => {
+  await trainingWithWaitingResource(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
+    localStorage.setItem('roda.e2e.trainingState', JSON.stringify({ ...state, failNext: 'addResource' }));
+  });
+  await page.goto('/app#/me/settings');
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: 'Waiting to sync' });
+  await expect(sheet).toContainText('One item is still waiting to sync — connect to the internet and try again.');
+  await expect(sheet.getByRole('button', { name: /sign out/i })).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('roda.e2e.session'))).not.toBeNull();
+  await sheet.getByRole('button', { name: 'Try again' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(await savedResources(page)).toBe(1);
 });
 
 test('an expired session keeps unsaved work for after sign-in', async ({ page }) => {
@@ -1443,19 +1476,19 @@ test('an expired session keeps unsaved work for after sign-in', async ({ page })
 });
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [ ] **Step 3: Run to verify they fail**
 
 Run: `npx vitest run tests/unit/local-data.test.js tests/unit/sign-out.test.js && npm run build:test && npx playwright test tests/e2e/app-hardening.spec.js -g "sign|expired"`
-Expected: FAIL — the modules do not exist; the browser test signs out without a warning.
+Expected: FAIL — the modules do not exist, and today's sign-out leaves the waiting resource unsent (`savedResources` is 0) and never shows the sheet.
 
-- [ ] **Step 3: Implement**
+- [ ] **Step 4: Implement**
 
 ```js
 // src/app/local-data.js
-// Training text and resources wait in browser storage until they sync. This
-// finds that private work so signing out can warn about it and then remove it
-// from a shared device.
-const DRAFT_PREFIX = 'roda.logDraft:';
+// Resources save as soon as they are submitted. When a save fails, the item
+// waits in browser storage (roda.pendingResources:<occurrence>) until it can
+// be sent. This module counts and sends those items so nothing waiting is
+// ever dropped, for example when signing out.
 const PENDING_PREFIX = 'roda.pendingResources:';
 const LEGACY_KEYS = Object.freeze(['roda.dashboard.mode', 'roda.dashboard.group']);
 
@@ -1467,54 +1500,65 @@ function storedKeys(storage) {
   }
 }
 
-function readJson(storage, key) {
+function readQueue(storage, key) {
   try {
-    return JSON.parse(storage.getItem(key) ?? 'null');
+    const value = JSON.parse(storage.getItem(key) ?? '[]');
+    return Array.isArray(value) ? value : [];
   } catch {
-    return null;
+    return [];
   }
 }
 
-function remove(storage, key) {
+function writeQueue(storage, key, queue) {
   try {
-    storage.removeItem(key);
+    if (queue.length) storage.setItem(key, JSON.stringify(queue));
+    else storage.removeItem(key);
   } catch {
-    // Blocked storage holds nothing to remove.
+    // Blocked storage: nothing was stored there to begin with.
   }
 }
 
-function draftHasWork(draft) {
-  if (!draft || typeof draft !== 'object') return false;
-  const rounds = Array.isArray(draft.rounds) ? draft.rounds : [];
-  return rounds.some((round) => String(round?.sourceText ?? '').trim() !== '')
-    || String(draft.notes ?? '').trim() !== ''
-    || (Array.isArray(draft.resources) && draft.resources.length > 0);
+export function waitingCount(storage) {
+  return storedKeys(storage)
+    .filter((key) => key.startsWith(PENDING_PREFIX))
+    .reduce((total, key) => total + readQueue(storage, key).length, 0);
 }
 
-export function unsyncedCount(storage, profileId) {
-  let count = draftHasWork(readJson(storage, `${DRAFT_PREFIX}${profileId}`)) ? 1 : 0;
-  for (const key of storedKeys(storage)) {
-    if (!key.startsWith(PENDING_PREFIX)) continue;
-    const queue = readJson(storage, key);
-    if (Array.isArray(queue)) count += queue.length;
+export async function sendWaitingResources(storage, training) {
+  let remaining = 0;
+  for (const key of storedKeys(storage).filter((name) => name.startsWith(PENDING_PREFIX))) {
+    let queue = readQueue(storage, key).map((entry) => (
+      entry?.clientKey ? entry : { ...entry, clientKey: training.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID() }
+    ));
+    writeQueue(storage, key, queue);
+    while (queue.length) {
+      try {
+        await training.addResource(queue[0]);
+      } catch {
+        break;
+      }
+      queue = queue.slice(1);
+      writeQueue(storage, key, queue);
+    }
+    remaining += queue.length;
   }
-  return count;
-}
-
-export function clearLocalTrainingData(storage) {
-  for (const key of storedKeys(storage)) {
-    if (key.startsWith(DRAFT_PREFIX) || key.startsWith(PENDING_PREFIX)) remove(storage, key);
-  }
+  return remaining;
 }
 
 export function clearLegacyDashboardKeys(storage) {
-  for (const key of LEGACY_KEYS) remove(storage, key);
+  for (const key of LEGACY_KEYS) {
+    try {
+      storage.removeItem(key);
+    } catch {
+      // Nothing to clear.
+    }
+  }
 }
 ```
 
 ```js
 // src/app/screens/sign-out.js
-import { clearLocalTrainingData, unsyncedCount } from '../local-data.js';
+import { sendWaitingResources } from '../local-data.js';
 import { el } from '../shell/page.js';
 
 function localStorageOf(window) {
@@ -1525,81 +1569,76 @@ function localStorageOf(window) {
   }
 }
 
-// Signing out removes drafts and waiting resources from this device. When any
-// of them has not reached the account yet, the person is asked first.
-export async function confirmSignOut(ctx, { signOut }) {
+// Sign-out never drops a resource that has not reached the account. It sends
+// anything waiting first; if that fails, the person stays signed in and is
+// asked to connect and try again. There is deliberately no way to discard.
+export async function signOutSafely(ctx, { signOut }) {
   const { document, i18n } = ctx;
   const storage = localStorageOf(ctx.window);
-  const finish = async () => {
-    clearLocalTrainingData(storage);
+  const remaining = await sendWaitingResources(storage, ctx.services.training);
+  if (!remaining) {
     await signOut();
-  };
-  const count = unsyncedCount(storage, ctx.profile.id);
-  if (!count) {
-    await finish();
-    return;
+    return true;
   }
   let sheet = null;
-  const content = el(document, 'div', { className: 'sign-out-confirm' }, [
-    el(document, 'p', { text: count === 1 ? i18n.t('signOut.unsyncedOne') : i18n.t('signOut.unsyncedMany', { count }) }),
-    el(document, 'button', {
-      className: 'button-secondary', text: i18n.t('signOut.stay'), attrs: { type: 'button' }, dataset: { action: 'stay' },
-      on: { click: () => sheet.close() },
-    }),
-    el(document, 'button', {
-      className: 'button-danger', text: i18n.t('signOut.confirm'), attrs: { type: 'button' }, dataset: { action: 'confirm-sign-out' },
-      on: { click: () => { sheet.close(); finish(); } },
-    }),
-  ]);
-  sheet = ctx.openSheet({ title: i18n.t('signOut.title'), content });
+  const retry = el(document, 'button', {
+    className: 'button-primary', text: i18n.t('app.retry'), attrs: { type: 'button' }, dataset: { action: 'retry-sign-out' },
+    on: { click: async () => {
+      retry.disabled = true;
+      sheet.close();
+      await signOutSafely(ctx, { signOut });
+    } },
+  });
+  const message = remaining === 1 ? i18n.t('signOut.waitingOne') : i18n.t('signOut.waitingMany', { count: remaining });
+  sheet = ctx.openSheet({
+    title: i18n.t('signOut.waitingTitle'),
+    content: el(document, 'div', { className: 'sign-out-waiting' }, [el(document, 'p', { text: message }), retry]),
+  });
+  return false;
 }
 ```
 
 Copy in `src/app/dashboard-i18n.js` — `en`:
 
 ```js
-    'signOut.title': 'Sign out?',
-    'signOut.unsyncedOne': "One item on this device hasn't been saved to your account yet. Signing out deletes it.",
-    'signOut.unsyncedMany': "{count} items on this device haven't been saved to your account yet. Signing out deletes them.",
-    'signOut.stay': 'Stay signed in',
-    'signOut.confirm': 'Sign out and delete',
+    'signOut.waitingTitle': 'Waiting to sync',
+    'signOut.waitingOne': 'One item is still waiting to sync — connect to the internet and try again.',
+    'signOut.waitingMany': '{count} items are still waiting to sync — connect to the internet and try again.',
 ```
 
 `pt`:
 
 ```js
-    'signOut.title': 'Sair?',
-    'signOut.unsyncedOne': 'Um item neste dispositivo ainda não foi guardado na tua conta. Ao sair, será apagado.',
-    'signOut.unsyncedMany': '{count} itens neste dispositivo ainda não foram guardados na tua conta. Ao sair, serão apagados.',
-    'signOut.stay': 'Continuar com sessão iniciada',
-    'signOut.confirm': 'Sair e apagar',
+    'signOut.waitingTitle': 'À espera de sincronizar',
+    'signOut.waitingOne': 'Um item ainda está à espera de sincronizar — liga-te à internet e tenta novamente.',
+    'signOut.waitingMany': '{count} itens ainda estão à espera de sincronizar — liga-te à internet e tenta novamente.',
 ```
 
-In `src/app/entries/app.js`: import `confirmSignOut` from `'../screens/sign-out.js'` and `clearLegacyDashboardKeys` from `'../local-data.js'`; make `clearLegacyDashboardKeys(localStorage);` the first line of `main()`; and wrap the Settings sign-out handler (find the call `services.auth.signOut()` passed as `onSignOut` to the Settings screen) so it reads:
+In `src/app/entries/app.js`: import `signOutSafely` from `'../screens/sign-out.js'` and `clearLegacyDashboardKeys` from `'../local-data.js'`; make `clearLegacyDashboardKeys(localStorage);` the first line of `main()`; and wrap the Settings sign-out handler (find the call `services.auth.signOut()` passed as `onSignOut` to the Settings screen) so it reads:
 
 ```js
-            onSignOut: () => confirmSignOut(ctx, {
+            onSignOut: () => signOutSafely(ctx, {
               signOut: async () => { await services.auth.signOut(); location.replace('/'); },
             }),
 ```
 
-Leave the `onAuthStateChange` handler (session expiry) unchanged: it must not clear anything.
+Leave the `onAuthStateChange` handler (session expiry) unchanged: it must not send or clear anything. An unsent Log training draft (`roda.logDraft:<profile>`) is not "waiting to sync" — it was never submitted — and stays on the device for that profile only; the composer never shows another profile's draft.
 
-- [ ] **Step 4: Run to verify they pass**
+- [ ] **Step 5: Run to verify they pass**
 
 Run: `npx vitest run tests/unit/local-data.test.js tests/unit/sign-out.test.js tests/unit/dashboard-i18n.test.js && npm run build:test && npx playwright test tests/e2e/app-hardening.spec.js tests/e2e/app-shell.spec.js`
-Expected: PASS (the existing "signs out from Settings" test has no drafts, so it signs out at once).
+Expected: PASS (the existing "signs out from Settings" test has nothing waiting, so it signs out at once).
 
-- [ ] **Step 5: Run the suites**
+- [ ] **Step 6: Run the suites**
 
 Run: `npm run test:unit && npm run test:e2e`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/app/local-data.js src/app/screens/sign-out.js src/app/entries/app.js src/app/dashboard-i18n.js tests/unit/local-data.test.js tests/unit/sign-out.test.js tests/e2e/app-hardening.spec.js
-git commit -m "feat: warn about unsaved work on sign-out and leave no training text behind
+git commit -m "feat: send waiting resources before signing out and never drop them
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -3054,9 +3093,11 @@ Production smoke checklist after deploying the switch-over:
     "Add to Home Screen" from `/dashboard` opens full-screen.
 11. On a phone, log a training whose round contains a long pasted link → the
     page never scrolls sideways.
-12. Write a round in Log training, then sign out from Settings → the warning
-    appears; after "Sign out and delete", Local Storage has no
-    `roda.logDraft:` or `roda.pendingResources:` keys.
+12. Add a resource on a training page while offline (developer tools), so it
+    waits to sync; still offline, sign out from Settings → "1 item is still
+    waiting to sync — connect to the internet and try again" and you stay
+    signed in. Go online, tap Try again → you are signed out and the resource
+    shows on the training after signing back in.
 13. Run the bundle scan from the security checklist on the production build;
     it prints nothing.
 
@@ -3089,8 +3130,8 @@ In `docs/security-checklist.md`, replace the item "Coaches remain practitioners 
 and add under "Product privacy and behavior":
 
 ```markdown
-- [ ] Signing out warns about unsynced drafts and resources and then removes
-  every `roda.logDraft:*` and `roda.pendingResources:*` key from the device.
+- [ ] Signing out sends every resource still waiting to sync first; if one
+  cannot be sent, the person stays signed in and nothing is deleted.
 ```
 
 - [ ] **Step 5: Full verification from a clean build**

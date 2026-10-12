@@ -1,0 +1,489 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Plan 2 · Teaching, Me, first sign-in</title><link rel="stylesheet" href="mock.css">
+<style>
+  .wk { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; text-align: center; font-size: 11px; margin-bottom: 8px; }
+  .wk div { background: var(--card); border-radius: 10px; padding: 4px 0; }
+  .wk .on { background: var(--gold); color: var(--bg); font-weight: 700; }
+  .wk i { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--green); margin: 2px auto 0; }
+  .ch { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--frame); font-size: 12px; }
+  .ch b { color: var(--gold); font-size: 11px; width: 12px; }
+  .att { display: flex; justify-content: space-between; align-items: center; padding: 7px 2px; border-bottom: 1px solid var(--frame); }
+  .rc { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 7px 10px; margin-top: 6px; font-size: 12px; }
+  .rc .h { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+  .mv { display: inline-block; font-size: 10px; border-radius: 6px; padding: 1px 6px; background: #2f3b2a; color: #cfe6c5; margin: 3px 3px 0 0; }
+  .dock { border-top: 1px solid var(--line); background: var(--bar); padding: 8px 12px; flex: none; }
+  .chat { display: flex; gap: 6px; align-items: center; }
+  .chat .input { flex: 1; color: var(--muted); border-radius: 999px; }
+  .go { width: 32px; height: 32px; border-radius: 50%; background: var(--gold); color: var(--bg); display: grid; place-items: center; font-weight: 800; flex: none; }
+  .quote { border-left: 3px solid var(--gold); padding: 2px 8px; margin: 6px 0; font-size: 12px; }
+  .callout { position: absolute; background: var(--clay); color: var(--cream); font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 8px; box-shadow: 0 2px 8px #0008; }
+  .wheel { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: center; margin: 8px 0; }
+  .wheel div { background: var(--card); border-radius: 10px; padding: 4px 0; font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .wheel b { display: block; color: var(--cream); background: #3a2f23; border-radius: 6px; margin: 0 6px; }
+  .tbl { font-size: 10px; border-collapse: collapse; width: 380px; }
+  .tbl td, .tbl th { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; vertical-align: top; }
+  .rowbtns { display: flex; gap: 4px; flex: none; }
+  .rowbtns .btn { flex: none; padding: 4px 9px; font-size: 11px; }
+  .stat { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stat .card { margin: 0; padding: 7px 9px; }
+  .stat b { display: block; font-size: 15px; }
+</style></head><body>
+<div class="top"><a class="back" href="index.html">← All screens</a><h1>Plan 2 · Teaching, Me, first sign-in</h1></div>
+<p class="subtitle">What plan 2 adds to the new app: a short welcome, the Train · Both · Teach setting, everything a coach does (plans, scheduling, the class page, past classes, students), and the Me pages that still live in the classic dashboard today.</p>
+
+<!-- ============ FIRST SIGN-IN ============ -->
+<h2>First sign-in</h2>
+<div class="phones">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="title" style="font-size:20px">Welcome to roda</div>
+      <div class="muted">Step 1 of 2</div>
+      <div style="font-weight:700;font-size:15px;margin:14px 0 8px">Your name and photo</div>
+      <div class="row"><div class="ava lg">JM</div><div class="field" style="flex:1;margin:0"><label>Photo</label><div class="input ph">Choose a photo…</div></div></div>
+      <div class="field" style="margin-top:14px"><label>Name</label><div class="input">João Morais</div></div>
+      <div class="muted" style="margin-top:6px">Filled in from your Google account. You can change it.</div>
+    </div>
+    <div class="bar"><span class="b main">Next</span></div>
+  </div><div class="cap"><span class="task">Task 4</span><b>Welcome · step 1.</b> Shown once to a new account (<code>#/welcome</code>); no tab bar and no way around it. The name comes from the sign-in provider; the photo is optional and shows as a preview.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="title" style="font-size:20px">Welcome to roda</div>
+      <div class="muted">Step 2 of 2</div>
+      <div style="font-weight:700;font-size:15px;margin:14px 0 4px">How will you use roda?</div>
+      <div class="muted">How I use roda</div>
+      <div class="seg"><span>Train</span><span class="on">Both</span><span>Teach</span></div>
+      <div class="muted" style="display:flex;justify-content:space-between"><span>log my training</span><span>teach classes</span></div>
+      <div class="card hi" style="margin-top:12px;font-size:12px">The + button lets you log your training, schedule a class, or record a past class. Teaching appears in Me.</div>
+      <div class="muted" style="margin-top:10px;font-size:12px">Choosing Both or Teach adds coaching to your profile. You can change this any time in Me.</div>
+    </div>
+    <div class="bar"><span class="b">Back</span><span class="b main">Finish</span></div>
+  </div><div class="cap"><span class="task">Task 4</span><b>Welcome · step 2.</b> The three-position slider, with one line under it that explains the chosen position (Train: "The + button opens Log training. Teaching stays out of Me." Teach: "The + button schedules or records classes, and Today puts your classes first."). Finish saves everything and opens Today. Plan 3 adds a third step for city and "Who can find you".</div></div>
+</div>
+
+<!-- ============ MODE ============ -->
+<h2>Train · Both · Teach</h2>
+<div class="phones">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Me</b></div>
+      <div class="row" style="margin-bottom:10px"><div class="ava lg">JM</div><b style="font-size:16px">João Morais</b></div>
+      <div class="muted">How I use roda</div>
+      <div class="seg"><span class="on">Train</span><span>Both</span><span>Teach</span></div>
+      <div class="muted" style="display:flex;justify-content:space-between"><span>log my training</span><span>teach classes</span></div>
+      <div class="list" style="margin-top:8px">
+        <div><span>📈 Progress</span><span class="muted">›</span></div>
+        <div><span>📚 Repertoire</span><span class="muted">›</span></div>
+        <div><span>👥 Groups</span><span class="muted">›</span></div>
+        <div><span>⚙️ Settings</span><span class="muted">›</span></div>
+      </div>
+    </div>
+    <div class="tabs"><div>Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div class="on">Me</div></div>
+  </div><div class="cap"><span class="task">Task 5</span><b>Me in Train.</b> No Teaching row. Tapping the photo or name opens Settings → Profile. Catalog appears only for curators.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Me</b></div>
+      <div class="row" style="margin-bottom:10px"><div class="ava lg">JM</div><b style="font-size:16px">João Morais</b></div>
+      <div class="muted">How I use roda</div>
+      <div class="seg"><span>Train</span><span class="on">Both</span><span>Teach</span></div>
+      <div class="muted" style="display:flex;justify-content:space-between"><span>log my training</span><span>teach classes</span></div>
+      <div class="list" style="margin-top:8px">
+        <div><span>📈 Progress</span><span class="muted">›</span></div>
+        <div><span>📚 Repertoire</span><span class="muted">›</span></div>
+        <div style="background:#2a2119;border-radius:8px"><span>🧑‍🏫 <b>Teaching</b></span><span class="muted">›</span></div>
+        <div><span>👥 Groups</span><span class="muted">›</span></div>
+        <div><span>🗂️ Catalog</span><span class="muted">›</span></div>
+        <div><span>⚙️ Settings</span><span class="muted">›</span></div>
+      </div>
+    </div>
+    <div class="tabs"><div>Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div class="on">Me</div></div>
+  </div><div class="cap"><span class="task">Task 5</span><b>Me in Both (a curator).</b> Moving the slider saves at once and Teaching appears. Going back to Train hides the row but deletes nothing; if saving fails, the slider snaps back and says why.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Today</b><div class="ava" style="width:28px;height:28px;font-size:11px">JM</div></div>
+      <div class="wk"><div>M<br>12</div><div>T<br>13<i></i></div><div>W<br>14</div><div class="on">T<br>15</div><div>F<br>16</div><div>S<br>17</div><div>S<br>18</div></div>
+      <div class="lbl">Recent</div>
+      <div class="card"><div class="row" style="justify-content:space-between"><b>Alone</b><span>🎙️</span></div><div class="muted">Tue, Oct 13 · 45m</div><div class="small">ginga 10 min</div></div>
+      <div class="card"><div class="row" style="justify-content:space-between"><b>Group · Grupo Lua</b><span>🎥</span></div><div class="muted">Thu, Oct 8 · 1h 26m · 6 attended</div><div class="small">10x (armada, aú)</div></div>
+    </div>
+    <div class="callout" style="left:150px;bottom:72px;transform:translateX(-50%)">→ opens Log training</div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus" style="box-shadow:0 0 0 4px #eba63c55">+</div></div><div>Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 8</span><b>+ in Train.</b> One tap goes straight to Log training, as today. On desktop the sidebar button reads "+ Log training".</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Today</b><div class="ava" style="width:28px;height:28px;font-size:11px">JM</div></div>
+      <div class="wk"><div>M<br>12</div><div>T<br>13<i></i></div><div>W<br>14</div><div class="on">T<br>15</div><div>F<br>16</div><div>S<br>17</div><div>S<br>18</div></div>
+      <div class="lbl">Recent</div>
+      <div class="card"><b>Alone</b><div class="muted">Tue, Oct 13 · 45m</div></div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet"><div class="grab"></div>
+      <div class="hdr"><b style="font-size:15px">Create</b><span>×</span></div>
+      <div class="card">📝 Log my training</div>
+      <div class="card">📅 Schedule a class</div>
+      <div class="card">🧾 Record a past class</div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 8</span><b>+ in Both.</b> A short sheet with three choices. Desktop shows the same sheet from "+ Create".</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Today</b><div class="ava" style="width:28px;height:28px;font-size:11px">JM</div></div>
+      <div class="wk"><div>M<br>12</div><div>T<br>13<i></i></div><div>W<br>14</div><div class="on">T<br>15</div><div>F<br>16</div><div>S<br>17</div><div>S<br>18</div></div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet"><div class="grab"></div>
+      <div class="hdr"><b style="font-size:15px">Create</b><span>×</span></div>
+      <div class="card">📅 Schedule a class</div>
+      <div class="card">🧾 Record a past class</div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 8</span><b>+ in Teach.</b> Only the coaching choices. Log training is still reachable at <code>#/log</code>.</div></div>
+</div>
+
+<div class="phones" style="margin-top:22px">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Today</b><div class="ava" style="width:28px;height:28px;font-size:11px">JM</div></div>
+      <div class="wk"><div>M<br>12</div><div>T<br>13<i></i></div><div>W<br>14</div><div class="on">T<br>15</div><div>F<br>16</div><div>S<br>17</div><div>S<br>18</div></div>
+      <div class="card hi"><div class="lbl" style="margin:0">Your class just ended</div><h4>Group · Grupo Lua</h4><div class="muted">07:00 PM · Armada ladder · You teach</div><span class="btn main block">Finish class</span></div>
+      <div class="lbl">Recent</div>
+      <div class="card"><b>Group · Grupo Lua</b><div class="muted">Mon, Oct 12 · 1h 30m · 7 attended</div><div class="small">ginga 10 min</div></div>
+      <div class="card"><b>Personal class</b><div class="muted">Sat, Oct 10 · 50m</div><div class="small">meia lua de compasso</div></div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 5</span><b>Today in Teach.</b> Same day as the next phone. Teach puts "finish the class you just taught" first, then your next class to teach, then rating a class you attended.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Today</b><div class="ava" style="width:28px;height:28px;font-size:11px">JM</div></div>
+      <div class="wk"><div>M<br>12</div><div>T<br>13<i></i></div><div>W<br>14</div><div class="on">T<br>15<i></i></div><div>F<br>16</div><div>S<br>17</div><div>S<br>18</div></div>
+      <div class="card hi"><div class="lbl" style="margin:0">How did it go?</div><h4>Roda Sul</h4><span class="btn main block">Rate it</span></div>
+      <div class="lbl">Recent</div>
+      <div class="card"><b>Group · Roda Sul</b><div class="muted">Thu, Oct 15 · 1h · 9 attended</div><div class="small">3x (negativa, rolê)</div></div>
+      <div class="card"><b>Alone</b><div class="muted">Tue, Oct 13 · 45m</div><span class="tag">felt Okay</span></div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 5</span><b>Today in Train.</b> Train puts "rate the class you just attended" first, then your next class as a student; your own teaching comes last. Both keeps the original order.</div></div>
+</div>
+
+<!-- ============ TEACHING ============ -->
+<h2>Teaching</h2>
+<div class="phones">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Teaching</b></div>
+      <div><span class="chip on">📅 Schedule a class</span><span class="chip">🧾 Record a past class</span></div>
+      <div class="lbl">Upcoming classes</div>
+      <div class="item"><span><b>Group · Grupo Lua</b><br><span class="muted">Thu, Oct 15, 07:00 PM · Armada ladder</span></span><span class="muted">›</span></div>
+      <div class="item"><span><b>Personal class · with Bia Santos</b><br><span class="muted">Sat, Oct 17, 10:00 AM · Ginga drills</span></span><span class="muted">›</span></div>
+      <div class="row" style="justify-content:space-between"><div class="lbl">Plans</div><span class="chip" style="padding:2px 9px;font-size:11px">+ New plan</span></div>
+      <div class="item"><span><b>Armada ladder</b><br><span class="muted">1h · Published</span></span><span class="muted">›</span></div>
+      <div class="item"><span><b>Ginga drills</b><br><span class="muted">45m · Draft</span></span><span class="muted">›</span></div>
+      <div class="row" style="justify-content:space-between"><div class="lbl">Students</div><span class="chip" style="padding:2px 9px;font-size:11px">Find a student</span></div>
+      <div class="item" style="align-items:center"><span class="small">Eva Costa asked you to coach them</span><span class="rowbtns"><span class="btn main">Accept</span><span class="btn">Decline</span></span></div>
+      <div class="list"><div><span>Bia Santos</span><span class="muted">›</span></div><div><span>Caio Lima</span><span class="muted">›</span></div><div><span>Duda Reis</span><span class="muted">›</span></div></div>
+    </div>
+  </div><div class="cap"><span class="task">Tasks 10–11</span><b>Teaching home</b> (<code>#/me/teaching</code>). Classes you teach in the next 60 days, your plans, and your students: active coaching connections plus members of groups you coach. Students' requests to be coached show here too.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Teaching</b></div>
+      <div class="lbl">Upcoming classes</div>
+      <div class="item"><span><b>Group · Grupo Lua</b><br><span class="muted">Thu, Oct 15, 07:00 PM</span></span></div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet full"><div class="grab"></div>
+      <div class="hdr"><b style="font-size:15px">Schedule a class</b><span>×</span></div>
+      <div class="field"><label>Plan</label><div class="input">Armada ladder ▾</div></div>
+      <div class="field"><label>Who</label><div class="input">Group class · Grupo Lua ▾</div></div>
+      <div class="row"><div class="field" style="flex:1"><label>Date</label><div class="input">Oct 22, 2026</div></div><div class="field" style="flex:1"><label>Start time</label><div class="input">07:00 PM</div></div></div>
+      <div class="row small" style="margin-top:10px"><span class="ck on">✓</span>Show the plan to students before class</div>
+      <span class="btn main block" style="margin-top:12px">Schedule</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 7</span><b>Schedule a class.</b> A bottom sheet from +, Teaching, a plan, or a student. "Who" lists your groups and your students (personal class). Only published plans; the start must still be ahead. Scheduling opens the new class page.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="muted">‹ Back</span><span class="chip" style="margin:0;padding:3px 9px;font-size:11px">Edit plan</span></div>
+      <h4>Group · Grupo Lua</h4>
+      <div class="muted">Thu, Oct 15 · 07:00 PM · You teach · plan: Armada ladder</div>
+      <span class="tag">⏱ 1h</span><span class="tag">👥 3 coming</span>
+      <div class="lbl">Plan</div>
+      <div class="ch"><b>1</b>ginga 10 min</div>
+      <div class="ch"><b>2</b>10x (armada, aú)</div>
+      <div class="ch"><b>3</b>3x (negativa, rolê)</div>
+      <div class="lbl">Who's here · tap to mark</div>
+      <div class="att"><span>Bia Santos</span><span class="ck on">✓</span></div>
+      <div class="att"><span>Caio Lima</span><span class="ck on">✓</span></div>
+      <div class="att"><span>Duda Reis</span><span class="ck"></span></div>
+      <div class="att"><span>Eva Costa</span><span class="ck on">✓</span></div>
+    </div>
+    <div class="bar"><span class="b">Cancel class</span><span class="b main">Finish class</span></div>
+  </div><div class="cap"><span class="task">Task 9</span><b>Coach's class page</b> (<code>#/class/&lt;id&gt;</code>). Everyone starts checked; tap to unmark. Finish is enabled once the class has started and records the checked people with the planned hour. Cancel asks for an optional reason.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="muted">‹ Back</span></div>
+      <h4>Group · Grupo Lua</h4>
+      <div class="muted">Thu, Oct 15 · 07:00 PM · João Morais</div>
+      <span class="tag">⏱ 1h</span><span class="tag">👥 3 attended</span>
+      <div class="lbl">Rounds</div>
+      <div class="ch"><b>1</b>ginga 10 min</div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet"><div class="grab"></div>
+      <div class="hdr"><b style="font-size:15px">Add resources</b><span>×</span></div>
+      <div class="field"><label>Resource type</label><div class="input">Video link ▾</div></div>
+      <div class="field"><label>Title</label><div class="input">Class recording</div></div>
+      <div class="field"><label>Link</label><div class="input">https://youtu.be/VAI3JUKTwz0</div></div>
+      <div class="field"><label>Text files (.txt, .md)</label><div class="input ph">Choose files…</div></div>
+      <span class="btn main block">Save resources</span>
+    </div>
+    <div class="bar"><span class="b">📎 Add</span></div>
+  </div><div class="cap"><span class="task">Task 9</span><b>Right after Finish class.</b> The class page is replaced by the new training page, and its Add resources sheet opens once so the coach can attach the recording, transcript, or summary. Back goes to Today, not to the finished class.</div></div>
+</div>
+
+<div class="phones" style="margin-top:22px">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px;font-size:16px">Record a past class</b></div>
+      <div class="seg" style="grid-template-columns:1fr 1fr"><span class="on">Group</span><span>Personal class</span></div>
+      <div class="field"><label>Group</label><div class="input">Grupo Lua ▾</div></div>
+      <div class="card" style="padding:6px 10px"><div class="muted">Who came</div>
+        <div class="row small" style="margin-top:4px"><span class="ck on">✓</span>Bia Santos <span class="ck on" style="margin-left:8px">✓</span>Caio Lima</div>
+        <div class="row small" style="margin-top:4px"><span class="ck"></span>Duda Reis <span class="ck on" style="margin-left:8px">✓</span>Eva Costa</div></div>
+      <div class="row" style="gap:6px"><div class="field" style="flex:1.3"><label>Date</label><div class="input">Oct 13</div></div><div class="field" style="flex:1"><label>Start time</label><div class="input">07:00 PM</div></div><div class="field" style="flex:.8"><label>Duration</label><div class="input">90</div></div></div>
+      <div class="lbl">Rounds</div>
+      <div class="rc"><div class="h"><span>Round 1</span><span>×</span></div>ginga 10 min<br><span class="mv">✓ Ginga · 10 min</span></div>
+      <div class="small" style="margin-top:8px;color:var(--muted)">📎 Add resources ▸</div>
+    </div>
+    <div class="dock"><div class="chat"><div class="input">Write a round</div><div class="go">↑</div></div><span class="btn main block">Save class</span></div>
+  </div><div class="cap"><span class="task">Task 8</span><b>Record a past class</b> (<code>#/me/teaching/record</code>). For a class that happened but was never scheduled: group with who came, or one student. Rounds are typed in the same chat box as Log training; a start time in the future is refused.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Edit plan</b></div>
+      <div class="field"><label>Plan title</label><div class="input">Ginga drills</div></div>
+      <div class="field"><label>Description</label><div class="input ph">For beginners</div></div>
+      <div class="row"><div class="field" style="flex:1"><label>Expected duration in minutes</label><div class="input">45</div></div></div>
+      <div class="field"><label>Instructions</label><div class="input">Stay low and keep breathing.</div></div>
+      <div class="lbl">Rounds</div>
+      <div class="rc"><div class="h"><span>Round 1</span><span>×</span></div>ginga 10 min<br><span class="mv">✓ Ginga · 10 min</span><div class="muted" style="margin-top:4px">Planned: Easy · Okay · <b>Hard</b></div></div>
+      <div class="rc"><div class="h"><span>Round 2</span><span>×</span></div>3x (ginga, esquiva)</div>
+      <span class="chip">+ Add round</span>
+    </div>
+    <div class="bar"><span class="b main">Save draft</span><span class="b">Publish plan</span></div>
+  </div><div class="cap"><span class="task">Task 10</span><b>Plan, draft</b> (<code>#/me/teaching/plans/&lt;id&gt;</code>, or <code>…/new</code>). The same round cards as everywhere, with the planned difficulty. Publish saves first, then locks the plan.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Armada ladder</b></div>
+      <div class="muted">1h · Published</div>
+      <div class="small" style="margin-top:6px">Stay relaxed and keep the movement continuous.</div>
+      <div class="lbl">Rounds</div>
+      <div class="ch"><b>1</b>ginga 10 min</div>
+      <div class="ch"><b>2</b>10x (armada, aú)</div>
+      <div class="ch"><b>3</b>3x (negativa, rolê)</div>
+      <span class="btn main block" style="margin-top:14px">📅 Schedule this plan</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 10</span><b>Plan, published.</b> Read-only, with one action: schedule it (opens the Schedule a class sheet with this plan chosen).</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Bia Santos</b></div>
+      <div><span class="chip on">📅 Schedule a class</span><span class="chip">End coaching</span></div>
+      <div class="lbl">Training in the last year</div>
+      <div class="item"><span><b>Alone</b><br><span class="muted">Fri, Oct 16 · 55m</span></span></div>
+      <div class="item"><span><b>Group · Grupo Lua</b><br><span class="muted">Sun, Oct 4 · 1h 10m</span></span></div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet full"><div class="grab"></div>
+      <div class="hdr"><b style="font-size:15px">Friday, October 16</b><span>×</span></div>
+      <div class="muted">Alone · 55m</div>
+      <div class="ch"><b>1</b>ginga 10 min</div>
+      <div class="ch"><b>2</b>10x (armada, aú)</div>
+      <div class="lbl">Coach feedback</div>
+      <div class="quote">Good rhythm. Let the shoulders stay loose.<div class="muted">João Morais</div></div>
+      <div class="field"><label>Coach feedback</label><div class="input" style="min-height:48px">Turn the hips before the kick.</div></div>
+      <span class="btn main block">Add feedback</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 11</span><b>Student page</b> (<code>#/me/teaching/students/&lt;id&gt;</code>). A year of the student's training; tap one to read its rounds and earlier feedback and write new feedback. "End coaching" needs a second tap.</div></div>
+</div>
+
+<!-- ============ ME PAGES ============ -->
+<h2>Me pages</h2>
+<div class="phones">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Progress</b></div>
+      <div class="field" style="margin-top:0"><label>Group for the ranking</label><div class="input">Grupo Lua ▾</div></div>
+      <div><span class="chip">Week</span><span class="chip on">Month</span><span class="chip">Year</span><span class="chip">All time</span></div>
+      <div class="lbl">Personal</div>
+      <div class="stat"><div class="card"><span class="muted">Total time</span><b>9h 30m</b></div><div class="card"><span class="muted">Trainings</span><b>9 trainings</b></div><div class="card"><span class="muted">Streak</span><b>3 days</b></div><div class="card"><span class="muted">Weekly average</span><b>2.1</b></div></div>
+      <div class="card" style="padding:7px 9px"><span class="muted">Hardest transitions</span><div class="small">armada → aú · 4 of 6 hard</div></div>
+      <div class="lbl">Group ranking</div>
+      <div class="list"><div><span>1 · Caio Lima</span><span>12h 5m</span></div><div><span>2 · João Morais</span><span>9h 30m</span></div><div><span>3 · Bia Santos</span><span>8h 10m</span></div></div>
+    </div>
+  </div><div class="cap"><span class="task">Task 12</span><b>Progress.</b> The existing statistics, moved here: personal numbers, hardest transitions, and the group ranking. The group picker shows only when you're in more than one group.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Repertoire</b></div>
+      <div class="card"><b>Armada into aú</b><div class="small" style="margin:4px 0">10x (armada, aú)</div><span class="chip">Log</span><span class="chip">Rename</span><span class="chip">Delete</span></div>
+      <div class="card"><b>Floor flow</b><div class="small" style="margin:4px 0">3x (negativa, rolê, meia lua de frente)</div><span class="chip">Log</span><span class="chip">Rename</span><span class="chip" style="border-color:var(--clay);color:var(--clay)">Confirm delete</span></div>
+    </div>
+  </div><div class="cap"><span class="task">Task 12</span><b>Repertoire.</b> Saved sequences. Log adds the sequence as a round to your Log training draft and opens it; Delete asks for a second tap.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Catalog</b></div>
+      <div style="font-weight:700">Uncatalogued moves</div>
+      <div class="muted">Words people typed that the catalog doesn't know yet.</div>
+      <div style="overflow:hidden;margin-top:8px">
+        <table class="tbl"><tr><th>Term</th><th>People</th><th>Uses</th><th>Actions</th></tr>
+          <tr><td>galopanti</td><td>3</td><td>7</td><td><span class="chip" style="font-size:10px;padding:2px 6px">Map ▾</span><span class="chip" style="font-size:10px;padding:2px 6px">Not a move</span></td></tr>
+          <tr><td>armadinha</td><td>2</td><td>3</td><td><span class="chip" style="font-size:10px;padding:2px 6px">Map ▾</span><span class="chip" style="font-size:10px;padding:2px 6px">Not a move</span></td></tr>
+        </table>
+      </div>
+      <div class="muted" style="margin-top:6px">← the table scrolls sideways inside its box →</div>
+    </div>
+  </div><div class="cap"><span class="task">Task 12</span><b>Catalog (curators only).</b> The existing curator table. Anyone else who opens <code>#/me/catalog</code> lands back on Me.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Groups</b></div>
+      <div class="row" style="justify-content:space-between"><div class="lbl">My groups</div><span class="chip" style="padding:2px 9px;font-size:11px">+ Create a group</span></div>
+      <div class="item"><span><b>Grupo Lua</b><br><span class="muted">Owner · Lisbon</span></span><span class="muted">›</span></div>
+      <div class="item"><span><b>Roda Sul</b><br><span class="muted">Member · Porto</span></span><span class="muted">›</span></div>
+      <div class="row" style="justify-content:space-between"><div class="lbl">My coaches</div><span class="chip" style="padding:2px 9px;font-size:11px">Find a coach</span></div>
+      <div class="item" style="align-items:center"><span><b>Professora Lua</b><br><span class="muted">Direct connection · Pending</span></span><span class="rowbtns"><span class="btn main">Accept</span><span class="btn">Decline</span></span></div>
+      <div class="item" style="align-items:center"><span><b>Mestre Sol</b><br><span class="muted">Direct connection · Active</span></span><span class="rowbtns"><span class="btn">End</span></span></div>
+      <div class="item"><span><b>Contramestre Rio</b><br><span class="muted">Through Roda Sul · Active</span></span></div>
+    </div>
+  </div><div class="cap"><span class="task">Task 13</span><b>Me → Groups.</b> Your groups with your role, and your own coaches. Only people with coaching (Both or Teach) see "Create a group"; others get a line saying how.</div></div>
+</div>
+
+<div class="phones" style="margin-top:22px">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Grupo Lua</b></div>
+      <div class="muted">Coach · Lisbon · Europe/Lisbon</div>
+      <div class="small">Tuesdays and Thursdays at 7 pm.</div>
+      <div class="lbl">Invite a student</div>
+      <div class="input ph">Student email (optional)</div>
+      <span class="btn block">Create invitation link</span>
+      <div class="input small" style="margin-top:6px">roda.fyi/dashboard?member_invite=…</div>
+      <div class="row" style="gap:4px;margin-top:4px"><span class="chip" style="margin:0">Copy</span><span class="chip" style="margin:0">Share by email</span><span class="muted">Expires in 7 days · one-time use</span></div>
+      <div class="lbl">Requests to join</div>
+      <div class="item" style="align-items:center"><span class="small">Eva Costa · wants to join</span><span class="rowbtns"><span class="btn main">Approve</span><span class="btn">Decline</span></span></div>
+      <div class="lbl">Members</div>
+      <div class="list"><div><span>Bia Santos <span class="muted">Member</span></span><span class="chip" style="margin:0;padding:2px 8px;font-size:11px">Remove</span></div><div><span>Mestre Sol <span class="muted">Coach</span></span><span></span></div></div>
+    </div>
+  </div><div class="cap"><span class="task">Task 14</span><b>Group page for a coach</b> (<code>#/group/&lt;id&gt;</code>). Invite by link, answer join requests, remove members (a second tap confirms). Plain members see only the details and "Leave group". People outside the group see "This group isn't available" until Discover's group card arrives in plan 3.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Grupo Lua</b></div>
+      <div class="muted">Owner · Lisbon · Europe/Lisbon</div>
+      <div class="lbl">Owner tools</div>
+      <div><span class="chip">Edit group</span><span class="chip">Create discovery link</span><span class="chip">Transfer ownership</span><span class="chip">Invite a child group</span></div>
+      <div class="input small" style="margin-top:8px">roda.fyi/dashboard?group_link=…</div>
+      <div class="muted">This link shows the group but never makes anyone a member.</div>
+      <span class="chip">Revoke link</span>
+      <div class="lbl">Group hierarchy</div>
+      <div class="muted">Visibility applies to the immediate parent only; it never cascades to higher groups.</div>
+      <div class="card" style="padding:7px 9px"><div class="small">Grupo Mãe → Grupo Lua · waiting for an answer</div><span class="chip">Accept</span><span class="chip">Decline</span></div>
+      <div class="card" style="padding:7px 9px"><div class="small">Grupo Lua → Roda Filha · active</div><span class="chip">Revoke</span></div>
+      <span class="btn danger block" style="margin-top:12px">Archive group</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 15</span><b>Owner tools</b> (further down the same page). Edit, discovery link, transfer to another coach, parent/child groups and what a parent sees, and archive (second tap).</div></div>
+</div>
+
+<!-- ============ LOG + SETTINGS ============ -->
+<h2>Log training start time and Settings → Profile</h2>
+<div class="phones">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>✕</span><b style="flex:1;margin-left:8px">Log training</b></div>
+      <div><span class="chip">Today</span><span class="chip on">Yesterday</span><span class="chip">📅 Oct 14</span><span class="chip" style="border-color:var(--gold)">🕖 07:30 AM</span><span class="chip">45m ▾</span></div>
+      <div class="rc"><div class="h"><span>Round 1</span><span>×</span></div>ginga 10 min<br><span class="mv">✓ Ginga · 10 min</span><div class="muted" style="margin-top:3px">Easy · <b>Okay</b> · Hard</div></div>
+      <div class="rc"><div class="h"><span>Round 2</span><span>×</span></div>10x (armada, aú)<br><span class="mv">✓ Armada</span><span class="mv">✓ Aú</span></div>
+      <div style="margin-top:8px"><span class="chip">🥋 Moves</span><span class="chip">📚 Saved</span><span class="chip">📝 Notes</span><span class="chip">🎥 Link</span></div>
+    </div>
+    <div class="dock"><div class="chat"><div class="input">e.g. 10x (armada, aú, 3x ginga)</div><div class="go">↑</div></div><span class="btn main block">Save</span></div>
+  </div><div class="cap"><span class="task">Task 6</span><b>Log training with the start-time chip.</b> New chip between the date and the duration. It starts at "now minus the duration" and follows the duration until you change it, so yesterday's training no longer shows today's clock time.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>✕</span><b style="flex:1;margin-left:8px">Log training</b></div>
+      <div><span class="chip on">Today</span><span class="chip">Yesterday</span><span class="chip">📅</span><span class="chip" style="border-color:var(--clay)">🕖 11:30 PM</span><span class="chip">45m ▾</span></div>
+      <div class="rc"><div class="h"><span>Round 1</span><span>×</span></div>ginga 10 min</div>
+      <div class="err-msg" style="margin-top:8px">That start time is still ahead. Choose a time that has passed.</div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet full"><div class="grab"></div>
+      <div class="hdr"><b style="font-size:15px">Start time</b><span class="muted">phone's own picker</span></div>
+      <div class="wheel"><div>05<b>07</b>09</div><div>25<b>30</b>35</div></div>
+      <div class="muted">Steps of 5 minutes.</div>
+      <span class="btn main block">Done</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 6</span><b>Picking a start time.</b> Tapping the chip opens the phone's own time picker. A time later than now is refused on Save with this message, and the draft stays.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span>‹</span><b style="flex:1;margin-left:8px">Settings</b></div>
+      <div class="lbl">Profile</div>
+      <div class="row"><div class="ava lg">JM</div><div class="field" style="flex:1;margin:0"><label>Photo</label><div class="input ph">Choose a photo…</div></div></div>
+      <div class="field"><label>Name</label><div class="input">João Morais</div></div>
+      <div class="field"><label>Timezone</label><div class="input">Europe/Lisbon</div></div>
+      <div class="row small" style="margin-top:8px"><span class="ck on">✓</span>Show me in group rankings</div>
+      <span class="btn main block">Save profile</span>
+      <div class="small" style="color:var(--sand);margin-top:4px">Profile saved.</div>
+      <div class="lbl">Language</div>
+      <div class="seg" style="grid-template-columns:1fr 1fr;width:200px"><span class="on">English</span><span>Português</span></div>
+      <span class="btn block">Open the classic dashboard</span>
+      <span class="btn danger block">Sign out</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 4</span><b>Settings → Profile.</b> Name, photo, timezone (blank means automatic), and ranking visibility, above the existing language and sign-out. Plan 3 adds the Discover settings here.</div></div>
+</div>
+
+<!-- ============ DESKTOP ============ -->
+<h2>Desktop</h2>
+<div class="desk">
+  <div class="side">
+    <div style="color:var(--gold);font-weight:800;font-size:18px;margin-bottom:10px">RODA</div>
+    <div style="background:var(--gold);color:var(--bg);font-weight:700;text-align:center;border-radius:999px;margin-bottom:10px">+ Create</div>
+    <div>◉ Today</div><div>▦ Calendar</div><div>⌖ Discover</div><div class="on">☺ Me</div>
+  </div>
+  <div class="pane">
+    <div class="hdr"><b>Teaching</b></div>
+    <div><span class="chip on">📅 Schedule a class</span><span class="chip">🧾 Record a past class</span></div>
+    <div class="lbl">Upcoming classes</div>
+    <div class="item" style="border-color:var(--gold)"><span><b>Group · Grupo Lua</b><br><span class="muted">Thu, Oct 15, 07:00 PM · Armada ladder</span></span><span class="muted">›</span></div>
+    <div class="item"><span><b>Personal class · with Bia Santos</b><br><span class="muted">Sat, Oct 17, 10:00 AM · Ginga drills</span></span><span class="muted">›</span></div>
+    <div class="lbl">Plans</div>
+    <div class="item"><span><b>Armada ladder</b><br><span class="muted">1h · Published</span></span></div>
+    <div class="item"><span><b>Ginga drills</b><br><span class="muted">45m · Draft</span></span></div>
+    <div class="lbl">Students</div>
+    <div class="list"><div><span>Bia Santos</span><span class="muted">›</span></div><div><span>Caio Lima</span><span class="muted">›</span></div></div>
+  </div>
+  <div class="pane" style="border-right:0;position:relative">
+    <div class="hdr"><span class="muted">Group class</span><span class="chip" style="margin:0;padding:3px 9px;font-size:11px">Edit plan</span></div>
+    <h4>Group · Grupo Lua</h4>
+    <div class="muted">Thu, Oct 15 · 07:00 PM · You teach · plan: Armada ladder</div>
+    <span class="tag">⏱ 1h</span><span class="tag">👥 3 coming</span>
+    <div class="lbl">Plan</div>
+    <div class="ch"><b>1</b>ginga 10 min</div><div class="ch"><b>2</b>10x (armada, aú)</div><div class="ch"><b>3</b>3x (negativa, rolê)</div>
+    <div class="lbl">Who's here · tap to mark</div>
+    <div class="att"><span>Bia Santos</span><span class="ck on">✓</span></div>
+    <div class="att"><span>Caio Lima</span><span class="ck on">✓</span></div>
+    <div class="att"><span>Duda Reis</span><span class="ck"></span></div>
+    <div class="att"><span>Eva Costa</span><span class="ck on">✓</span></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><span class="btn">Cancel class</span><span class="btn main">Finish class</span></div>
+  </div>
+</div>
+<div class="cap" style="max-width:900px"><span class="task">Task 10</span><b>Teaching on desktop (900 px and wider).</b> The sidebar's button reads "+ Create" in Both and Teach. Opening a class, plan, or student from Teaching keeps Teaching on the left and shows the page on the right, like Today and Calendar do with trainings. On phones the same pages open full-screen.</div>
+</body></html>
