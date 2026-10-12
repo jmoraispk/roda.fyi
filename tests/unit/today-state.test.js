@@ -45,4 +45,15 @@ describe('today state', () => {
       .toEqual({ type: 'next', item: sooner, teaching: true });
     expect(nowNextCard({ calendarItems: [farAway], recent: [], profileId: 'me', now })).toBeNull();
   });
+
+  it('uses the person own date, not the UTC date', () => {
+    const late = new Date('2026-10-12T00:30:00Z');
+    const tonight = { item_id: 's5', item_type: 'scheduled', status: 'scheduled', coach_profile_id: 'x',
+      starts_at: '2026-10-12T00:45:00Z', duration_minutes: 60, local_date: '2026-10-11' };
+    const twoDaysOut = { ...tonight, item_id: 's6', starts_at: '2026-10-13T22:00:00Z', local_date: '2026-10-13' };
+    expect(nowNextCard({ calendarItems: [tonight], recent: [], profileId: 'me', now: late, todayIso: '2026-10-11' }))
+      .toMatchObject({ type: 'next', item: tonight });
+    expect(nowNextCard({ calendarItems: [twoDaysOut], recent: [], profileId: 'me', now: late, todayIso: '2026-10-11' }))
+      .toBeNull();
+  });
 });

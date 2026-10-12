@@ -55,4 +55,13 @@ describe('sheet', () => {
     expect(initials('ana')).toBe('A');
     expect(initials('')).toBe('?');
   });
+
+  it('closes the open sheet on request', async () => {
+    const { closeSheet } = await import('../../src/app/shell/sheet.js');
+    const { opener } = open();
+    closeSheet();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(opener);
+    expect(() => closeSheet()).not.toThrow();
+  });
 });

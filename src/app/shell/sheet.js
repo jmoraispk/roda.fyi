@@ -62,3 +62,7 @@ export function openSheet({ document, title, content, closeLabel = 'Close', onCl
   current = { close };
   return { element: panel, body, close };
 }
+
+export function closeSheet() {
+  current?.close();
+}

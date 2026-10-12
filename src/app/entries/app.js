@@ -1,4 +1,5 @@
 // src/app/entries/app.js
+import { loadStartup } from '../app-startup.js';
 import { createServices } from '../create-services.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
 import { seedDemoData } from '../demo-data.js';
@@ -11,7 +12,7 @@ import { renderTraining } from '../screens/training.js';
 import { createLayout } from '../shell/layout.js';
 import { el } from '../shell/page.js';
 import { createRouter, isDetail, tabFor } from '../shell/router.js';
-import { openSheet } from '../shell/sheet.js';
+import { closeSheet, openSheet } from '../shell/sheet.js';
 
 function localIsoDate(date, timezone) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
@@ -26,12 +27,23 @@ async function main() {
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
   const root = document.querySelector('#appRoot');
 
-  const session = await services.auth.getSession();
-  if (!session) {
-    location.replace(`/?next=${encodeURIComponent(`/app${location.hash}`)}`);
+  const toSignIn = () => location.replace(`/?next=${encodeURIComponent(`/app${location.hash}`)}`);
+  const startup = await loadStartup({ auth: services.auth, profile: services.profile });
+  if (startup.status === 'signed-out') {
+    toSignIn();
     return;
   }
-  const profile = await services.profile.loadProfile();
+  if (startup.status === 'error') {
+    root.replaceChildren(el(document, 'section', { className: 'screen' }, [
+      el(document, 'p', { text: navigator.onLine ? (startup.error?.message || i18n.t('app.loadError')) : i18n.t('app.offline') }),
+      el(document, 'button', { className: 'button-primary', text: i18n.t('app.retry'), attrs: { type: 'button' }, on: { click: () => location.reload() } }),
+    ]));
+    return;
+  }
+  const { profile } = startup;
+  services.auth.onAuthStateChange((_event, nextSession) => {
+    if (!nextSession) toSignIn();
+  });
   const timezone = profile.timezone_override || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   let termMappings = [];
   services.catalog.listTermMappings().then((rows) => { termMappings = rows; }).catch(() => {});
@@ -83,6 +95,7 @@ async function main() {
 
   async function show(route) {
     const token = ++renderToken;
+    closeSheet();
     const detailRoute = isDetail(route);
     const sideBySide = desktop.matches && route.name === 'training';
     layout.setActive(tabFor(route) ?? tabFor(lastTopLevel));
@@ -90,7 +103,7 @@ async function main() {
     if (!detailRoute) lastTopLevel = route;
     const target = sideBySide ? layout.detail : layout.main;
     target.replaceChildren(el(document, 'p', { className: 'muted screen-loading', text: i18n.t('app.loading') }));
-    if (sideBySide && !layout.main.firstElementChild?.dataset.screen) {
+    if (sideBySide && layout.main.firstElementChild?.dataset.screen !== lastTopLevel.name) {
       const top = await screenFor(lastTopLevel);
       top.dataset.screen = lastTopLevel.name;
       if (token === renderToken) layout.main.replaceChildren(top);

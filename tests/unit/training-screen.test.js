@@ -82,4 +82,15 @@ describe('training screen', () => {
     view.querySelector('button[aria-label="Back"]').click();
     expect(context.back).toHaveBeenCalledWith('/');
   });
+
+  it('shows resources still waiting to sync on the page', async () => {
+    localStorage.setItem('roda.pendingResources:o1', JSON.stringify([
+      { occurrenceId: 'o1', kind: 'summary', title: '', url: null, body: '# Notes' },
+    ]));
+    const training = { ...base, can_add_resources: true };
+    const view = await renderTraining(ctx({ getTraining: vi.fn().mockResolvedValue(training), addResource: vi.fn() }), { params: { id: 'o1' } });
+    expect(view.querySelector('[data-pending-resources]').textContent).toBe('1 resource waiting to sync.');
+    expect(view.querySelector('button[data-action="retry-resources"]')).not.toBeNull();
+    localStorage.clear();
+  });
 });
