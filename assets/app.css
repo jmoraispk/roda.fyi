@@ -75,3 +75,19 @@ button { font: inherit; color: inherit; }
   .screen { padding-bottom: 32px; }
   .sheet { left: 50%; right: auto; width: 520px; transform: translateX(-50%); }
 }
+
+/* Today */
+.me-avatar.small { width: 34px; height: 34px; font-size: .8rem; text-decoration: none; }
+.week-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 14px; }
+.week-day { display: grid; justify-items: center; gap: 2px; padding: 6px 0; border: 0; border-radius: 12px; background: var(--card); cursor: pointer; }
+.week-day[aria-current="date"] { background: var(--gold); color: var(--bg); font-weight: 700; }
+.week-name { font-size: .65rem; opacity: .8; }
+.week-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.now-card { border-color: var(--gold); background: linear-gradient(135deg, #3a2a15, var(--card)); margin-bottom: 8px; }
+.now-card h2 { margin: 2px 0 4px; font-size: 1.2rem; }
+.recent-list { display: grid; gap: 8px; }
+.recent-card { display: grid; gap: 4px; text-align: left; width: 100%; cursor: pointer; }
+.recent-head { display: flex; justify-content: space-between; gap: 8px; }
+.recent-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .9rem; }
+.recent-card .felt { justify-self: start; }
+.empty-card { text-align: center; border-style: dashed; }
