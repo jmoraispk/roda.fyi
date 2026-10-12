@@ -180,6 +180,8 @@ async function main() {
     const sideBySide = (desktop.matches && route.name === 'training') || besideTeaching;
     layout.setActive(tabFor(route) ?? tabFor(lastTopLevel));
     layout.setDetailMode(detailRoute && !sideBySide);
+    // The welcome has no way out until it is finished, on phones and desktop alike.
+    layout.root.classList.toggle('app-welcome', route.name === 'welcome');
     if (!detailRoute) lastTopLevel = route;
     const target = sideBySide ? layout.detail : layout.main;
     target.replaceChildren(el(document, 'p', { className: 'muted screen-loading', text: i18n.t('app.loading') }));

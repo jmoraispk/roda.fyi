@@ -86,7 +86,8 @@ export async function renderClass(ctx, route) {
   if (data.instructions) screen.append(el(document, 'p', { className: 'training-notes', text: data.instructions }));
 
   const here = new Set(data.people.map(({ profile_id: id }) => id));
-  const started = new Date(data.starts_at) <= ctx.now();
+  const startsAt = new Date(data.starts_at).getTime();
+  const hasStarted = () => startsAt <= ctx.now().getTime();
   const hint = el(document, 'p', { className: 'muted class-hint' });
   const status = el(document, 'p', { className: 'log-status', attrs: { role: 'status' } });
   const finish = el(document, 'button', { className: 'bar-main', text: i18n.t('classPage.finish'), attrs: { type: 'button' }, dataset: { action: 'finish' } });
@@ -95,6 +96,7 @@ export async function renderClass(ctx, route) {
   function refresh() {
     coming.textContent = `👥 ${i18n.t('classPage.coming', { count: here.size })}`;
     const studentAbsent = data.kind === 'personal_class' && !here.size;
+    const started = hasStarted();
     finish.disabled = busy || !started || studentAbsent;
     hint.textContent = !started ? i18n.t('classPage.notStarted')
       : studentAbsent ? i18n.t('classPage.studentAbsent', { name: data.student_name ?? '' }) : '';
@@ -151,6 +153,9 @@ export async function renderClass(ctx, route) {
   });
   cancel.addEventListener('click', () => cancelSheet(ctx, data));
   refresh();
+  // The page may be opened before the class starts; enable Finish when it does.
+  const wait = startsAt - ctx.now().getTime();
+  if (wait > 0 && wait < 86400000) setTimeout(() => { if (screen.isConnected) refresh(); }, wait + 250);
   screen.append(el(document, 'div', { className: 'training-bar' }, [cancel, finish]));
   return screen;
 }

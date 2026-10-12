@@ -52,4 +52,10 @@ describe('dashboard i18n', () => {
     expect(Object.keys(DASHBOARD_STRINGS.pt).sort())
       .toEqual(Object.keys(DASHBOARD_STRINGS.en).sort());
   });
+
+  it('uses American spelling in English copy', async () => {
+    const { AppError } = await import('../../src/app/errors.js');
+    const english = [...Object.values(DASHBOARD_STRINGS.en), new AppError('conflict', 'cancelled_training').message].join('\n');
+    expect(english).not.toMatch(/cancell/i);
+  });
 });
