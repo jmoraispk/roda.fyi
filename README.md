@@ -31,6 +31,13 @@ its attendees and resources.
 Catalog curators see a Catalog tab listing uncatalogued words with totals only
 and can map, merge, or ignore them.
 
+### The new app (`/app`)
+
+A mobile-first version of the dashboard is being built at `/app`: Today,
+Calendar, Log training, and the training page, with a bottom tab bar on phones
+and a sidebar on desktop. It can be added to a phone's home screen. Sections
+not rebuilt yet link to the classic dashboard at `/dashboard`.
+
 ## Local browser development
 
 Use Node.js 22.22.2 from `.nvmrc`:
