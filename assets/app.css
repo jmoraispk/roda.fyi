@@ -108,3 +108,23 @@ button { font: inherit; color: inherit; }
 .day-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; width: 100%; }
 button.day-item { cursor: pointer; }
 .day-item.upcoming { border-style: dashed; }
+
+/* Training page */
+.training-video { margin: 0 -16px 12px; }
+.training-video iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; display: block; background: #000; }
+.training-video figcaption { padding: 6px 16px 0; }
+.training-title { font: 800 1.35rem/1.15 var(--display); margin: 4px 0; }
+.training-meta { margin: 0 0 6px; }
+.training-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.resource-buttons { display: flex; flex-wrap: wrap; }
+.chapters { list-style: none; margin: 0; padding: 0; }
+.chapter { display: flex; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.chapter-number { color: var(--gold); font-family: var(--mono); font-size: .8rem; width: 18px; flex: none; }
+.chapter-text { flex: 1; }
+.training-notes { white-space: pre-wrap; }
+.feedback { margin: 8px 0; padding-left: 10px; border-left: 3px solid var(--gold); }
+.feedback p { margin: 0 0 4px; }
+.training-bar { position: sticky; bottom: 0; margin: 18px -16px 0; display: grid; grid-auto-flow: column; background: #1b150f; border-top: 1px solid var(--line); padding-bottom: var(--safe-bottom); }
+.training-bar button { border: 0; background: transparent; padding: 16px 0; cursor: pointer; }
+.training-bar .bar-main { color: var(--gold); font-weight: 700; }
+.resource-transcript { white-space: pre-wrap; font: inherit; }
