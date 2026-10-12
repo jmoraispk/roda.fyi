@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support · Roda</title>
+<meta name="description" content="Get help with roda.fyi: account and sign-in problems, deleting your data, reporting a bug or abuse. Email support@roda.fyi.">
+<meta name="theme-color" content="#17120D">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  /* Same self-hosted fonts and colors as the home page and /app. No external requests. */
+  @font-face { font-family: 'Syne'; font-style: normal; font-weight: 800; font-display: swap; src: url('/assets/fonts/syne-800-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Hanken Grotesk'; font-style: normal; font-weight: 400; font-display: swap; src: url('/assets/fonts/hanken-grotesk-400-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Hanken Grotesk'; font-style: normal; font-weight: 600; font-display: swap; src: url('/assets/fonts/hanken-grotesk-600-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url('/assets/fonts/space-mono-700-latin.woff2') format('woff2'); }
+  :root {
+    --bg: #17120D; --card: #251C13; --card-2: #2C2117; --line: #3A2C1E;
+    --gold: #EBA63C; --clay: #D2502A; --cream: #F3E9D6; --sand: #E6D4B2; --muted: #A8957A;
+    --display: 'Syne', system-ui, sans-serif;
+    --body: 'Hanken Grotesk', system-ui, sans-serif;
+    --mono: 'Space Mono', ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--cream); font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--clay); color: #fff; }
+  a { color: var(--gold); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; border-radius: 3px; }
+  header.nav { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--line); background: rgba(23, 18, 13, .94); backdrop-filter: blur(10px); }
+  .nav-inner { max-width: 760px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; color: var(--cream); text-decoration: none; font: 800 1.05rem/1 var(--display); letter-spacing: .02em; }
+  .brand .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(235, 166, 60, .18); }
+  .nav-links { margin-left: auto; display: flex; gap: 4px; }
+  .nav-links a { color: var(--muted); text-decoration: none; font: 700 .72rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 8px 10px; border-radius: 999px; }
+  .nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--gold); background: var(--card-2); }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 80px; }
+  .kicker { color: var(--gold); font: 700 .7rem/1.4 var(--mono); letter-spacing: .16em; text-transform: uppercase; margin: 0; }
+  h1 { font: 800 clamp(2.2rem, 9vw, 3.2rem)/1.05 var(--display); letter-spacing: -.025em; margin: 8px 0 12px; }
+  h2 { font: 800 1.35rem/1.2 var(--display); margin: 44px 0 10px; letter-spacing: -.01em; }
+  h3 { font: 600 1.05rem/1.3 var(--body); margin: 24px 0 6px; color: var(--sand); }
+  p, ul { margin: 0 0 14px; }
+  ul { padding-left: 1.2em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--gold); }
+  strong { font-weight: 600; color: var(--sand); }
+  .lead { color: var(--sand); font-size: 1.08rem; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .note { border: 1px solid var(--line); border-left: 3px solid var(--gold); background: var(--card); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
+  .note p:last-child { margin-bottom: 0; }
+  .table-wrap { overflow-x: auto; margin: 0 0 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); }
+  th { font: 700 .7rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  code { font: .88em var(--mono); color: var(--sand); background: var(--card-2); padding: 1px 5px; border-radius: 4px; }
+  footer { border-top: 1px solid var(--line); }
+  .foot-inner { max-width: 760px; margin: 0 auto; padding: 24px 16px 40px; color: var(--muted); font-size: .9rem; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .foot-inner a { color: var(--muted); }
+  .foot-inner a:hover { color: var(--gold); }
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Roda home"><span class="dot"></span><b>RODA</b></a>
+    <nav class="nav-links" aria-label="Site">
+      <a href="/privacy">Privacy</a>
+      <a href="/support" aria-current="page">Support</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <p class="kicker">roda.fyi</p>
+  <h1>Support</h1>
+  <p class="lead">Stuck, found a bug, or want your data gone? Email us and a real person will read it.</p>
+
+  <div class="note">
+    <p><strong>Email:</strong> <a href="mailto:support@roda.fyi">support@roda.fyi</a></p>
+    <p>We usually reply within a few days.</p>
+  </div>
+
+  <h2>What to email us about</h2>
+
+  <h3>Account and sign-in help</h3>
+  <ul>
+    <li>The sign-in link didn't arrive, or it says it has expired.</li>
+    <li>You can't sign in, or you end up in the wrong account.</li>
+    <li>You can't join a group, accept an invite, or see a class you expected.</li>
+  </ul>
+  <p>Tell us the email address you sign in with and what you see on screen. A screenshot helps.</p>
+
+  <h3>Getting a copy of your data, or deleting it</h3>
+  <p>There isn't a delete button in the app yet. Email us from the address you sign in with and say whether you want a copy of your data, your account deleted, or both. We'll confirm it's you and take care of it within one month, usually much sooner. If you own a group with other members, we'll ask you to hand it over or archive it first. The <a href="/privacy">privacy policy</a> explains what we keep and what deletion covers.</p>
+
+  <h3>Reporting a bug</h3>
+  <p>Tell us what you did, what you expected, and what happened instead. Include your device and browser (for example "iPhone, Safari" or "Windows, Chrome") and a screenshot if you can.</p>
+
+  <h3>Reporting abuse</h3>
+  <p>If someone is harassing you, impersonating someone, or posting something harmful in a group, training note, or link, email us with the person's or group's name and what happened. We'll look into it and may remove the content or the account. We won't tell anyone who sent the report.</p>
+
+  <h3>Anything else</h3>
+  <p>Ideas, a missing capoeira move, a translation fix, or just a hello. We read everything.</p>
+
+  <h2>Before you write</h2>
+  <ul>
+    <li><strong>No sign-in email?</strong> Check your spam folder. Links expire, so if it's been a while, request a new one.</li>
+    <li><strong>Something looks out of date?</strong> Reload the page. The app keeps a copy of itself for offline use and updates on the next visit.</li>
+  </ul>
+  <p>We will never ask for a password; roda.fyi doesn't use them.</p>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <a href="/">Home</a>
+    <a href="/privacy">Privacy</a>
+    <a href="mailto:support@roda.fyi">support@roda.fyi</a>
+  </div>
+</footer>
+</body>
+</html>

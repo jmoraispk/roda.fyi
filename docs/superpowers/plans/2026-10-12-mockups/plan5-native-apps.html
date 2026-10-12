@@ -1,0 +1,304 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Plan 5 · Phone apps</title><link rel="stylesheet" href="mock.css">
+<style>
+  /* Page-only helpers: system status bar, home indicator, Android nav bar, in-app browser, home screen. */
+  .sb { height: 26px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font-size: 11px; font-weight: 600; color: var(--cream); background: var(--bg); position: relative; }
+  .sb .notch { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 96px; height: 20px; background: #000; border-radius: 0 0 12px 12px; }
+  .homebar { height: 18px; flex: none; display: grid; place-items: center; background: var(--bar); }
+  .homebar i { width: 96px; height: 4px; border-radius: 2px; background: var(--cream); opacity: .8; }
+  .nav { height: 34px; flex: none; display: grid; grid-template-columns: repeat(3, 1fr); place-items: center; background: #000; color: var(--cream); font-size: 15px; }
+  .nav .press { color: var(--gold); text-shadow: 0 0 8px var(--gold); }
+  .safe { outline: 1px dashed var(--teal); outline-offset: -1px; }
+  .safe-note { position: absolute; right: 8px; font-size: 9px; color: var(--teal); background: #0009; padding: 1px 5px; border-radius: 4px; }
+  .center { flex: 1; display: grid; place-items: center; text-align: center; }
+  .logo { width: 84px; height: 84px; display: block; margin: 0 auto; }
+  .wordmark { font-weight: 800; letter-spacing: 3px; font-size: 18px; color: var(--cream); margin-top: 10px; }
+  .btn.google { background: var(--cream); color: #1b150f; border-color: var(--cream); font-weight: 700; }
+  .btn.apple { background: #000; color: #fff; border-color: #000; font-weight: 700; }
+  .browser { position: absolute; left: 0; right: 0; top: 26px; bottom: 0; background: #f4f1ec; color: #1f1f1f; border-radius: 14px 14px 0 0; display: flex; flex-direction: column; box-shadow: 0 -6px 18px #000a; }
+  .browser .chrome { display: flex; gap: 8px; align-items: center; padding: 9px 10px; border-bottom: 1px solid #ddd; font-size: 11px; }
+  .browser .addr { flex: 1; background: #e4e0d9; border-radius: 8px; padding: 5px 8px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .browser .done { color: #1a73e8; font-weight: 700; }
+  .browser .page { padding: 16px 16px; font-size: 12px; }
+  .acct { display: flex; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 1px solid #e3e3e3; }
+  .acct .ava { width: 30px; height: 30px; font-size: 12px; }
+  .prompt { position: absolute; left: 22px; right: 22px; top: 210px; background: #2c2620; color: var(--cream); border-radius: 14px; text-align: center; font-size: 12px; box-shadow: 0 8px 30px #000c; overflow: hidden; }
+  .prompt p { margin: 0; padding: 14px 14px 12px; }
+  .prompt .acts { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #4a4036; }
+  .prompt .acts span { padding: 9px 0; color: #4ea1ff; }
+  .prompt .acts span + span { border-left: 1px solid #4a4036; font-weight: 700; }
+  .toast { position: absolute; left: 14px; right: 14px; bottom: 90px; background: var(--card-2); border: 1px solid var(--green); border-radius: 12px; padding: 8px 10px; font-size: 12px; }
+  .video { height: 150px; border-radius: 12px; background: linear-gradient(135deg, #2a2119, #0d0a07); display: grid; place-items: center; position: relative; margin-top: 6px; }
+  .video .play { width: 46px; height: 32px; border-radius: 9px; background: #e33; color: #fff; display: grid; place-items: center; font-size: 14px; }
+  .video .src { position: absolute; left: 8px; bottom: 6px; font-size: 9px; color: #cfc3ad; }
+  .home { flex: 1; padding: 22px 16px 0; background: radial-gradient(circle at 30% 20%, #3b2c4a, #141a2a 60%, #0c0f18); }
+  .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 8px; text-align: center; font-size: 9px; color: #eee; }
+  .apps .ic { width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 4px; display: grid; place-items: center; font-size: 22px; }
+  .apps .ic svg { width: 48px; height: 48px; display: block; }
+  .apps .me .ic { box-shadow: 0 0 0 2px var(--gold), 0 0 16px #eba63c88; }
+  .dock { margin: 22px -6px 0; background: #ffffff22; border-radius: 22px; padding: 10px 8px; }
+  .backmap { font-size: 11.5px; }
+  .backmap > div { display: grid; grid-template-columns: 1fr 14px 1fr; gap: 6px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 7px 8px; margin-top: 7px; }
+  .backmap b { color: var(--gold); font-weight: 600; }
+  .later { color: var(--muted); }
+  .checkrow { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; font-size: 12px; }
+  .btn[aria-disabled="true"] { opacity: .45; }
+  .btn.block { flex: none; }
+</style></head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="roda" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#17120D"/><path d="M22 5 Q9 16 22 27" fill="none" stroke="#EBA63C" stroke-width="2.4" stroke-linecap="round"/><line x1="22" y1="5" x2="22" y2="27" stroke="#caa15f" stroke-width="0.9"/><ellipse cx="16.5" cy="20" rx="4.2" ry="4.8" fill="#2C2117" stroke="#D2502A" stroke-width="1.2"/></symbol>
+</defs></svg>
+
+<div class="top"><a class="back" href="index.html">← All screens</a><h1>Plan 5 · Phone apps</h1></div>
+<p class="subtitle">The same Roda app, installed as an iPhone and Android app. Part A builds the apps so you can put them on your own phone now: the app opens with a splash, signs you in through the phone's browser, and works like the web version, with the phone's own status bar, Back button, and home-screen icon. Part B, for later, adds what the App Store and Google Play require before publishing.</p>
+
+<h2>Opening the app and signing in</h2>
+<p class="subtitle">Sign-in happens in the phone's browser, because Google does not allow signing in inside an app's built-in web view. You come back to the app already signed in.</p>
+<div class="phones">
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="center" style="background:var(--bg)">
+      <div><svg class="logo"><use href="#roda"/></svg><div class="wordmark">RODA</div></div>
+    </div>
+    <div class="homebar" style="background:var(--bg)"><i></i></div>
+  </div><div class="cap"><span class="task">A·Task 2</span><b>Splash.</b> The logo on the dark Roda background while the app starts. It disappears as soon as the first screen is ready (A·Task 4).</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr" style="display:flex;flex-direction:column;justify-content:center;padding-bottom:10px">
+      <svg class="logo" style="width:56px;height:56px;margin:0"><use href="#roda"/></svg>
+      <div class="title" style="margin-top:12px">Welcome to Roda</div>
+      <div class="muted" style="font-size:12px">Train, teach, and track capoeira.</div>
+      <span class="btn google block" style="margin-top:18px">G&nbsp; Continue with Google</span>
+      <div class="field" style="margin-top:14px"><div class="input ph">Email address</div></div>
+      <span class="btn block">Email me a sign-in link</span>
+      <span class="btn block">Try the demo</span>
+      <div class="muted" style="margin-top:10px;min-height:14px"></div>
+    </div>
+    <div class="homebar" style="background:var(--bg)"><i></i></div>
+  </div><div class="cap"><span class="task">A·Task 3</span><b>Sign-in screen.</b> Shown inside the app instead of the website's home page. Google, an email link, or a demo with sample data.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr" style="opacity:.35">
+      <div class="title">Welcome to Roda</div>
+      <div class="muted">Opening sign-in…</div>
+    </div>
+    <div class="browser">
+      <div class="chrome"><span class="done">Done</span><span class="addr">🔒 accounts.google.com</span><span>⋯</span></div>
+      <div class="page">
+        <div style="font-size:15px;font-weight:700">Choose an account</div>
+        <div style="color:#555;margin:2px 0 10px">to continue to <b>roda.fyi</b></div>
+        <div class="acct"><span class="ava">AS</span><div><b>Ana Silva</b><div style="color:#666">ana.silva@gmail.com</div></div></div>
+        <div class="acct"><span class="ava teal">AS</span><div><b>Ana Silva</b><div style="color:#666">ana@grupolua.pt</div></div></div>
+        <div class="acct" style="border:0;color:#1a73e8">＋ Use another account</div>
+      </div>
+    </div>
+  </div><div class="cap"><span class="task">A·Task 3</span><b>Google in the phone's browser.</b> A browser sheet slides up over the app. Tapping Done brings you back, and the buttons work again.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:42</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="browser" style="background:#f4f1ec">
+      <div class="chrome"><span class="done">Done</span><span class="addr">🔒 roda.fyi</span><span>⋯</span></div>
+      <div class="page" style="color:#777">Signing you in…</div>
+    </div>
+    <div class="dim"></div>
+    <div class="prompt"><p><b>Open in “Roda”?</b></p><div class="acts"><span>Cancel</span><span>Open</span></div></div>
+  </div><div class="cap"><span class="task">A·Task 3</span><b>Back to the app.</b> After you pick an account, the phone hands you back to Roda. On iPhone it asks once to open Roda; on Android it switches straight back.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:42</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr">
+      <div class="hdr"><b>Today</b><span class="ava" style="width:28px;height:28px;font-size:12px">AS</span></div>
+      <div class="card hi">
+        <div class="muted">IN 2 HOURS · GRUPO LUA</div>
+        <h4>Group class · 19:00</h4>
+        <div class="small">Mestre João · 60m</div>
+      </div>
+      <div class="lbl">Recent</div>
+      <div class="card"><div class="row" style="justify-content:space-between"><b>Yesterday · Alone · 45m</b><span>🎙️</span></div><div class="muted">ginga 10 min · 10x (armada, aú)</div></div>
+      <div class="card"><div class="row" style="justify-content:space-between"><b>Thu · Group class · 1h 26m</b><span>🎥</span></div><div class="muted">Grupo Lua · 6 attended</div></div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+    <div class="homebar"><i></i></div>
+  </div><div class="cap"><span class="task">A·Task 3</span><b>Signed in.</b> You land where you were heading, usually Today. Your session is kept on the phone, so you stay signed in.</div></div>
+
+</div>
+
+<h2>Inside the app</h2>
+<p class="subtitle">The screens are the same as on the web. The phone's status bar stays readable, and nothing hides under the notch or the home bar.</p>
+<div class="phones">
+
+  <div class="shot"><div class="phone">
+    <div class="sb safe"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span><span class="safe-note" style="top:6px">status bar</span></div>
+    <div class="scr">
+      <div class="hdr"><b>Today</b><span class="ava" style="width:28px;height:28px;font-size:12px">AS</span></div>
+      <div class="card hi">
+        <div class="muted">IN 2 HOURS · GRUPO LUA</div>
+        <h4>Group class · 19:00</h4>
+        <div><span class="tag">8 coming</span><span class="tag">planned: Hard</span></div>
+      </div>
+      <div class="lbl">Recent</div>
+      <div class="card"><b>Yesterday · Alone · 45m</b><div class="muted">felt Okay</div></div>
+      <div class="card"><b>Thu · Group class · 1h 26m</b><div class="muted">Grupo Lua · 6 attended</div></div>
+      <div class="card"><b>Tue · Personal · 50m</b><div class="muted">with Bia</div></div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+    <div class="homebar safe" style="position:relative"><i></i><span class="safe-note" style="top:3px">home bar</span></div>
+  </div><div class="cap"><span class="task">A·Task 4</span><b>Today in the app.</b> Light status-bar icons on the dark background. The dashed areas are kept clear for the phone's own bars.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb" style="justify-content:space-between"><span>9:41</span><span>▾ ▴ 🔋</span></div>
+    <div class="scr">
+      <div class="title">Android Back button</div>
+      <div class="muted" style="font-size:12px">What one press of ◁ does:</div>
+      <div class="backmap">
+        <div><span>A sheet is open</span><span>→</span><b>Sheet closes</b></div>
+        <div><span>A training page</span><span>→</span><b>Back to where you were</b></div>
+        <div><span>Me → Settings</span><span>→</span><b>Me</b></div>
+        <div><span>Calendar, Discover, or Me tab</span><span>→</span><b>Today</b></div>
+        <div><span>Today</span><span>→</span><b>App goes to the background</b></div>
+      </div>
+      <div class="muted" style="margin-top:10px;font-size:11px">Back never leaves you on a blank screen, and it matches the ‹ Back button at the top of each page.</div>
+    </div>
+    <div class="nav"><span class="press">◁</span><span>○</span><span>□</span></div>
+  </div><div class="cap"><span class="task">A·Task 4</span><b>Back on Android.</b> The phone's Back button follows the app's own Back, one step at a time.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr">
+      <div class="muted">‹ Back</div>
+      <div class="video"><div class="play">▶</div><span class="src">Recording · plays here, in the app</span></div>
+      <div class="title" style="margin-top:8px">Group class · Grupo Lua</div>
+      <div class="muted">Thu, Oct 9 · 19:00 · Mestre João</div>
+      <div><span class="tag">⏱ 1h 26m</span><span class="tag">👥 6 attended</span></div>
+      <div class="lbl">Resources</div>
+      <span class="btn">🎥 Recording</span> <span class="btn">🎥 Vimeo link</span> <span class="btn">📄 Summary</span>
+      <div class="lbl">Rounds</div>
+      <div class="list"><div><span>1 · ginga 10 min</span><span class="muted">felt Easy</span></div><div><span>2 · 10x (armada, aú)</span><span class="muted">felt Hard</span></div></div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div><div class="cap"><span class="task">A·Task 5</span><b>A YouTube recording.</b> Plays right on the training page, the same as on the web.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:43</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr" style="opacity:.35"><div class="muted">‹ Back</div><div class="title">Group class · Grupo Lua</div></div>
+    <div class="browser" style="background:#111;color:#eee">
+      <div class="chrome" style="border-color:#333"><span class="done">Done</span><span class="addr" style="background:#2a2a2a;color:#ccc">🔒 vimeo.com</span><span>↗</span></div>
+      <div class="page"><div class="video" style="height:130px;margin-top:0"><div class="play" style="background:#1ab7ea">▶</div></div><div style="margin-top:8px;font-weight:700">Roda de sábado — Grupo Lua</div><div style="color:#999;font-size:11px">Uploaded by Mestre João</div></div>
+    </div>
+  </div><div class="cap"><span class="task">A·Task 5</span><b>Other links.</b> Links that leave Roda open in a browser sheet inside the app. Done takes you back to the training.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb" style="background:transparent;position:absolute;left:0;right:0;z-index:1"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="home">
+      <div class="apps" style="margin-top:22px">
+        <div><div class="ic" style="background:#fff">📅</div>Calendar</div>
+        <div><div class="ic" style="background:#3c8">💬</div>Messages</div>
+        <div><div class="ic" style="background:#f5c542">🗒️</div>Notes</div>
+        <div><div class="ic" style="background:#eee">📷</div>Camera</div>
+        <div><div class="ic" style="background:#e33">▶</div>YouTube</div>
+        <div class="me"><div class="ic"><svg><use href="#roda"/></svg></div>Roda</div>
+        <div><div class="ic" style="background:#4a90e2">🗺️</div>Maps</div>
+        <div><div class="ic" style="background:#888">⚙️</div>Settings</div>
+      </div>
+      <div class="dock apps"><div><div class="ic" style="background:#3c8">📞</div></div><div><div class="ic" style="background:#4ea1ff">🧭</div></div><div><div class="ic" style="background:#4ea1ff">✉️</div></div><div><div class="ic" style="background:#f55">🎵</div></div></div>
+    </div>
+    <div class="homebar" style="background:#0c0f18"><i></i></div>
+  </div><div class="cap"><span class="task">A·Task 2</span><b>Home-screen icon.</b> The Roda logo, made from the site's favicon. On your own phone for now: Android from a downloaded app file, iPhone through a Mac (A·Task 7).</div></div>
+
+</div>
+
+<h2>Later: publishing</h2>
+<p class="subtitle later">Not built yet. These screens come only when you decide to publish to the App Store and Google Play (Part B). Both stores require a way to delete your account, and the App Store also expects Sign in with Apple when Google sign-in is offered.</p>
+<div class="phones">
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr" style="display:flex;flex-direction:column;justify-content:center;padding-bottom:10px">
+      <svg class="logo" style="width:56px;height:56px;margin:0"><use href="#roda"/></svg>
+      <div class="title" style="margin-top:12px">Welcome to Roda</div>
+      <div class="muted" style="font-size:12px">Train, teach, and track capoeira.</div>
+      <span class="btn apple block" style="margin-top:18px"> Continue with Apple</span>
+      <span class="btn google block">G&nbsp; Continue with Google</span>
+      <div class="field" style="margin-top:14px"><div class="input ph">Email address</div></div>
+      <span class="btn block">Email me a sign-in link</span>
+      <span class="btn block">Try the demo</span>
+    </div>
+    <div class="homebar" style="background:var(--bg)"><i></i></div>
+  </div><div class="cap"><span class="task">B·Task 3</span><b>Sign in with Apple (iPhone only).</b> Apple's own sheet, with the option to hide your email. Android and the web stay as they are.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr">
+      <div class="muted">‹ Back</div>
+      <div class="title" style="margin-top:4px">Settings</div>
+      <div class="lbl">Language</div>
+      <div class="seg" style="grid-template-columns:1fr 1fr"><span class="on">English</span><span>Português</span></div>
+      <span class="btn danger block">Sign out</span>
+      <span class="btn danger block">Delete account</span>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet full">
+      <div class="grab"></div>
+      <div class="row" style="justify-content:space-between"><b style="font-size:15px">Delete account</b><span>×</span></div>
+      <p class="small" style="margin:8px 0">Deleting your account signs you out and can't be undone.</p>
+      <ul class="small" style="padding-left:16px;margin:0;color:var(--sand)">
+        <li>Removed: your name and photo, your own trainings, notes, ratings, saved sequences, links you added, and feedback you wrote.</li>
+        <li style="margin-top:4px">Kept without your name: classes you taught, so your students keep their history.</li>
+      </ul>
+      <div class="checkrow"><span class="ck"></span>I understand this can't be undone.</div>
+      <span class="btn danger block" aria-disabled="true">Delete my account</span>
+    </div>
+    <div class="homebar" style="position:absolute;left:0;right:0;bottom:0;background:var(--card-2)"><i></i></div>
+  </div><div class="cap"><span class="task">B·Task 2</span><b>The warning.</b> Me → Settings → Delete account explains what goes and what stays. The button stays off until you tick the box.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr">
+      <div class="muted">‹ Back</div>
+      <div class="title" style="margin-top:4px">Settings</div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet full">
+      <div class="grab"></div>
+      <div class="row" style="justify-content:space-between"><b style="font-size:15px">Delete account</b><span>×</span></div>
+      <p class="small" style="margin:10px 0 6px">You own groups with other members. Transfer or archive them first:</p>
+      <div class="item"><span>👥 Grupo Lua</span><span class="muted">14 members</span></div>
+      <div class="item"><span>👥 Lua Kids</span><span class="muted">6 members</span></div>
+      <span class="btn block" style="margin-top:12px">Open Groups</span>
+      <p class="muted" style="margin-top:10px">Nothing has been deleted.</p>
+    </div>
+    <div class="homebar" style="position:absolute;left:0;right:0;bottom:0;background:var(--card-2)"><i></i></div>
+  </div><div class="cap"><span class="task">B·Task 2</span><b>Group owners first.</b> If you own a group with other members, you're asked to hand it over or archive it. Nothing is deleted yet.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:41</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr"><div class="muted">‹ Back</div><div class="title" style="margin-top:4px">Settings</div></div>
+    <div class="dim"></div>
+    <div class="sheet full">
+      <div class="grab"></div>
+      <div class="row" style="justify-content:space-between"><b style="font-size:15px">Delete account</b><span>×</span></div>
+      <p class="small" style="margin:8px 0">Deleting your account signs you out and can't be undone.</p>
+      <div class="checkrow"><span class="ck on">✓</span>I understand this can't be undone.</div>
+      <span class="btn danger block" style="background:var(--clay);color:var(--bg);font-weight:700">Delete my account</span>
+      <p class="small" style="color:var(--clay);margin-top:8px">Deleting your account…</p>
+    </div>
+    <div class="homebar" style="position:absolute;left:0;right:0;bottom:0;background:var(--card-2)"><i></i></div>
+  </div><div class="cap"><span class="task">B·Task 2</span><b>Confirmed.</b> With the box ticked, one tap deletes the account. Your photo goes first, then your data.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="sb"><span>9:42</span><span class="notch"></span><span>●●● 🔋</span></div>
+    <div class="scr" style="display:flex;flex-direction:column;justify-content:center;padding-bottom:10px">
+      <svg class="logo" style="width:56px;height:56px;margin:0"><use href="#roda"/></svg>
+      <div class="title" style="margin-top:12px">Welcome to Roda</div>
+      <div class="muted" style="font-size:12px">Train, teach, and track capoeira.</div>
+      <span class="btn apple block" style="margin-top:18px"> Continue with Apple</span>
+      <span class="btn google block">G&nbsp; Continue with Google</span>
+      <span class="btn block">Try the demo</span>
+    </div>
+    <div class="homebar" style="background:var(--bg)"><i></i></div>
+  </div><div class="cap"><span class="task">B·Task 2</span><b>Done.</b> You're signed out and back at the start, and drafts on this phone are cleared. Signing in again later creates a new, empty account.</div></div>
+
+</div>
+</body></html>

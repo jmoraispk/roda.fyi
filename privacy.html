@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · Roda</title>
+<meta name="description" content="How roda.fyi handles your data: what we store for your capoeira training log, classes, and groups, who can see it, and how to get it corrected, exported, or deleted.">
+<meta name="theme-color" content="#17120D">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  /* Same self-hosted fonts and colors as the home page and /app. No external requests. */
+  @font-face { font-family: 'Syne'; font-style: normal; font-weight: 800; font-display: swap; src: url('/assets/fonts/syne-800-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Hanken Grotesk'; font-style: normal; font-weight: 400; font-display: swap; src: url('/assets/fonts/hanken-grotesk-400-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Hanken Grotesk'; font-style: normal; font-weight: 600; font-display: swap; src: url('/assets/fonts/hanken-grotesk-600-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url('/assets/fonts/space-mono-700-latin.woff2') format('woff2'); }
+  :root {
+    --bg: #17120D; --card: #251C13; --card-2: #2C2117; --line: #3A2C1E;
+    --gold: #EBA63C; --clay: #D2502A; --cream: #F3E9D6; --sand: #E6D4B2; --muted: #A8957A;
+    --display: 'Syne', system-ui, sans-serif;
+    --body: 'Hanken Grotesk', system-ui, sans-serif;
+    --mono: 'Space Mono', ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--cream); font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--clay); color: #fff; }
+  a { color: var(--gold); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; border-radius: 3px; }
+  header.nav { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--line); background: rgba(23, 18, 13, .94); backdrop-filter: blur(10px); }
+  .nav-inner { max-width: 760px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; color: var(--cream); text-decoration: none; font: 800 1.05rem/1 var(--display); letter-spacing: .02em; }
+  .brand .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(235, 166, 60, .18); }
+  .nav-links { margin-left: auto; display: flex; gap: 4px; }
+  .nav-links a { color: var(--muted); text-decoration: none; font: 700 .72rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 8px 10px; border-radius: 999px; }
+  .nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--gold); background: var(--card-2); }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 80px; }
+  .kicker { color: var(--gold); font: 700 .7rem/1.4 var(--mono); letter-spacing: .16em; text-transform: uppercase; margin: 0; }
+  h1 { font: 800 clamp(2.2rem, 9vw, 3.2rem)/1.05 var(--display); letter-spacing: -.025em; margin: 8px 0 12px; }
+  h2 { font: 800 1.35rem/1.2 var(--display); margin: 44px 0 10px; letter-spacing: -.01em; }
+  h3 { font: 600 1.05rem/1.3 var(--body); margin: 24px 0 6px; color: var(--sand); }
+  p, ul { margin: 0 0 14px; }
+  ul { padding-left: 1.2em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--gold); }
+  strong { font-weight: 600; color: var(--sand); }
+  .lead { color: var(--sand); font-size: 1.08rem; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .note { border: 1px solid var(--line); border-left: 3px solid var(--gold); background: var(--card); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
+  .note p:last-child { margin-bottom: 0; }
+  .table-wrap { overflow-x: auto; margin: 0 0 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); }
+  th { font: 700 .7rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  code { font: .88em var(--mono); color: var(--sand); background: var(--card-2); padding: 1px 5px; border-radius: 4px; }
+  footer { border-top: 1px solid var(--line); }
+  .foot-inner { max-width: 760px; margin: 0 auto; padding: 24px 16px 40px; color: var(--muted); font-size: .9rem; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .foot-inner a { color: var(--muted); }
+  .foot-inner a:hover { color: var(--gold); }
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Roda home"><span class="dot"></span><b>RODA</b></a>
+    <nav class="nav-links" aria-label="Site">
+      <a href="/privacy" aria-current="page">Privacy</a>
+      <a href="/support">Support</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <p class="kicker">roda.fyi</p>
+  <h1>Privacy policy</h1>
+  <p class="meta">Effective October 12, 2026</p>
+  <p class="lead">roda.fyi is a capoeira training log with class scheduling and groups. This page explains, in plain words, what data we keep, why, who can see it, and what you can ask us to do with it.</p>
+
+  <h2>Who we are</h2>
+  <!--
+    OWNER: before publishing, add the legal name and postal address of the
+    person or company that runs roda.fyi (the "controller" under the GDPR).
+    Example:
+      roda.fyi is run by [LEGAL NAME], [STREET ADDRESS], [POSTAL CODE] [CITY], Portugal.
+  -->
+  <p>roda.fyi is run from Portugal and is responsible (the "controller") for your personal data under the EU General Data Protection Regulation (GDPR). For anything about your data, email <a href="mailto:support@roda.fyi">support@roda.fyi</a>.</p>
+
+  <h2>The short version</h2>
+  <ul>
+    <li>We keep what you need for your training log, classes, and groups, and nothing else.</li>
+    <li>No ads, no analytics, no tracking pixels, and no cookies of our own. We don't sell your data.</li>
+    <li>Your training is visible to you and to coaches you've connected with or who coach your groups.</li>
+    <li>You can ask for a copy of your data, or for it to be deleted, at any time by email.</li>
+  </ul>
+
+  <h2>What we store</h2>
+
+  <h3>Your account</h3>
+  <ul>
+    <li><strong>Email address</strong>, used to sign you in.</li>
+    <li><strong>Sign-in details</strong>: if you use Google, Google tells us your name, email address, and profile photo link. We only ask Google for basic sign-in information (no access to your Drive, Calendar, or anything else).</li>
+    <li><strong>Profile</strong>: the display name you choose, a profile photo if you upload one (JPEG, PNG, or WebP, up to 5&nbsp;MB), your time zone setting, and whether you appear by name on group leaderboards. While you set up your profile we may show your Google photo as a preview, but we only store a photo you upload yourself.</li>
+  </ul>
+
+  <h3>Your training</h3>
+  <ul>
+    <li><strong>Training logs</strong>: date, time, time zone, duration, the rounds and moves you did, the ratings you give them, and your personal notes.</li>
+    <li><strong>Class resources</strong>: links (for example a YouTube link to a class recording), written summaries, and voice-note text added to a training. These are text and links only; we don't host uploaded audio or video files.</li>
+    <li><strong>Coach feedback</strong> written about your training, and feedback you write if you coach.</li>
+    <li><strong>Saved sequences</strong> of moves you build, which only you can see.</li>
+    <li><strong>Plans and schedules</strong> coaches create, including scheduled classes and any cancellation reason.</li>
+  </ul>
+
+  <h3>Groups and coaching</h3>
+  <ul>
+    <li><strong>Groups</strong> you own or join: name, description, location text, picture, time zone, members and their roles (member, coach, owner), join requests, and links between groups.</li>
+    <li><strong>Invitations</strong>: a coach can create an invite link and may attach an email address to it. roda.fyi doesn't send invitation emails itself; the coach shares the link.</li>
+    <li><strong>Coaching connections</strong> between you and a coach, and when they started or ended.</li>
+  </ul>
+
+  <h3>Technical data</h3>
+  <ul>
+    <li>Our hosting provider receives your IP address, browser type, and the pages you request, as any website does. We use this only to run and secure the site.</li>
+    <li>When you write to support, we keep your email and our reply.</li>
+  </ul>
+
+  <h2>Who can see what</h2>
+  <ul>
+    <li><strong>You</strong> see everything in your account.</li>
+    <li><strong>Your coaches</strong> can see your training logs, including your notes and ratings, and your profile photo. That means coaches you've connected with directly, coaches of groups you belong to, and coaches of a parent group your group has linked with, depending on what that link allows.</li>
+    <li><strong>Other signed-in people</strong> can find you by your display name when they look for a coach or student to connect with. They see your name, not your training, and a connection only starts if you both agree.</li>
+    <li><strong>Other group members</strong> see your display name in the group and on its leaderboard. If you turn off leaderboard visibility, you appear without your name, but your training still counts toward group totals.</li>
+    <li><strong>Anyone</strong> can find a group that its owner has made discoverable, by its name, description, and location.</li>
+    <li><strong>Catalog curators</strong> (people who maintain the list of capoeira moves) see move names that aren't in the catalog yet, with counts of how often they're used, but not who wrote them or your notes.</li>
+  </ul>
+
+  <h2>Why we use your data (legal bases)</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">What we do</th><th scope="col">Legal basis (GDPR art. 6)</th></tr></thead>
+      <tbody>
+        <tr><td>Sign you in, keep your training log, groups, classes, and coaching working</td><td>Providing the service you asked for (contract, 6(1)(b))</td></tr>
+        <tr><td>Showing your profile photo, your name on leaderboards, and (once available) your Discover card and contacts</td><td>Your choices in settings, which you can change any time (consent, 6(1)(a))</td></tr>
+        <tr><td>Keeping the site secure, preventing abuse, fixing bugs, and improving the move catalog from anonymous counts</td><td>Our legitimate interest in running a safe, useful service (6(1)(f))</td></tr>
+        <tr><td>Answering your support emails</td><td>Our legitimate interest in helping you, or the contract if it's about your account</td></tr>
+        <tr><td>Keeping records the law requires</td><td>Legal obligation (6(1)(c))</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Discover (coming soon)</h2>
+  <div class="note">
+    <p>This section applies once Discover is available in the app. Until then, none of the data below is collected.</p>
+  </div>
+  <p>Discover is a map where capoeiristas and groups can find each other. Everything in it is optional.</p>
+  <ul>
+    <li><strong>Your city</strong>: you can choose a city. We store the city, region, country, and a map point rounded to two decimal places (roughly 1&nbsp;km), never your exact location.</li>
+    <li><strong>Contacts</strong>: you can add an Instagram handle, a website, a WhatsApp number, and a contact email. They are shown only on your Discover card.</li>
+    <li><strong>Who can find you</strong>: Everyone, Signed-in people, or Nobody. If you haven't chosen, people who only train start as <em>Nobody</em> and people who teach start as <em>Everyone</em>. Today, "Everyone" means anyone signed in to roda.fyi. If we later add a public page for visitors who aren't signed in, we'll update this policy first.</li>
+    <li>Your card shows your name, photo, city, the discoverable groups you train in or teach, and your contacts. Profiles set to Nobody never appear on the map, in cards, or in search.</li>
+    <li>Group owners can add a place and contacts for their group in the same way.</li>
+    <li><strong>Map and city search</strong>: map images come from OpenStreetMap's servers, and when you search for a city, your browser sends what you typed to OpenStreetMap's Nominatim search service. OpenStreetMap receives your IP address and the area or search text, but nothing from your roda.fyi account. Only the city you pick is saved.</li>
+  </ul>
+
+  <h2>Services we rely on</h2>
+  <p>We use a few providers to run roda.fyi. They process data on our behalf or, where noted, when your browser connects to them directly.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Provider</th><th scope="col">What for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Supabase</strong></td><td>Database, sign-in, and storage for profile and group pictures. Holds all your account data.</td></tr>
+        <tr><td><strong>Vercel</strong></td><td>Hosts the website and delivers its pages and files.</td></tr>
+        <tr><td><strong>Google</strong></td><td>Only if you choose "Sign in with Google". Google learns that you signed in to roda.fyi.</td></tr>
+        <!-- OWNER: name the email provider that sends sign-in links (the SMTP service configured in Supabase). -->
+        <tr><td><strong>Our email provider</strong></td><td>Sends the sign-in link when you sign in with your email address.</td></tr>
+        <tr><td><strong>YouTube</strong> (Google)</td><td>When you open a training that has a YouTube recording, your browser loads YouTube's player from its privacy-enhanced domain, <code>youtube-nocookie.com</code>. YouTube receives your IP address and may store data in your browser when you play the video.</td></tr>
+        <tr><td><strong>OpenStreetMap</strong></td><td>Only once Discover is available, and only when you use it: map images and city search.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Links that people add to a training (for example a website or video page) open the other site, which has its own privacy policy.</p>
+
+  <h3>Transfers outside the EU</h3>
+  <p>Your account and training data are stored by Supabase on servers in the United States (US East, North Virginia). Some of the other providers are based in, or use servers in, the United States and other countries outside the European Economic Area. When that happens, the transfer is covered by the EU&ndash;US Data Privacy Framework or the European Commission's Standard Contractual Clauses in the provider's data processing terms. The OpenStreetMap Foundation is based in the United Kingdom, which the EU recognizes as offering adequate protection.</p>
+
+  <h2>What stays in your browser</h2>
+  <p>roda.fyi doesn't set cookies of its own. It saves a few things in your browser's local storage so the site works:</p>
+  <ul>
+    <li>Your sign-in session, and the page to return to after signing in.</li>
+    <li>Your language and which view or group you last chose.</li>
+    <li>Unsent drafts of a training log, and links or notes waiting to be saved when you're offline.</li>
+    <li>Sequences you build on the home page while signed out. They're copied into your account when you sign in.</li>
+  </ul>
+  <p>The app also keeps a copy of its own files (pages, styles, fonts, and code, not your data) so it opens quickly and works offline. Signing out removes your session. You can clear everything through your browser's settings for roda.fyi.</p>
+
+  <h2>How long we keep it</h2>
+  <ul>
+    <li>Account and training data: for as long as you have an account. When you ask us to delete it, we do so within one month.</li>
+    <li>Copies in our providers' backups disappear as those backups expire on their normal schedule.</li>
+    <li>Hosting logs: kept briefly by our hosting provider for security, then deleted automatically.</li>
+    <li>Support emails: only as long as we need them to help you and keep a record of what we did.</li>
+  </ul>
+
+  <h2>Your rights</h2>
+  <p>Under the GDPR you can ask us to:</p>
+  <ul>
+    <li><strong>Access</strong> your data and get a copy of it.</li>
+    <li><strong>Correct</strong> it. You can change your name, photo, time zone, leaderboard setting, training notes and ratings, and saved sequences yourself in the app.</li>
+    <li><strong>Delete</strong> it.</li>
+    <li><strong>Export</strong> it in a machine-readable format, so you can take it elsewhere.</li>
+    <li><strong>Object to</strong> or <strong>restrict</strong> how we use it.</li>
+    <li><strong>Withdraw consent</strong> for anything that relies on it, by changing the setting or emailing us.</li>
+  </ul>
+  <p>Email <a href="mailto:support@roda.fyi">support@roda.fyi</a> from the address you sign in with. We reply within one month, and usually much sooner. It's free.</p>
+
+  <h3>Deleting your account</h3>
+  <p>There isn't a delete button in the app yet. Until there is, email <a href="mailto:support@roda.fyi?subject=Delete%20my%20account">support@roda.fyi</a> from your sign-in address and we'll delete your account and your data. If you own a group that still has other members, we'll ask you to hand it to another member or archive it first. Where other people's records depend on yours, for example a class you taught that your students logged, we keep that record without your name.</p>
+
+  <h3>Complaints</h3>
+  <p>If you think we've mishandled your data, please tell us first so we can fix it. You also have the right to complain to a data protection authority, such as Portugal's <strong>Comissão Nacional de Proteção de Dados (CNPD)</strong> at <a href="https://www.cnpd.pt" rel="noopener">cnpd.pt</a>, or the authority where you live or work.</p>
+
+  <h2>Children</h2>
+  <p>roda.fyi is meant for people aged 16 and older. If you're younger, please use it only with a parent's or guardian's permission. Many capoeira groups train together across ages, so if you're a parent and believe your child is using roda.fyi without your agreement, email us and we'll delete the account.</p>
+
+  <h2>Security</h2>
+  <p>All connections use HTTPS. There are no passwords to leak: you sign in with Google or a one-time email link. In the database, access rules decide who can read each record, so other users only ever receive what this policy says they can see.</p>
+
+  <h2>Mobile apps</h2>
+  <p>If we release roda.fyi as an iPhone or Android app, it will use the same account and data, and we'll update this policy for anything the apps add.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>When we change this policy, we'll update the date at the top. If a change matters for how your data is used, we'll tell you in the app or by email before it takes effect.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about privacy: <a href="mailto:support@roda.fyi">support@roda.fyi</a>. For other help, see the <a href="/support">support page</a>.</p>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <a href="/">Home</a>
+    <a href="/support">Support</a>
+    <a href="mailto:support@roda.fyi">support@roda.fyi</a>
+  </div>
+</footer>
+</body>
+</html>

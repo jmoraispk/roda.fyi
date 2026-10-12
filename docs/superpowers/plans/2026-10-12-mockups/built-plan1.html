@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Built · Plan 1 (live at /app)</title><link rel="stylesheet" href="mock.css">
+<style>.shot img{width:300px;border-radius:22px;border:6px solid var(--frame);display:block}</style></head><body>
+<div class="top"><a class="back" href="index.html">← All screens</a><h1>Built · Plan 1, live now at roda.fyi/app</h1></div>
+<p class="subtitle">Real screenshots of the app as it ships today (demo data, iPhone-size screen, Oct 22 2026). These are the screens we designed together; compare with the approved mockups.</p>
+<div class="note"><b>Two visual bugs these screenshots exposed</b> (not caught by tests):<br>
+1. <b>Bars float mid-screen.</b> On Log training and the training page, the chat box / Save and the Rate · Notes · Add bar sit right under the content instead of pinned to the bottom of the screen as in the mockups.<br>
+2. <b>A thin white line</b> under Calendar and Log: the browser's focus ring on the page area, which the app focuses after each navigation for screen readers. It should be invisible.<br>
+Both are small CSS fixes; I'd fix them before starting Plan 2.</div>
+<div class="phones">
+<div class="shot"><img src="built-today.png" alt="Today"><div class="cap"><b>Today.</b> Week strip, then recent trainings with resource icons. The "Now or next" card appears when a class is coming up this week.</div></div>
+<div class="shot"><img src="built-calendar.png" alt="Calendar"><div class="cap"><b>Calendar.</b> Full month with colored dots per kind; tap a day for its bottom sheet. <span style="color:var(--clay)">White line = bug 2.</span></div></div>
+<div class="shot"><img src="built-training.png" alt="Training page"><div class="cap"><b>Training page.</b> Date, time, and duration always shown; a video plays at the top when there is one (this demo training has none). <span style="color:var(--clay)">Bar mid-screen = bug 1.</span></div></div>
+<div class="shot"><img src="built-log.png" alt="Log training"><div class="cap"><b>Log training.</b> Date and duration chips, rounds as cards, the chat box where each message is a round. <span style="color:var(--clay)">Chat box mid-screen = bug 1; white line = bug 2.</span></div></div>
+<div class="shot"><img src="built-me.png" alt="Me"><div class="cap"><b>Me.</b> The sections are listed, but Progress, Repertoire, Teaching, and Groups still open placeholders that link to the classic dashboard; Plan 2 builds them. No Train · Both · Teach slider yet (Plan 2). <span style="color:var(--clay)">White line = bug 2.</span></div></div>
+</div></body></html>

@@ -1,0 +1,172 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Plan 4 · Switch to /dashboard</title><link rel="stylesheet" href="mock.css">
+<style>
+  /* Page-only helpers: a fake address bar and a tiny month grid. */
+  .url { background: var(--card-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 11px; color: var(--muted); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .url b { color: var(--text); font-weight: 600; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; font-size: 11px; }
+  .cal span { padding: 6px 0 4px; border-radius: 8px; background: var(--card); }
+  .cal .h { background: none; color: var(--muted); font-size: 10px; padding: 2px 0; }
+  .cal .out { color: #5a4630; }
+  .cal .today { outline: 1px solid var(--gold); }
+  .cal i { display: block; width: 5px; height: 5px; border-radius: 50%; margin: 2px auto 0; }
+  .wrap { overflow-wrap: anywhere; }
+  .old { font-size: 12px; color: var(--muted); }
+  .old .box { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-top: 8px; background: var(--card); }
+</style></head><body>
+<div class="top"><a class="back" href="index.html">← All screens</a><h1>Plan 4 · Switch to /dashboard</h1></div>
+<p class="subtitle">Plan 4 is mostly invisible: the new app replaces the old dashboard at the same address, old links keep working, and a few rough edges from Plan 1 get fixed. These screens show the moments a person would notice.</p>
+
+<h2>The same address, the new app</h2>
+<p class="subtitle">Before and after on a desktop at roda.fyi/dashboard. Nothing to relearn about where to go; everything inside is the new app.</p>
+<div class="phones">
+  <div class="shot" style="width:900px;max-width:100%">
+    <div class="desk" style="grid-template-columns:1fr">
+      <div class="pane old" style="border-right:0">
+        <div class="row" style="justify-content:space-between"><b style="color:var(--text);font-size:15px">RODA</b><span>PT · Ana Silva · Profile · Sign out</span></div>
+        <div class="row" style="margin-top:12px"><span class="chip on">My Training</span><span class="chip">Coaching</span><span class="input" style="min-height:0;padding:5px 10px">Group context: Grupo Lua ▾</span><span class="chip">Find a group</span></div>
+        <h4 style="color:var(--text);margin-top:14px">My Training</h4>
+        <div class="row" style="margin-top:6px"><span class="chip on">Calendar</span><span class="chip">Statistics</span><span class="chip">Repertoire</span><span class="btn main" style="flex:none;margin-left:auto">Record Alone training</span></div>
+        <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-top:10px">
+          <div class="box" style="height:250px">← October 2026 →<div class="cal" style="margin-top:8px"><span class="h">M</span><span class="h">T</span><span class="h">W</span><span class="h">T</span><span class="h">F</span><span class="h">S</span><span class="h">S</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span></div></div>
+          <div><div class="box">4 trainings · 3h 11m this month</div><div class="box" style="height:190px">Day detail: stacked forms for notes, ratings, feedback, resources…</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><span class="task">Before</span><b>Old /dashboard.</b> One long page with a mode switch, a group selector, tabs, and stacked forms.</div>
+  </div>
+  <div class="shot" style="width:900px;max-width:100%">
+    <div class="desk">
+      <div class="side"><div style="color:var(--text);font-weight:800">RODA</div><div class="btn main" style="display:block;margin:8px 0">+ Log training</div><div>Today</div><div class="on">Calendar</div><div>Discover</div><div>Me</div></div>
+      <div class="pane">
+        <div class="hdr"><b>October 2026</b><span class="muted">‹ ›</span></div>
+        <div class="cal"><span class="h">M</span><span class="h">T</span><span class="h">W</span><span class="h">T</span><span class="h">F</span><span class="h">S</span><span class="h">S</span>
+          <span class="out">28</span><span class="out">29</span><span class="out">30</span><span>1</span><span>2<i style="background:var(--green)"></i></span><span>3</span><span>4</span>
+          <span>5</span><span>6<i style="background:var(--teal)"></i></span><span>7</span><span>8<i style="background:var(--green)"></i></span><span>9</span><span>10</span><span class="today">11<i style="background:var(--violet)"></i></span>
+          <span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span>
+          <span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span>
+          <span>26</span><span>27</span><span>28</span><span>29</span><span>30</span><span>31</span><span class="out">1</span></div>
+        <div class="muted" style="margin-top:8px">● Alone ● Group ● Personal class</div>
+      </div>
+      <div class="pane" style="border-right:0">
+        <div class="title">Group class · Grupo Lua</div>
+        <div class="muted">Mon, Oct 6 · 19:00 · Mestre João</div>
+        <div><span class="tag">⏱ 1h 26m</span><span class="tag">👥 6 attended</span></div>
+        <div class="lbl">Rounds</div>
+        <div class="list"><div><span>1 · ginga 10 min</span><span class="muted">felt Easy</span></div><div><span>2 · 10x (armada, aú)</span><span class="muted">felt Hard</span></div></div>
+      </div>
+    </div>
+    <div class="cap"><span class="task">Task 9</span><b>New /dashboard.</b> The sidebar app: the month on the left, the chosen training on the right.</div>
+  </div>
+</div>
+
+<h2>Old links still work</h2>
+<div class="phones">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="url">roda.fyi/<b>dashboard</b>#/training/…</div>
+      <div class="muted">‹ Back</div>
+      <div class="title" style="margin-top:6px">Alone</div>
+      <div class="muted">Thu, Oct 9 · 07:30</div>
+      <div><span class="tag">⏱ 45m</span></div>
+      <div class="lbl">Rounds</div>
+      <div class="list"><div><span>1 · ginga 10 min</span><span class="muted">felt Okay</span></div><div><span>2 · 10x (armada, aú)</span></div></div>
+      <div class="note" style="margin-top:14px;font-size:12px">You opened a saved link to <b>roda.fyi/app#/training/…</b>. It lands on the same screen under /dashboard.</div>
+    </div>
+    <div class="bar"><span class="b main">★ Rate</span><span class="b">📝 Notes</span><span class="b">📎 Add</span></div>
+  </div><div class="cap"><span class="task">Task 9</span><b>An /app bookmark.</b> Old /app links and home-screen icons forward to /dashboard and keep the screen they pointed at.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="url">roda.fyi/<b>dashboard</b></div>
+      <div class="hdr"><b>Today</b><div class="ava" style="width:28px;height:28px;font-size:11px">AS</div></div>
+      <div class="card"><div class="muted">RECENT</div>Thu · Alone · 45m</div>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet"><div class="grab"></div>
+      <div class="hdr"><b style="font-size:16px">Group invitation</b><span class="muted">×</span></div>
+      <div class="small">You were invited to join a group as a practitioner. The invitation can be used once.</div>
+      <span class="btn main block">Accept invitation</span>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 7</span><b>An invitation link.</b> It survives sign-in, opens as a sheet, and the code disappears from the address bar right away.</div></div>
+</div>
+
+<h2>Signing out never loses anything</h2>
+<p class="subtitle">Resources save the moment you add them. Only if a save fails does one wait on the phone, and signing out sends it first.</p>
+<div class="phones">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="muted">‹</span><b>Settings</b><span></span></div>
+      <div class="lbl">Language</div>
+      <div class="seg" style="grid-template-columns:repeat(2,1fr)"><span class="on">English</span><span>Português</span></div>
+      <div class="lbl">Account</div>
+      <span class="btn danger block">Sign out</span>
+      <div class="note" style="font-size:12px">Nothing waiting: you are signed out at once, like today.</div>
+    </div>
+  </div><div class="cap"><span class="task">Task 6</span><b>Sign out, normally.</b> Anything still waiting is sent first, which takes a moment, then you're signed out.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><span class="muted">‹</span><b>Settings</b><span></span></div>
+      <div class="lbl">Language</div>
+      <div class="seg" style="grid-template-columns:repeat(2,1fr)"><span class="on">English</span><span>Português</span></div>
+      <div class="lbl">Account</div>
+      <span class="btn danger block">Sign out</span>
+    </div>
+    <div class="dim"></div>
+    <div class="sheet full"><div class="grab"></div>
+      <div class="hdr"><b style="font-size:16px">Waiting to sync</b><span class="muted">×</span></div>
+      <div class="small">One item is still waiting to sync — connect to the internet and try again.</div>
+      <span class="btn main block">Try again</span>
+    </div>
+  </div><div class="cap"><span class="task">Task 6</span><b>Offline at sign-out.</b> You stay signed in and nothing is deleted. Try again is the only choice; there's no "discard".</div></div>
+</div>
+
+<h2>Small fixes from Plan 1</h2>
+<div class="phones">
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="url">roda.fyi/dashboard<b>#/calendar</b></div>
+      <div class="hdr"><b>October 2026</b><span class="muted">‹ ›</span></div>
+      <div class="cal"><span class="h">M</span><span class="h">T</span><span class="h">W</span><span class="h">T</span><span class="h">F</span><span class="h">S</span><span class="h">S</span>
+        <span class="out">28</span><span class="out">29</span><span class="out">30</span><span>1</span><span>2<i style="background:var(--green)"></i></span><span>3</span><span>4</span>
+        <span>5</span><span>6<i style="background:var(--teal)"></i></span><span>7</span><span>8<i style="background:var(--green)"></i></span><span>9</span><span>10</span><span class="today">11</span>
+        <span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span>
+        <span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span>
+        <span>26</span><span>27</span><span>28</span><span>29</span><span>30</span><span>31</span><span class="out">1</span></div>
+      <div class="note" style="font-size:12px;margin-top:12px">Opened as <b>#/calendar/2026-13</b>, a month that doesn't exist. It used to stay on "Loading…".</div>
+    </div>
+    <div class="tabs"><div>Today</div><div class="on">Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 2</span><b>A broken calendar link.</b> It opens the current month and fixes the address.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="muted">‹ Back</div>
+      <div class="title" style="margin-top:6px">Alone</div>
+      <div class="muted">Sat, Oct 11 · 08:00</div>
+      <div><span class="tag">⏱ 45m</span></div>
+      <div class="lbl">Rounds</div>
+      <div class="list"><div class="wrap" style="align-items:flex-start"><span>1 · ginga, then the drill from https://drive.google.com/file/d/1aB2cD3eF4gH5iJ6kL7mN8oP9qR0sTuVwXyZ/view?usp=sharing</span></div><div><span>2 · 10x (armada, aú)</span></div></div>
+      <div class="lbl">Notes</div>
+      <div class="small wrap">Knees ok. Saved from aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa by mistake.</div>
+    </div>
+    <div class="bar"><span class="b main">★ Rate</span><span class="b">📝 Notes</span><span class="b">📎 Add</span></div>
+  </div><div class="cap"><span class="task">Task 4</span><b>Long words wrap.</b> A pasted link or a stuck key breaks onto the next line instead of pushing the page sideways.</div></div>
+
+  <div class="shot"><div class="phone">
+    <div class="scr">
+      <div class="hdr"><b>Today</b><div class="ava" style="width:28px;height:28px;font-size:11px">AS</div></div>
+      <div class="card hi">
+        <div class="muted">THIS MORNING · GRUPO LUA</div>
+        <h4>How did it go?</h4>
+        <div class="small">You rated the armada → aú transition, but not the class itself yet.</div>
+        <span class="btn main" style="margin-top:8px">Rate it</span>
+      </div>
+      <div class="lbl">Recent</div>
+      <div class="item"><span><b>Group class · 1h 26m</b><br><span class="muted">10x (armada, aú)</span></span><span>🎥</span></div>
+      <div class="item"><span><b>Thu · Alone · 45m</b><br><span class="muted">ginga 10 min</span></span><span class="muted">felt Okay</span></div>
+    </div>
+    <div class="tabs"><div class="on">Today</div><div>Calendar</div><div><div class="plus">+</div></div><div>Discover</div><div>Me</div></div>
+  </div><div class="cap"><span class="task">Task 2</span><b>"How did it go?"</b> Shown until the class itself has a felt rating; rating only a part no longer hides it.</div></div>
+</div>
+</body></html>
