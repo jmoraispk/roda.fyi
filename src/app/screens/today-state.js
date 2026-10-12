@@ -32,7 +32,7 @@ function endOf(item) {
   return new Date(item.starts_at).getTime() + (item.duration_minutes ?? 0) * 60000;
 }
 
-export function nowNextCard({ calendarItems, recent, profileId, now }) {
+export function nowNextCard({ calendarItems, recent, profileId, now, todayIso: localToday = null }) {
   const time = now.getTime();
   const scheduled = calendarItems.filter((item) => item.item_type === 'scheduled' && item.status === 'scheduled');
   const finish = scheduled
@@ -42,7 +42,7 @@ export function nowNextCard({ calendarItems, recent, profileId, now }) {
   const rate = recent.find((training) => training.role === 'participant' && training.kind !== 'alone'
     && !training.has_rating && time - new Date(training.occurred_at).getTime() < 12 * HOUR);
   if (rate) return { type: 'rate', training: rate };
-  const todayIso = now.toISOString().slice(0, 10);
+  const todayIso = localToday ?? now.toISOString().slice(0, 10);
   const tomorrowIso = addDaysIso(todayIso, 1);
   const next = scheduled
     .filter((item) => endOf(item) > time && item.local_date >= todayIso && item.local_date <= tomorrowIso)

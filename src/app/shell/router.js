@@ -44,6 +44,11 @@ export function isDetail(route) {
 }
 
 export function createRouter({ window, onRoute }) {
+  // Counts history entries created inside the app, so Back never leaves it.
+  let depth = 0;
+  let skipNext = false;
+  let pendingBack = false;
+
   function handle() {
     const route = parseRoute(window.location.hash);
     if (route.redirected && window.location.hash && window.location.hash !== '#/') {
@@ -51,21 +56,39 @@ export function createRouter({ window, onRoute }) {
     }
     onRoute(route);
   }
+  function onHashChange() {
+    if (skipNext) skipNext = false;
+    else if (pendingBack) {
+      pendingBack = false;
+      depth = Math.max(0, depth - 1);
+    } else depth += 1;
+    handle();
+  }
   return {
     start() {
-      window.addEventListener('hashchange', handle);
+      window.addEventListener('hashchange', onHashChange);
       handle();
     },
     navigate(path) {
-      if (window.location.hash === `#${path}`) handle();
-      else window.location.hash = path;
+      if (window.location.hash === `#${path}`) {
+        handle();
+        return;
+      }
+      depth += 1;
+      skipNext = true;
+      window.location.hash = path;
     },
     back(fallbackPath = '/') {
-      if (window.history.length > 1) window.history.back();
-      else window.location.hash = fallbackPath;
+      if (depth > 0) {
+        depth -= 1;
+        window.history.back();
+        return;
+      }
+      window.history.replaceState(null, '', `#${fallbackPath}`);
+      handle();
     },
     stop() {
-      window.removeEventListener('hashchange', handle);
+      window.removeEventListener('hashchange', onHashChange);
     },
   };
 }

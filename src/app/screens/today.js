@@ -82,7 +82,7 @@ export async function renderToday(ctx) {
   }, [el(document, 'span', { className: 'week-name', text: i18n.formatDate(`${day.date}T12:00:00`, { weekday: 'narrow' }) }),
     el(document, 'span', { text: String(day.day) }),
     trainedDays.has(day.date) ? el(document, 'span', { className: 'week-dot', attrs: { 'aria-hidden': 'true' } }) : null]))));
-  const card = nowNextCard({ calendarItems, recent, profileId: profile.id, now: ctx.now() });
+  const card = nowNextCard({ calendarItems, recent, profileId: profile.id, now: ctx.now(), todayIso });
   if (card) screen.append(nowCard(ctx, card));
   screen.append(el(document, 'h2', { className: 'section-label', text: i18n.t('today.recent') }));
   if (!recent.length) screen.append(el(document, 'p', { className: 'card muted empty-card', text: i18n.t('today.empty') }));

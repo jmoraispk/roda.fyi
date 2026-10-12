@@ -55,4 +55,20 @@ describe('router', () => {
     expect(onRoute).toHaveBeenCalledTimes(before + 1);
     router.stop();
   });
+
+  it('goes back inside the app only, otherwise to the fallback', async () => {
+    window.location.hash = '#/';
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const back = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    const router = createRouter({ window, onRoute: () => {} });
+    router.start();
+    router.back('/me');
+    expect(back).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe('#/me');
+    router.navigate('/calendar');
+    router.back('/me');
+    expect(back).toHaveBeenCalledTimes(1);
+    router.stop();
+    back.mockRestore();
+  });
 });

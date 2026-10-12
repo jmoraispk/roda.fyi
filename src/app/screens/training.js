@@ -97,6 +97,18 @@ export async function renderTraining(ctx, route) {
       ])));
   }
 
+  let pending = [];
+  try {
+    pending = JSON.parse(document.defaultView?.localStorage?.getItem(`roda.pendingResources:${training.occurrence_id}`) ?? '[]');
+  } catch {
+    pending = [];
+  }
+  if (training.can_add_resources && Array.isArray(pending) && pending.length) {
+    screen.append(el(document, 'div', { className: 'card pending-resources' }, [createResourceSection({
+      document, i18n, item: { ...training, resources: [] }, service: ctx.services.training, onChanged: reload,
+    })]));
+  }
+
   const actions = [];
   if (training.participation) {
     actions.push(el(document, 'button', { className: 'bar-main', text: `★ ${i18n.t('trainingPage.rate')}`, attrs: { type: 'button' }, dataset: { action: 'rate' },

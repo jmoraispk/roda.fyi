@@ -145,3 +145,20 @@ button.day-item { cursor: pointer; }
 .chat-send { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--gold); color: var(--bg); font-weight: 800; font-size: 1.2rem; cursor: pointer; }
 .log-save { width: 100%; margin: 0; }
 .log-resource-form { display: grid; gap: 8px; margin-top: 10px; }
+
+/* Safe areas, iOS input zoom, and shared component classes used inside /app */
+.app { padding-top: env(safe-area-inset-top, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.app-offline { top: env(safe-area-inset-top, 0px); }
+.app-nav { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.sheet { padding-left: calc(16px + env(safe-area-inset-left, 0px)); padding-right: calc(16px + env(safe-area-inset-right, 0px)); }
+input, select, textarea { font-size: 16px; }
+.field-label { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); margin-bottom: 10px; }
+.field-input { width: 100%; border: 1px solid var(--line); background: var(--bg); color: var(--cream); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 16px; }
+.field-textarea { min-height: 90px; resize: vertical; }
+.primary-button, .secondary-button, .quiet-button { border-radius: 999px; padding: 9px 16px; cursor: pointer; font-weight: 600; }
+.primary-button { border: 1px solid var(--gold); background: var(--gold); color: var(--bg); }
+.secondary-button { border: 1px solid var(--line); background: var(--card); color: var(--cream); }
+.quiet-button { border: 1px solid transparent; background: transparent; color: var(--sand); padding: 6px 10px; font-weight: 500; }
+.quiet-button:hover, .quiet-button[aria-expanded="true"] { border-color: var(--line); }
+.round-card { background: var(--card); }
+.pending-resources { margin: 10px 0; }
