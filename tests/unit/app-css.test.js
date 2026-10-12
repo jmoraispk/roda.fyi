@@ -12,6 +12,7 @@ describe('app styles', () => {
   it('keeps form controls at 16px so iOS does not zoom on focus', async () => {
     const css = await readFile('assets/app.css', 'utf8');
     expect(css).toMatch(/input,\s*select,\s*textarea\s*\{[^}]*font-size:\s*16px/);
+    expect(css).toMatch(/\.chip-input\s*\{[^}]*font-size:\s*16px/);
   });
 
   it('styles the shared component classes used inside the app', async () => {
