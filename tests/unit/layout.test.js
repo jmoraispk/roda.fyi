@@ -32,4 +32,14 @@ describe('layout', () => {
     layout.setDetailMode(false);
     expect(document.body.classList.contains('app-detail-open')).toBe(false);
   });
+
+  it('labels the desktop + from the mode', () => {
+    let label = 'app.logTraining';
+    const layout = createLayout({ document, i18n, onPlus() {}, plusLabel: () => label });
+    document.body.replaceChildren(layout.root);
+    expect(document.querySelector('.app-plus-side').textContent).toBe('+ Log training');
+    label = 'app.create';
+    layout.refreshCopy();
+    expect(document.querySelector('.app-plus-side').textContent).toBe('+ Create');
+  });
 });
