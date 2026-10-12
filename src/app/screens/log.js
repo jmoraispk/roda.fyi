@@ -7,6 +7,7 @@ import { RESOURCE_ICONS } from '../ui/resource-view.js';
 import { createRoundEditor } from '../ui/round-editor.js';
 import { createChatBox } from './chat-box.js';
 import { clearDraft, loadDraft, saveDraft } from './log-draft.js';
+import { defaultStartTime, startInstant } from './start-time.js';
 
 function addDaysIso(iso, amount) {
   const date = new Date(`${iso}T00:00:00Z`);
@@ -28,7 +29,12 @@ export async function renderLog(ctx) {
     notes: saved?.notes ?? '',
     resources: saved?.resources ?? [],
     idempotencyKey: saved?.idempotencyKey ?? training.createIdempotencyKey(),
+    startTime: saved?.startTime ?? null,
+    startTouched: saved?.startTouched ?? false,
   };
+  const now = () => ctx.now?.() ?? new Date();
+  const startFor = () => defaultStartTime({ now: now(), timezone: ctx.timezone, durationMinutes: state.durationMinutes });
+  if (!state.startTime) state.startTime = startFor();
   let saving = false;
   let finished = false;
 
@@ -77,7 +83,27 @@ export async function renderLog(ctx) {
       option.selected = minutes === state.durationMinutes;
       return option;
     }));
-  duration.addEventListener('change', () => { state.durationMinutes = Number(duration.value); persist(); });
+  const startInput = el(document, 'input', {
+    className: 'chip-input', attrs: { type: 'time', step: '300', 'aria-label': i18n.t('log.startTime') }, dataset: { chip: 'start' },
+  });
+  startInput.value = state.startTime;
+  startInput.addEventListener('change', () => {
+    if (startInput.value) {
+      state.startTime = startInput.value;
+      state.startTouched = true;
+    } else {
+      startInput.value = state.startTime;
+    }
+    persist();
+  });
+  duration.addEventListener('change', () => {
+    state.durationMinutes = Number(duration.value);
+    if (!state.startTouched) {
+      state.startTime = startFor();
+      startInput.value = state.startTime;
+    }
+    persist();
+  });
 
   const hint = el(document, 'p', { className: 'muted log-hint', text: i18n.t('log.hint') });
   hint.hidden = currentRounds().length > 0;
@@ -163,6 +189,11 @@ export async function renderLog(ctx) {
       status.textContent = i18n.t('alone.needRound');
       return;
     }
+    const start = startInstant({ localDate: state.localDate, startTime: state.startTime, timezone: ctx.timezone, now: now() });
+    if (start.error) {
+      status.textContent = i18n.t(start.error);
+      return;
+    }
     saving = true;
     saveButton.disabled = true;
     saveButton.textContent = i18n.t('log.saving');
@@ -172,6 +203,7 @@ export async function renderLog(ctx) {
       const result = await training.recordAloneTraining({
         localDate: state.localDate, timezone: ctx.timezone, durationMinutes: state.durationMinutes,
         notes: state.notes, rounds, idempotencyKey: state.idempotencyKey,
+        occurredAt: start.occurredAt,
       });
       const pending = state.resources.map((resource) => ({ occurrenceId: result.occurrence_id, ...resource }));
       while (pending.length) {
@@ -205,7 +237,7 @@ export async function renderLog(ctx) {
   screen.addEventListener('click', persist);
   screen.append(
     pageHeader({ document, title: i18n.t('log.title'), backLabel: i18n.t('app.close'), onBack: () => ctx.back('/') }),
-    el(document, 'div', { className: 'chip-row' }, [...dateChips, dateInput, duration]),
+    el(document, 'div', { className: 'chip-row' }, [...dateChips, dateInput, startInput, duration]),
     hint, editor.element, resourceList, chips, status,
     el(document, 'div', { className: 'log-dock' }, [chat.element, saveButton]),
   );

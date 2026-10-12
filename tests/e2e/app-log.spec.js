@@ -45,3 +45,15 @@ test('keeps a draft across reloads', async ({ page }) => {
   await page.reload();
   await expect(page.locator('textarea[data-round-text]').first()).toHaveValue('ginga 10 min');
 });
+
+test('a back-dated log keeps the start time it was given', async ({ page }) => {
+  await page.goto('/app#/log');
+  await page.getByRole('button', { name: 'Yesterday' }).click();
+  await page.getByLabel('Start time').fill('07:30');
+  const box = page.getByLabel('Write a round');
+  await box.fill('ginga 10 min');
+  await box.press('Enter');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page).toHaveURL(/#\/training\//);
+  await expect(page.locator('.training-meta')).toContainText('07:30');
+});

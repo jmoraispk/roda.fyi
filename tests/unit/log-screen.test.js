@@ -11,7 +11,8 @@ function ctx(training, extra = {}) {
     document, window, i18n: createDashboardI18n({ document, storage: { getItem: () => 'en', setItem() {} }, navigator: { languages: ['en'] } }),
     profile: { id: 'p1' }, timezone: 'Europe/Lisbon', services: { training, repertoire: { list: vi.fn().mockResolvedValue([{ id: 's1', title: 'Flow', source_text: '10x (armada, au)' }]) } },
     navigate: vi.fn(), back: vi.fn(), today: () => '2026-10-11', getTermMappings: () => [],
-    openSheet: (options) => openSheet({ document, ...options }), ...extra,
+    openSheet: (options) => openSheet({ document, ...options }),
+    now: () => new Date('2026-10-11T12:00:00Z'), ...extra,
   };
 }
 
@@ -47,6 +48,7 @@ describe('log screen', () => {
     expect(training.recordAloneTraining).toHaveBeenCalledTimes(1);
     expect(training.recordAloneTraining).toHaveBeenCalledWith(expect.objectContaining({
       localDate: '2026-10-10', durationMinutes: 45, idempotencyKey: 'key-1', timezone: 'Europe/Lisbon',
+      occurredAt: '2026-10-10T11:15:00.000Z',
       rounds: [expect.objectContaining({ source_text: 'ginga 10 min' }), expect.anything(), expect.anything()],
     }));
     expect(localStorage.getItem('roda.logDraft:p1')).toBeNull();
@@ -110,5 +112,49 @@ describe('log screen', () => {
     await vi.waitFor(() => expect(document.querySelector('[role="dialog"] button[data-sequence="s1"]')).not.toBeNull());
     document.querySelector('[role="dialog"] button[data-sequence="s1"]').click();
     expect(document.querySelector('textarea[data-round-text]').value).toBe('10x (armada, au)');
+  });
+
+  it('sends the start-time chip, which follows the duration until edited', async () => {
+    const training = {
+      createIdempotencyKey: vi.fn(() => 'k'),
+      recordAloneTraining: vi.fn().mockResolvedValue({ status: 'completed', occurrence_id: 'o2' }),
+      addResource: vi.fn(),
+    };
+    const view = await renderLog(ctx(training));
+    document.body.replaceChildren(view);
+    const start = document.querySelector('input[data-chip="start"]');
+    expect(start.getAttribute('aria-label')).toBe('Start time');
+    expect(start.value).toBe('12:15');
+    const duration = document.querySelector('select[aria-label="Duration"]');
+    duration.value = '90';
+    duration.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(start.value).toBe('11:30');
+    start.value = '07:30';
+    start.dispatchEvent(new Event('change', { bubbles: true }));
+    duration.value = '60';
+    duration.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(start.value).toBe('07:30');
+    const date = document.querySelector('input[aria-label="Training date"]');
+    date.value = '2026-10-09';
+    date.dispatchEvent(new Event('change', { bubbles: true }));
+    send('ginga 10 min');
+    document.querySelector('button[data-action="save"]').click();
+    await vi.waitFor(() => expect(training.recordAloneTraining).toHaveBeenCalledWith(expect.objectContaining({
+      localDate: '2026-10-09', durationMinutes: 60, occurredAt: '2026-10-09T06:30:00.000Z',
+    })));
+  });
+
+  it('refuses a start time later than now and keeps the draft', async () => {
+    const training = { createIdempotencyKey: vi.fn(() => 'k'), recordAloneTraining: vi.fn() };
+    const view = await renderLog(ctx(training));
+    document.body.replaceChildren(view);
+    const start = document.querySelector('input[data-chip="start"]');
+    start.value = '23:30';
+    start.dispatchEvent(new Event('change', { bubbles: true }));
+    send('ginga 10 min');
+    document.querySelector('button[data-action="save"]').click();
+    expect(document.querySelector('.log-status').textContent).toBe('That start time is still ahead. Choose a time that has passed.');
+    expect(training.recordAloneTraining).not.toHaveBeenCalled();
+    expect(document.querySelector('textarea[data-round-text]').value).toBe('ginga 10 min');
   });
 });

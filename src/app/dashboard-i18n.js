@@ -435,6 +435,8 @@ const STRINGS = Object.freeze({
     'profileForm.save': 'Save profile',
     'profileForm.saved': 'Profile saved.',
     'profileForm.saveError': "We couldn't save your profile. Your changes are still here.",
+    'log.startTime': 'Start time',
+    'log.futureStart': 'That start time is still ahead. Choose a time that has passed.',
   }),
   pt: Object.freeze({
     'dashboard.changeLanguage': 'Mudar idioma',
@@ -869,6 +871,8 @@ const STRINGS = Object.freeze({
     'profileForm.save': 'Guardar perfil',
     'profileForm.saved': 'Perfil guardado.',
     'profileForm.saveError': 'Não foi possível guardar o perfil. As alterações continuam aqui.',
+    'log.startTime': 'Hora de início',
+    'log.futureStart': 'Essa hora de início ainda não chegou. Escolhe uma hora que já passou.',
   }),
 });
 
