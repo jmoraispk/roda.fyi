@@ -10,7 +10,9 @@ import { renderPlaceholder } from '../screens/placeholder.js';
 import { renderToday } from '../screens/today.js';
 import { renderWelcome } from '../screens/welcome.js';
 import { renderTraining } from '../screens/training.js';
-import { redirectFor } from '../shell/access.js';
+import { modeOf, plusActions, redirectFor } from '../shell/access.js';
+import { openPlusMenu } from '../screens/plus-menu.js';
+import { renderRecordClass } from '../screens/record-class.js';
 import { createLayout } from '../shell/layout.js';
 import { el } from '../shell/page.js';
 import { createRouter, isDetail, tabFor } from '../shell/router.js';
@@ -64,7 +66,16 @@ async function main() {
   const desktop = window.matchMedia('(min-width: 900px)');
   let lastTopLevel = { name: 'today', path: '/', params: {}, query: {} };
   let renderToken = 0;
-  const layout = createLayout({ document, i18n, onPlus: () => router.navigate('/log') });
+  // Ruling R9: + follows the mode on phones and on the desktop sidebar.
+  const layout = createLayout({
+    document, i18n,
+    onPlus: () => {
+      const actions = plusActions(modeOf(profile));
+      if (actions.length === 1) router.navigate('/log');
+      else openPlusMenu(ctx, actions);
+    },
+    plusLabel: () => (plusActions(modeOf(profile)).length === 1 ? 'app.logTraining' : 'app.create'),
+  });
   root.replaceChildren(layout.root);
   layout.setOffline(!navigator.onLine);
   window.addEventListener('online', () => layout.setOffline(false));
@@ -118,6 +129,7 @@ async function main() {
             router.replace('/');
           },
         });
+      case 'teaching-record': return renderRecordClass(ctx, route);
       case 'discover': return renderPlaceholder(ctx, { title: i18n.t('app.discover') });
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }

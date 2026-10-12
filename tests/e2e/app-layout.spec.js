@@ -36,3 +36,12 @@ test('the page area shows no focus outline after navigating', async ({ page }) =
   });
   expect(outline).toEqual({ focused: true, style: 'none' });
 });
+
+test('Record a past class keeps its dock at the bottom and its date fields readable', async ({ page }) => {
+  await page.goto('/app?demo=1#/me/teaching/record');
+  await expect(page.locator('.screen-record .log-dock')).toBeVisible();
+  expect(await bottomGap(page, '.screen-record .log-dock')).toBeLessThanOrEqual(1);
+  const fits = await page.evaluate(() => [...document.querySelectorAll('.record-when input')]
+    .every((input) => input.scrollWidth <= input.clientWidth + 1));
+  expect(fits).toBe(true);
+});

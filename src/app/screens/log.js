@@ -7,6 +7,7 @@ import { RESOURCE_ICONS } from '../ui/resource-view.js';
 import { createRoundEditor } from '../ui/round-editor.js';
 import { createChatBox } from './chat-box.js';
 import { clearDraft, loadDraft, saveDraft } from './log-draft.js';
+import { saveResourcesOrQueue } from './resource-queue.js';
 import { defaultStartTime, startInstant } from './start-time.js';
 
 function addDaysIso(iso, amount) {
@@ -205,20 +206,7 @@ export async function renderLog(ctx) {
         notes: state.notes, rounds, idempotencyKey: state.idempotencyKey,
         occurredAt: start.occurredAt,
       });
-      const pending = state.resources.map((resource) => ({ occurrenceId: result.occurrence_id, ...resource }));
-      while (pending.length) {
-        try {
-          await training.addResource(pending[0]);
-          pending.shift();
-        } catch {
-          try {
-            storage.setItem(`roda.pendingResources:${result.occurrence_id}`, JSON.stringify(pending));
-          } catch {
-            // The training page shows nothing to retry when storage is blocked.
-          }
-          break;
-        }
-      }
+      await saveResourcesOrQueue({ storage, service: training, occurrenceId: result.occurrence_id, resources: state.resources });
       finished = true;
       clearTimeout(timer);
       clearDraft(storage, profile.id);

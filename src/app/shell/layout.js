@@ -4,7 +4,7 @@ import { el } from './page.js';
 const TABS = [['today', '#/', 'app.today', '◉'], ['calendar', '#/calendar', 'app.calendar', '▦'],
   ['discover', '#/discover', 'app.discover', '⌖'], ['me', '#/me', 'app.me', '☺']];
 
-export function createLayout({ document, i18n, onPlus }) {
+export function createLayout({ document, i18n, onPlus, plusLabel = () => 'app.logTraining' }) {
   const links = TABS.map(([tab, href, key, icon]) => el(document, 'a', {
     className: 'app-tab', attrs: { href }, dataset: { tab },
   }, [el(document, 'span', { className: 'app-tab-icon', text: icon, attrs: { 'aria-hidden': 'true' } }),
@@ -22,7 +22,7 @@ export function createLayout({ document, i18n, onPlus }) {
   function refreshCopy() {
     nav.setAttribute('aria-label', i18n.t('app.navigation'));
     plus.setAttribute('aria-label', i18n.t('app.create'));
-    plusSide.textContent = `+ ${i18n.t('app.logTraining')}`;
+    plusSide.textContent = `+ ${i18n.t(plusLabel())}`;
     offline.textContent = i18n.t('app.offline');
     for (const label of nav.querySelectorAll('[data-label]')) label.textContent = i18n.t(label.dataset.label);
   }
