@@ -8,6 +8,7 @@ import { renderLog } from '../screens/log.js';
 import { renderMe, renderSettings } from '../screens/me.js';
 import { renderPlaceholder } from '../screens/placeholder.js';
 import { renderToday } from '../screens/today.js';
+import { renderWelcome } from '../screens/welcome.js';
 import { renderTraining } from '../screens/training.js';
 import { redirectFor } from '../shell/access.js';
 import { createLayout } from '../shell/layout.js';
@@ -83,12 +84,19 @@ async function main() {
     openSheet: (options) => openSheet({ document, closeLabel: i18n.t('app.close'), ...options }),
   };
 
+  function profileSaved(fresh) {
+    Object.assign(profile, fresh);
+    ctx.timezone = zoneFor(profile);
+    layout.refreshCopy();
+  }
+
   async function meSection(route) {
     const { section } = route.params;
     if (section === 'settings') {
       return renderSettings(ctx, {
         onLocaleChange: () => { layout.refreshCopy(); show(route); },
         onSignOut: async () => { await services.auth.signOut(); location.replace('/'); },
+        onProfileSaved: profileSaved,
       });
     }
     return renderPlaceholder(ctx, { title: i18n.t(`app.${section}`) });
@@ -103,10 +111,13 @@ async function main() {
       case 'me': return renderMe(ctx, route);
       case 'me-section': return meSection(route);
       case 'welcome':
-        return el(document, 'section', { className: 'screen' }, [
-          el(document, 'p', { text: i18n.t('app.completeProfile') }),
-          el(document, 'a', { className: 'button-secondary', text: i18n.t('app.classic'), attrs: { href: '/dashboard' } }),
-        ]);
+        return renderWelcome(ctx, route, {
+          onDone: (fresh, mode) => {
+            if (mode !== 'train') isCoach = true;
+            profileSaved(fresh);
+            router.replace('/');
+          },
+        });
       case 'discover': return renderPlaceholder(ctx, { title: i18n.t('app.discover') });
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }

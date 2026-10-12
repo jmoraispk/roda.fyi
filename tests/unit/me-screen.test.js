@@ -51,4 +51,25 @@ describe('me screen', () => {
     expect(view.querySelector('h1').textContent).toBe('Discover');
     expect(view.querySelector('a[href="/dashboard"]').textContent).toBe('Open the classic dashboard');
   });
+
+  it('saves the profile from Settings', async () => {
+    const profile = {
+      completeProfile: vi.fn().mockResolvedValue({ status: 'updated' }),
+      uploadProfilePicture: vi.fn(),
+      loadProfile: vi.fn().mockResolvedValue({ id: 'p1', display_name: 'Ana Morais', completed_at: 'x' }),
+    };
+    const onProfileSaved = vi.fn();
+    const context = ctx({
+      profile: { id: 'p1', display_name: 'João Morais', completed_at: 'x', timezone_override: 'Europe/Lisbon', leaderboard_visible: false },
+      services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) }, profile },
+    });
+    const view = await renderSettings(context, { onLocaleChange() {}, onSignOut() {}, onProfileSaved });
+    expect(view.querySelector('input[name="timezone"]').value).toBe('Europe/Lisbon');
+    expect(view.querySelector('input[name="leaderboardVisible"]').checked).toBe(false);
+    view.querySelector('input[name="displayName"]').value = 'Ana Morais';
+    view.querySelector('button[data-action="save-profile"]').click();
+    await vi.waitFor(() => expect(onProfileSaved).toHaveBeenCalledWith(expect.objectContaining({ display_name: 'Ana Morais' })));
+    expect(profile.completeProfile).toHaveBeenCalledWith({ displayName: 'Ana Morais', timezoneChoice: 'Europe/Lisbon', leaderboardVisible: false });
+    expect(view.querySelector('[data-profile-status]').textContent).toBe('Profile saved.');
+  });
 });

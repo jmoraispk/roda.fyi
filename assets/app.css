@@ -11,6 +11,8 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+/* Component display rules must never override the hidden attribute. */
+[hidden] { display: none !important; }
 html, body { margin: 0; background: var(--bg); color: var(--cream); font: 15px/1.4 var(--body); }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
@@ -80,6 +82,7 @@ button { font: inherit; color: inherit; }
   .app-detail { border-left: 1px solid var(--line); max-height: 100vh; overflow: auto; position: sticky; top: 0; }
   .screen { padding-bottom: 32px; }
   .screen-log, .screen-training { padding-bottom: 0; }
+  .screen-welcome { padding-bottom: 16px; }
   .sheet { left: 50%; right: auto; width: 520px; transform: translateX(-50%); }
 }
 
@@ -169,3 +172,19 @@ input, select, textarea { font-size: 16px; }
 .quiet-button:hover, .quiet-button[aria-expanded="true"] { border-color: var(--line); }
 .round-card { background: var(--card); }
 .pending-resources { margin: 10px 0; }
+
+/* Welcome, profile form, Train · Both · Teach */
+.screen-welcome { display: flex; flex-direction: column; gap: 8px; min-height: 100vh; min-height: 100dvh; padding-bottom: calc(16px + var(--safe-bottom)); }
+.welcome-step-title { font: 800 1.1rem/1.2 var(--display); margin: 8px 0 4px; }
+.welcome-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 12px; }
+.welcome-actions > [data-action="welcome-next"], .welcome-actions > :last-child { margin-left: auto; }
+.form-status:empty { display: none; }
+.form-status { color: var(--sand); }
+.profile-photo-row { display: flex; align-items: center; gap: 12px; }
+.profile-preview { flex: none; background-size: cover; background-position: center; }
+.check-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.mode-field { display: grid; gap: 6px; margin: 8px 0 14px; }
+.mode-slider { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.mode-option { border: 0; background: transparent; border-radius: 999px; padding: 9px 0; cursor: pointer; }
+.mode-option[aria-checked="true"] { background: var(--gold); color: var(--bg); font-weight: 700; }
+.mode-hints { display: flex; justify-content: space-between; }
