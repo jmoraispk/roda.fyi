@@ -29,24 +29,32 @@ export async function renderMe(ctx, _route = {}, { onModeChange = () => {} } = {
   const status = el(document, 'p', { className: 'form-status', attrs: { role: 'status' } });
   let saved = modeOf(profile);
   let request = 0;
+  // Saves run one at a time, in the order chosen, so the server ends on the last choice;
+  // every success is remembered so a later failure snaps back to what was really saved.
+  let queue = Promise.resolve();
+  const save = async (mode, mine) => {
+    try {
+      await services.profile.setUsageMode(mode);
+      saved = mode;
+      profile.usage_mode = mode;
+      if (mode !== 'train') ctx.markCoach();
+      if (mine !== request) return;
+      renderRows(mode);
+      onModeChange(mode);
+    } catch (error) {
+      if (mine !== request) return;
+      slider.set(saved);
+      renderRows(saved);
+      status.textContent = error?.message || i18n.t('mode.saveError');
+    }
+  };
   const slider = createModeSlider({
     document, i18n, value: saved,
-    onChange: async (mode) => {
+    onChange: (mode) => {
       const mine = ++request;
       status.textContent = '';
-      try {
-        await services.profile.setUsageMode(mode);
-        if (mine !== request) return;
-        saved = mode;
-        profile.usage_mode = mode;
-        if (mode !== 'train') ctx.markCoach();
-        renderRows(mode);
-        onModeChange(mode);
-      } catch (error) {
-        if (mine !== request) return;
-        slider.set(saved);
-        status.textContent = error?.message || i18n.t('mode.saveError');
-      }
+      queue = queue.then(() => save(mode, mine));
+      return queue;
     },
   });
   renderRows(saved);

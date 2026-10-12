@@ -7,7 +7,7 @@ const EXPIRED_CODES = new Set([
 ]);
 
 const SAFE_MESSAGES = Object.freeze({
-  cancelled_training: 'This training was cancelled.',
+  cancelled_training: 'This training was canceled.',
   connection_ended: 'This coaching connection has ended.',
   duplicate_completion: 'This training was already completed.',
   edit_conflict: 'This plan changed elsewhere. Reload it before saving again.',

@@ -45,3 +45,16 @@ test('the first welcome step has no Back button and the actions rest at the bott
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByRole('button', { name: 'Back' })).toBeVisible();
 });
+
+test('the welcome shows no navigation on desktop either, so typed answers cannot be lost', async ({ page }) => {
+  await seedAccount(page, { profile: { display_name: 'Capoeirista', completed_at: null } });
+  await page.goto('/app');
+  await expect(page).toHaveURL(/#\/welcome$/);
+  await expect(page.locator('.app-nav')).toBeHidden();
+  await page.getByLabel('Name', { exact: true }).fill('Ana Silva');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('radio', { name: 'Both' }).click();
+  await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page).toHaveURL(/#\/$/);
+  await expect(page.locator('.app-nav')).toBeVisible();
+});

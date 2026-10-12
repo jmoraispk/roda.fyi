@@ -108,4 +108,31 @@ describe('me screen', () => {
     expect(context.profile.usage_mode).toBe('both');
     expect(onModeChange).not.toHaveBeenCalled();
   });
+
+  it('saves rapid mode changes in order and snaps back to the last saved mode', async () => {
+    const calls = [];
+    let releaseFirst;
+    const setUsageMode = vi.fn((mode) => {
+      calls.push(mode);
+      if (mode === 'both') return new Promise((resolve) => { releaseFirst = () => resolve({ status: 'updated', usage_mode: 'both' }); });
+      return Promise.reject(new Error('You are offline.'));
+    });
+    const context = ctx({
+      profile: { id: 'p1', display_name: 'João Morais', usage_mode: 'train' },
+      services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) }, profile: { setUsageMode } },
+      markCoach: vi.fn(),
+    });
+    const view = await renderMe(context, {}, { onModeChange: vi.fn() });
+    view.querySelector('[data-mode="both"]').click();
+    view.querySelector('[data-mode="teach"]').click();
+    await vi.waitFor(() => expect(calls).toEqual(['both']));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(calls).toEqual(['both']);
+    releaseFirst();
+    await vi.waitFor(() => expect(view.querySelector('[role="status"]').textContent).toBe('You are offline.'));
+    expect(calls).toEqual(['both', 'teach']);
+    expect(view.querySelector('[data-mode="both"]').getAttribute('aria-checked')).toBe('true');
+    expect(context.profile.usage_mode).toBe('both');
+    expect(context.markCoach).toHaveBeenCalled();
+  });
 });

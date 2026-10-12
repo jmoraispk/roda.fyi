@@ -38,7 +38,7 @@ describe('class page', () => {
     expect(view.querySelector('h1').textContent).toBe('Group · Grupo Lua');
     expect(view.querySelector('.training-meta').textContent).toContain('You teach · plan: Armada ladder');
     expect([...view.querySelectorAll('.chapter-text')].map((node) => node.textContent)).toEqual(['ginga 10 min', '10x (armada, au)']);
-    expect(view.querySelector('a[href="#/me/teaching/plans/p1"]').textContent).toBe('Edit plan');
+    expect(view.querySelector('a[href="#/me/teaching/plans/p1"]').textContent).toBe('View plan');
     expect(view.textContent).toContain('👥 3 coming');
     view.querySelector('[data-person="duda"]').click();
     expect(view.querySelector('[data-person="duda"]').getAttribute('aria-checked')).toBe('false');
@@ -112,5 +112,22 @@ describe('class page', () => {
     sheet.querySelector('form').requestSubmit();
     await vi.waitFor(() => expect(ctx.navigate).toHaveBeenCalledWith('/'));
     expect(training.cancelScheduledTraining).toHaveBeenCalledWith('s1', 'Rain');
+  });
+
+  it('enables Finish when the start time arrives while the page is open', async () => {
+    vi.useFakeTimers({ now: new Date('2026-10-11T18:58:00Z'), toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    try {
+      const data = { ...base, starts_at: '2026-10-11T19:00:00Z' };
+      const training = { getScheduledClass: vi.fn().mockResolvedValue(data), createIdempotencyKey: vi.fn(() => 'k1') };
+      const ctx = appCtx({ services: { training }, now: () => new Date() });
+      const view = await renderClass(ctx, { name: 'class', params: { id: 's1' }, query: {} });
+      document.body.replaceChildren(view);
+      expect(view.querySelector('[data-action="finish"]').disabled).toBe(true);
+      vi.advanceTimersByTime(3 * 60 * 1000);
+      expect(view.querySelector('[data-action="finish"]').disabled).toBe(false);
+      expect(view.textContent).not.toContain('You can finish the class once it starts.');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
