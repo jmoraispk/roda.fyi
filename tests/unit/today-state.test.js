@@ -56,4 +56,22 @@ describe('today state', () => {
     expect(nowNextCard({ calendarItems: [twoDaysOut], recent: [], profileId: 'me', now: late, todayIso: '2026-10-11' }))
       .toBeNull();
   });
+
+  it('orders the cards by mode', () => {
+    const finishItem = { item_id: 'f', item_type: 'scheduled', status: 'scheduled', coach_profile_id: 'me',
+      starts_at: '2026-10-11T15:00:00Z', duration_minutes: 60, local_date: '2026-10-11' };
+    const teachNext = { item_id: 't', item_type: 'scheduled', status: 'scheduled', coach_profile_id: 'me',
+      starts_at: '2026-10-11T20:00:00Z', duration_minutes: 60, local_date: '2026-10-11' };
+    const attendNext = { ...teachNext, item_id: 'a', coach_profile_id: 'other', starts_at: '2026-10-11T19:00:00Z' };
+    const rate = { occurrence_id: 'o1', role: 'participant', kind: 'group', occurred_at: '2026-10-11T10:00:00Z', has_rating: false };
+    const input = { calendarItems: [finishItem, teachNext, attendNext], recent: [rate], profileId: 'me', now };
+    expect(nowNextCard({ ...input, mode: 'both' })).toMatchObject({ type: 'finish' });
+    expect(nowNextCard({ ...input, mode: 'train' })).toMatchObject({ type: 'rate' });
+    expect(nowNextCard({ ...input, mode: 'train', recent: [] })).toEqual({ type: 'next', item: attendNext, teaching: false });
+    expect(nowNextCard({ ...input, mode: 'teach', calendarItems: [teachNext, attendNext] }))
+      .toEqual({ type: 'next', item: teachNext, teaching: true });
+    expect(nowNextCard({ ...input, mode: 'teach', calendarItems: [attendNext] })).toMatchObject({ type: 'rate' });
+    expect(nowNextCard({ ...input, mode: 'teach', calendarItems: [attendNext], recent: [] }))
+      .toEqual({ type: 'next', item: attendNext, teaching: false });
+  });
 });

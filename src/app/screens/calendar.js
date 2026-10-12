@@ -4,23 +4,23 @@ import { el, pageHeader } from '../shell/page.js';
 import { resourceIcons } from '../ui/resource-view.js';
 import { kindLabel } from './today-state.js';
 
-function dayItem(ctx, item, kinds) {
+function dayItem(ctx, item) {
   const { document, i18n } = ctx;
   const upcoming = item.item_type !== 'completed';
   const time = new Intl.DateTimeFormat(i18n.locale() === 'pt' ? 'pt-PT' : 'en-US', {
     hour: '2-digit', minute: '2-digit', timeZone: ctx.timezone,
   }).format(new Date(item.starts_at));
-  const title = [kindLabel(i18n, item.kind), item.group_name].filter(Boolean).join(' · ');
+  const who = item.group_name ?? (item.student_name ? i18n.t('trainingPage.with', { name: item.student_name }) : null);
+  const title = [kindLabel(i18n, item.kind), who].filter(Boolean).join(' · ');
   const meta = [time, i18n.formatDuration(item.duration_minutes), upcoming ? i18n.t('cal.upcoming') : null].filter(Boolean).join(' · ');
   const target = upcoming
-    ? (item.coach_profile_id === ctx.profile.id ? `/class/${item.item_id}` : null)
+    ? (item.role === 'coach' ? `/class/${item.item_id}` : null)
     : `/training/${item.item_id}`;
-  const node = el(document, target ? 'button' : 'div', {
+  return el(document, target ? 'button' : 'div', {
     className: `card day-item${upcoming ? ' upcoming' : ''}`, attrs: target ? { type: 'button' } : {},
     on: target ? { click: () => { ctx.navigate(target); } } : {},
   }, [el(document, 'div', {}, [el(document, 'strong', { text: title }), el(document, 'div', { className: 'muted', text: meta })]),
-    resourceIcons(document, i18n, kinds.get(item.item_id) ?? [])]);
-  return node;
+    resourceIcons(document, i18n, item.resource_kinds ?? [])]);
 }
 
 export async function renderCalendar(ctx, route) {
@@ -36,14 +36,8 @@ export async function renderCalendar(ctx, route) {
       on: { click: () => ctx.navigate(`/calendar/${shiftMonth(month, 1)}`) } }),
   ] }));
   let items;
-  let kinds;
   try {
-    const [rows, kindRows] = await Promise.all([
-      ctx.services.training.listCalendar({ start: bounds.start, endExclusive: bounds.endExclusive }),
-      ctx.services.training.listResourceKinds({ start: bounds.start, endExclusive: bounds.endExclusive }).catch(() => []),
-    ]);
-    items = rows;
-    kinds = new Map(kindRows.map((row) => [row.occurrence_id, row.kinds]));
+    items = await ctx.services.training.listMyCalendar({ start: bounds.start, endExclusive: bounds.endExclusive });
   } catch (error) {
     screen.append(el(document, 'p', { className: 'muted', text: error?.message || i18n.t('app.loadError') }));
     return screen;
@@ -55,7 +49,7 @@ export async function renderCalendar(ctx, route) {
   function openDay(date) {
     const dayItems = (byDate.get(date) ?? []).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
     const content = el(document, 'div', { className: 'day-items' }, dayItems.length
-      ? dayItems.map((item) => dayItem(ctx, item, kinds))
+      ? dayItems.map((item) => dayItem(ctx, item))
       : [el(document, 'p', { className: 'muted', text: i18n.t('cal.empty') })]);
     ctx.openSheet({ title: i18n.formatDate(`${date}T12:00:00`, { weekday: 'long', month: 'long', day: 'numeric' }), content });
   }

@@ -108,7 +108,7 @@ async function main() {
       case 'calendar': return renderCalendar(ctx, route);
       case 'training': return renderTraining(ctx, route);
       case 'log': return renderLog(ctx, route);
-      case 'me': return renderMe(ctx, route);
+      case 'me': return renderMe(ctx, route, { onModeChange: () => layout.refreshCopy() });
       case 'me-section': return meSection(route);
       case 'welcome':
         return renderWelcome(ctx, route, {
