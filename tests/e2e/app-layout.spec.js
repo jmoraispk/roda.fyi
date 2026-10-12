@@ -45,3 +45,10 @@ test('Record a past class keeps its dock at the bottom and its date fields reada
     .every((input) => input.scrollWidth <= input.clientWidth + 1));
   expect(fits).toBe(true);
 });
+
+test('the coach class page keeps Cancel and Finish at the bottom', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-26T19:30:00Z'));
+  await page.goto('/app?demo=1#/class/demo-schedule');
+  await expect(page.locator('.screen-class .training-bar')).toBeVisible();
+  expect(await bottomGap(page, '.screen-class .training-bar')).toBeLessThanOrEqual(1);
+});

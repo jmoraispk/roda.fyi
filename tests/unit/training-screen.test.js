@@ -93,4 +93,14 @@ describe('training screen', () => {
     expect(view.querySelector('button[data-action="retry-resources"]')).not.toBeNull();
     localStorage.clear();
   });
+
+  it('opens Add resources once when it arrives with ?add=1', async () => {
+    const training = { getTraining: vi.fn().mockResolvedValue({ ...base, role: 'coach', participation: null, can_add_resources: true, resources: [] }) };
+    const context = { ...ctx(training), window: { history: { replaceState: vi.fn() } } };
+    const view = await renderTraining(context, { name: 'training', params: { id: 'o1' }, query: { add: '1' } });
+    document.body.replaceChildren(view);
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());
+    expect(document.querySelector('[role="dialog"]').getAttribute('aria-label')).toBe('Add resources');
+    expect(context.window.history.replaceState).toHaveBeenCalledWith(null, '', '#/training/o1');
+  });
 });

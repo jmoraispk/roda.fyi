@@ -4,6 +4,7 @@ import { createServices } from '../create-services.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
 import { seedDemoData } from '../demo-data.js';
 import { renderCalendar } from '../screens/calendar.js';
+import { renderClass } from '../screens/class.js';
 import { renderLog } from '../screens/log.js';
 import { renderMe, renderSettings } from '../screens/me.js';
 import { renderPlaceholder } from '../screens/placeholder.js';
@@ -130,6 +131,7 @@ async function main() {
           },
         });
       case 'teaching-record': return renderRecordClass(ctx, route);
+      case 'class': return renderClass(ctx, route);
       case 'discover': return renderPlaceholder(ctx, { title: i18n.t('app.discover') });
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }
