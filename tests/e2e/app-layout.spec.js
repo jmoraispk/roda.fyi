@@ -52,3 +52,12 @@ test('the coach class page keeps Cancel and Finish at the bottom', async ({ page
   await expect(page.locator('.screen-class .training-bar')).toBeVisible();
   expect(await bottomGap(page, '.screen-class .training-bar')).toBeLessThanOrEqual(1);
 });
+
+test('Progress shows its stat cards two per row on a phone', async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.includes('mobile'), 'phone layout');
+  await page.goto('/app?demo=1#/me/progress');
+  const cards = page.locator('.screen-progress .statistics-card');
+  await expect(cards.nth(1)).toBeVisible();
+  const [a, b] = [await cards.nth(0).boundingBox(), await cards.nth(1).boundingBox()];
+  expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+});

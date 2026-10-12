@@ -3,6 +3,9 @@ import { loadStartup } from '../app-startup.js';
 import { createServices } from '../create-services.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
 import { seedDemoData } from '../demo-data.js';
+import { renderCatalog } from '../screens/catalog.js';
+import { renderProgress } from '../screens/progress.js';
+import { renderRepertoire } from '../screens/repertoire.js';
 import { renderCalendar } from '../screens/calendar.js';
 import { renderClass } from '../screens/class.js';
 import { renderLog } from '../screens/log.js';
@@ -115,6 +118,21 @@ async function main() {
       });
     }
     if (section === 'teaching') return renderTeaching(ctx, route);
+    if (section === 'progress') return renderProgress(ctx, route);
+    if (section === 'repertoire') return renderRepertoire(ctx, route);
+    if (section === 'catalog') {
+      let curator = false;
+      try {
+        curator = await services.catalog.amICurator();
+      } catch {
+        curator = false;
+      }
+      if (!curator) {
+        router.replace('/me');
+        return null;
+      }
+      return renderCatalog(ctx, route);
+    }
     return renderPlaceholder(ctx, { title: i18n.t(`app.${section}`) });
   }
 
@@ -168,7 +186,7 @@ async function main() {
     }
     if (!sideBySide) layout.detail.replaceChildren();
     const view = await screenFor(route);
-    if (token !== renderToken) return;
+    if (!view || token !== renderToken) return;
     view.dataset.screen = route.name;
     target.replaceChildren(view);
     if (!sideBySide) layout.main.focus({ preventScroll: true });
