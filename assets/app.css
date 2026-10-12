@@ -214,3 +214,6 @@ input, select, textarea { font-size: 16px; }
 .list-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-decoration: none; }
 .section-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+/* Students */
+.student-day { display: grid; gap: 6px; }
+.feedback-list:empty { display: none; }

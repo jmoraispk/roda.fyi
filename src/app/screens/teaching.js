@@ -1,7 +1,8 @@
 // src/app/screens/teaching.js
 import { el, pageHeader } from '../shell/page.js';
 import { openScheduleSheet } from './schedule-sheet.js';
-import { loadTeaching } from './teaching-state.js';
+import { openPeopleSearch } from './people-search.js';
+import { loadTeaching, pendingStudentRequests } from './teaching-state.js';
 import { kindLabel } from './today-state.js';
 
 function addDaysIso(iso, amount) {
@@ -41,6 +42,7 @@ export async function renderTeaching(ctx) {
     return screen;
   }
   const status = el(document, 'p', { className: 'form-status', attrs: { role: 'status' } });
+  const reload = async () => screen.replaceWith(await renderTeaching(ctx));
 
   screen.append(el(document, 'div', { className: 'chip-row' }, [
     el(document, 'button', {
@@ -75,8 +77,35 @@ export async function renderTeaching(ctx) {
     })), i18n.t('coach.noPlans')),
   );
 
+  const requests = pendingStudentRequests({ profileId: ctx.profile.id, connections: teaching.connections });
   screen.append(
-    el(document, 'h2', { className: 'section-label', text: i18n.t('teaching.students') }),
+    el(document, 'div', { className: 'section-head' }, [
+      el(document, 'h2', { className: 'section-label', text: i18n.t('teaching.students') }),
+      el(document, 'button', {
+        className: 'button-secondary small', text: i18n.t('connections.findStudent'), attrs: { type: 'button' }, dataset: { action: 'find-student' },
+        on: { click: () => openPeopleSearch(ctx, { role: 'student' }) },
+      }),
+    ]),
+    ...(requests.length ? [el(document, 'div', { className: 'day-items' }, requests.map((connection) => el(document, 'div', {
+      className: 'card list-row', dataset: { request: connection.connection_id },
+    }, [
+      el(document, 'span', { text: i18n.t('teaching.wantsCoaching', { name: connection.student_display_name }) }),
+      el(document, 'div', { className: 'row-actions' }, [
+        ['accepted', 'teaching.accept', 'connections.accept', 'button-primary small'],
+        ['declined', 'teaching.decline', 'connections.decline', 'button-secondary small'],
+      ].map(([decision, key, label, className]) => el(document, 'button', {
+        className, text: i18n.t(key), dataset: { decision },
+        attrs: { type: 'button', 'aria-label': i18n.t(label, { name: connection.student_display_name }) },
+        on: { click: async () => {
+          try {
+            await ctx.services.connection.decide(connection.connection_id, decision);
+            await reload();
+          } catch (error) {
+            status.textContent = error?.message || i18n.t('groupPage.actionError');
+          }
+        } },
+      }))),
+    ])))] : []),
     listOrEmpty(document, teaching.students.map((student) => row(document, {
       href: `#/me/teaching/students/${student.profileId}`, title: student.name,
     })), i18n.t('coach.noStudents')),

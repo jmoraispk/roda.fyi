@@ -55,4 +55,30 @@ describe('teaching screen', () => {
     const view = await renderTeaching(appCtx({ services }));
     expect(view.textContent).toContain('offline');
   });
+
+  it('accepts a student request and finds a student to coach', async () => {
+    const connections = [{
+      connection_id: 'c2', connection_kind: 'direct', state: 'pending', coach_profile_id: 'me',
+      student_profile_id: 'eva', student_display_name: 'Eva Costa', initiated_by: 'eva',
+    }];
+    const services = teachingServices({
+      connection: {
+        listMine: vi.fn().mockResolvedValue(connections),
+        decide: vi.fn().mockResolvedValue({ status: 'active' }),
+        searchCandidates: vi.fn().mockResolvedValue([{ profile_id: 'gil', display_name: 'Gil Mota' }]),
+        request: vi.fn().mockResolvedValue({ status: 'pending' }),
+      },
+    });
+    const view = await renderTeaching(appCtx({ services }));
+    document.body.replaceChildren(view);
+    expect(view.querySelector('[data-request="c2"]').textContent).toContain('Eva Costa asked you to coach them');
+    view.querySelector('[data-request="c2"] [data-decision="accepted"]').click();
+    await vi.waitFor(() => expect(services.connection.decide).toHaveBeenCalledWith('c2', 'accepted'));
+    await vi.waitFor(() => expect(services.connection.listMine).toHaveBeenCalledTimes(2));
+    document.querySelector('[data-action="find-student"]').click();
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"] [data-candidate="gil"]')).not.toBeNull());
+    expect(services.connection.searchCandidates).toHaveBeenCalledWith('', 'student');
+    document.querySelector('[data-candidate="gil"]').click();
+    await vi.waitFor(() => expect(services.connection.request).toHaveBeenCalledWith('me', 'gil'));
+  });
 });
