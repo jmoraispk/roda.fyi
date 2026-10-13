@@ -4,7 +4,7 @@ import { el } from './page.js';
 const TABS = [['today', '#/', 'app.today', '◉'], ['calendar', '#/calendar', 'app.calendar', '▦'],
   ['discover', '#/discover', 'app.discover', '⌖'], ['me', '#/me', 'app.me', '☺']];
 
-export function createLayout({ document, i18n, onPlus, plusLabel = () => 'app.logTraining' }) {
+export function createLayout({ document, i18n, onPlus, plusLabel = () => 'app.logTraining', demo = false }) {
   const links = TABS.map(([tab, href, key, icon]) => el(document, 'a', {
     className: 'app-tab', attrs: { href }, dataset: { tab },
   }, [el(document, 'span', { className: 'app-tab-icon', text: icon, attrs: { 'aria-hidden': 'true' } }),
@@ -17,9 +17,11 @@ export function createLayout({ document, i18n, onPlus, plusLabel = () => 'app.lo
   const main = el(document, 'main', { className: 'app-main', attrs: { id: 'appMain', tabindex: '-1' } });
   const detail = el(document, 'aside', { className: 'app-detail', attrs: { id: 'appDetail' } });
   const offline = el(document, 'p', { className: 'app-offline', attrs: { role: 'status', hidden: true } });
-  const root = el(document, 'div', { className: 'app' }, [nav, offline, el(document, 'div', { className: 'app-panes' }, [main, detail])]);
+  const demoNote = demo ? el(document, 'p', { className: 'app-demo', attrs: { role: 'note' } }) : null;
+  const root = el(document, 'div', { className: 'app' }, [nav, ...(demoNote ? [demoNote] : []), offline, el(document, 'div', { className: 'app-panes' }, [main, detail])]);
 
   function refreshCopy() {
+    if (demoNote) demoNote.textContent = i18n.t('app.demoBadge');
     nav.setAttribute('aria-label', i18n.t('app.navigation'));
     plus.setAttribute('aria-label', i18n.t('app.create'));
     plusSide.textContent = `+ ${i18n.t(plusLabel())}`;

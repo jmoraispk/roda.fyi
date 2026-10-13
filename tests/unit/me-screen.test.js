@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
 import { renderMe, renderSettings } from '../../src/app/screens/me.js';
-import { renderPlaceholder } from '../../src/app/screens/placeholder.js';
 
 function ctx(overrides = {}) {
   const values = new Map([['roda.dashboard.locale', 'en']]);
@@ -44,13 +43,7 @@ describe('me screen', () => {
     expect(onLocaleChange).toHaveBeenCalled();
     view.querySelector('button[data-action="sign-out"]').click();
     expect(onSignOut).toHaveBeenCalled();
-    expect(view.querySelector('a[href="/dashboard"]')).not.toBeNull();
-  });
-
-  it('renders placeholders with a link to the classic dashboard', async () => {
-    const view = await renderPlaceholder(ctx(), { title: 'Discover' });
-    expect(view.querySelector('h1').textContent).toBe('Discover');
-    expect(view.querySelector('a[href="/dashboard"]').textContent).toBe('Open the classic dashboard');
+    expect(view.querySelector('a[href="/dashboard"]')).toBeNull();
   });
 
   it('saves the profile from Settings', async () => {

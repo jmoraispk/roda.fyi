@@ -41,7 +41,9 @@ export async function renderLog(ctx) {
   let saving = false;
   let finished = false;
 
-  const editor = createRoundEditor({ document, i18n, mode: 'record', getTermMappings: ctx.getTermMappings, showAddButton: false });
+  const editor = createRoundEditor({
+    document, i18n, mode: 'record', getTermMappings: ctx.getTermMappings, showAddButton: false, repertoire: ctx.services.repertoire,
+  });
   editor.setRounds(saved?.rounds ?? []);
   const screen = el(document, 'section', { className: 'screen screen-log' });
   const status = el(document, 'p', { className: 'log-status', attrs: { role: 'status' } });

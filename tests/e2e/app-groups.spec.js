@@ -38,14 +38,14 @@ test('a coach invites a student from the group page', async ({ page }) => {
   await page.getByRole('link', { name: /Roda da Lua/ }).click();
   await expect(page).toHaveURL(/#\/group\/demo-group$/);
   await page.getByRole('button', { name: 'Create invitation link' }).click();
-  await expect(page.getByLabel('Invitation link')).toHaveValue(/\/dashboard\?member_invite=invite-1$/);
+  await expect(page.getByLabel('Invitation link')).toHaveValue(/\/app\?member_invite=invite-1$/);
   await expect(page.locator('[data-member="student-bia"]')).toBeVisible();
 });
 
 test('an owner creates a discovery link for the group', async ({ page }) => {
   await page.goto('/app?demo=1#/group/demo-group');
   await page.getByRole('button', { name: 'Create discovery link' }).click();
-  await expect(page.getByLabel('Discovery link')).toHaveValue(/\/dashboard\?group_link=discovery-1$/);
+  await expect(page.getByLabel('Discovery link')).toHaveValue(/\/app\?group_link=discovery-1$/);
   await page.getByRole('button', { name: 'Revoke link' }).click();
   await expect(page.getByText('Discovery link revoked.')).toBeVisible();
 });
