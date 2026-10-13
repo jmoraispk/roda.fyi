@@ -1,5 +1,5 @@
 // src/app/sw/service-worker.js
-import { APP_SHELL, cacheName, strategyFor } from './cache-policy.js';
+import { APP_SHELL, SHELL_PATH, cacheName, shouldCache, strategyFor } from './cache-policy.js';
 
 const CACHE = cacheName(__RODA_SW_VERSION__);
 
@@ -20,17 +20,19 @@ self.addEventListener('fetch', (event) => {
   if (strategy === 'network-first') {
     event.respondWith(fetch(request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put('/app', copy));
+        if (shouldCache(response)) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(SHELL_PATH, copy));
+        }
         return response;
       })
-      .catch(() => caches.match('/app')));
+      .catch(() => caches.match(SHELL_PATH)));
     return;
   }
   event.respondWith(caches.open(CACHE).then(async (cache) => {
     const cached = await cache.match(request);
     const network = fetch(request).then((response) => {
-      if (response.ok) cache.put(request, response.clone());
+      if (shouldCache(response)) cache.put(request, response.clone());
       return response;
     }).catch(() => cached);
     return cached ?? network;

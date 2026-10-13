@@ -1,7 +1,7 @@
 // tests/unit/cache-policy.test.js
 import { describe, expect, it } from 'vitest';
 
-import { APP_SHELL, cacheName, strategyFor } from '../../src/app/sw/cache-policy.js';
+import { APP_SHELL, cacheName, shouldCache, strategyFor } from '../../src/app/sw/cache-policy.js';
 
 const origin = 'https://roda.fyi';
 const req = (path, extra = {}) => ({ url: new URL(path, origin).href, method: 'GET', mode: 'cors', origin, ...extra });
@@ -29,5 +29,16 @@ describe('cache policy', () => {
 
   it('names caches by version', () => {
     expect(cacheName('123')).toBe('roda-app-123');
+  });
+
+  it.each([
+    [{ ok: true, redirected: false, status: 200 }, true],
+    [{ ok: false, redirected: false, status: 404 }, false],
+    [{ ok: false, redirected: false, status: 503 }, false],
+    [{ ok: true, redirected: true, status: 200 }, false],
+    [{ ok: false, redirected: false, status: 0, type: 'opaqueredirect' }, false],
+    [undefined, false],
+  ])('caches %o: %s', (response, expected) => {
+    expect(shouldCache(response)).toBe(expected);
   });
 });
