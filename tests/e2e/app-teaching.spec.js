@@ -41,3 +41,16 @@ test('a coach opens a student and leaves feedback on a training', async ({ page 
   await sheet.getByRole('button', { name: 'Add feedback' }).click();
   await expect(sheet.getByText('Feedback saved.')).toBeVisible();
 });
+
+test('on desktop, finishing a class beside Teaching keeps Teaching on the left', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.includes('mobile'), 'desktop side-by-side only');
+  await page.clock.setFixedTime(new Date('2026-10-26T19:30:00Z'));
+  await page.goto('/app?demo=1#/me/teaching');
+  await expect(page.locator('#appMain [data-teaching-home]')).toBeVisible();
+  await page.evaluate(() => { location.hash = '#/class/demo-schedule'; });
+  await page.locator('#appDetail').getByRole('button', { name: 'Finish class' }).click();
+  await expect(page).toHaveURL(/#\/training\//);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#appMain [data-teaching-home]')).toBeVisible();
+  await expect(page.locator('#appDetail .training-title')).toBeVisible();
+});
