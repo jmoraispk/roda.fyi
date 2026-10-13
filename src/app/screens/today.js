@@ -61,6 +61,8 @@ export async function renderToday(ctx) {
   const screen = el(document, 'section', { className: 'screen screen-today' });
   const avatar = el(document, 'a', { className: 'me-avatar small', text: initials(profile.display_name), attrs: { href: '#/me', 'aria-label': i18n.t('app.me') } });
   screen.append(pageHeader({ document, title: i18n.t('app.today'), actions: [avatar] }));
+  const installHint = ctx.installHint?.();
+  if (installHint) screen.append(installHint);
   let calendarItems;
   let recent;
   try {

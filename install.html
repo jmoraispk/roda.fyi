@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install · Roda</title>
+<meta name="description" content="How to put roda.fyi on your phone's home screen so it opens like an app, on iPhone, Android, and desktop. Free, no app store needed.">
+<meta name="theme-color" content="#17120D">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  /* Same self-hosted fonts and colors as the home page and /app. No external requests. */
+  @font-face { font-family: 'Syne'; font-style: normal; font-weight: 800; font-display: swap; src: url('/assets/fonts/syne-800-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Hanken Grotesk'; font-style: normal; font-weight: 400; font-display: swap; src: url('/assets/fonts/hanken-grotesk-400-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Hanken Grotesk'; font-style: normal; font-weight: 600; font-display: swap; src: url('/assets/fonts/hanken-grotesk-600-latin.woff2') format('woff2'); }
+  @font-face { font-family: 'Space Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url('/assets/fonts/space-mono-700-latin.woff2') format('woff2'); }
+  :root {
+    --bg: #17120D; --card: #251C13; --card-2: #2C2117; --line: #3A2C1E;
+    --gold: #EBA63C; --clay: #D2502A; --cream: #F3E9D6; --sand: #E6D4B2; --muted: #A8957A;
+    --display: 'Syne', system-ui, sans-serif;
+    --body: 'Hanken Grotesk', system-ui, sans-serif;
+    --mono: 'Space Mono', ui-monospace, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--cream); font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--clay); color: #fff; }
+  a { color: var(--gold); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; border-radius: 3px; }
+  header.nav { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--line); background: rgba(23, 18, 13, .94); backdrop-filter: blur(10px); }
+  .nav-inner { max-width: 760px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; color: var(--cream); text-decoration: none; font: 800 1.05rem/1 var(--display); letter-spacing: .02em; }
+  .brand .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(235, 166, 60, .18); }
+  .nav-links { margin-left: auto; display: flex; gap: 4px; }
+  .nav-links a { color: var(--muted); text-decoration: none; font: 700 .72rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 8px 10px; border-radius: 999px; }
+  .nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--gold); background: var(--card-2); }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 80px; }
+  .kicker { color: var(--gold); font: 700 .7rem/1.4 var(--mono); letter-spacing: .16em; text-transform: uppercase; margin: 0; }
+  h1 { font: 800 clamp(2.2rem, 9vw, 3.2rem)/1.05 var(--display); letter-spacing: -.025em; margin: 8px 0 12px; }
+  h2 { font: 800 1.35rem/1.2 var(--display); margin: 44px 0 10px; letter-spacing: -.01em; }
+  h3 { font: 600 1.05rem/1.3 var(--body); margin: 24px 0 6px; color: var(--sand); }
+  p, ul { margin: 0 0 14px; }
+  ul { padding-left: 1.2em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--gold); }
+  strong { font-weight: 600; color: var(--sand); }
+  .lead { color: var(--sand); font-size: 1.08rem; }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .note { border: 1px solid var(--line); border-left: 3px solid var(--gold); background: var(--card); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
+  .note p:last-child { margin-bottom: 0; }
+  .table-wrap { overflow-x: auto; margin: 0 0 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); }
+  th { font: 700 .7rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  code { font: .88em var(--mono); color: var(--sand); background: var(--card-2); padding: 1px 5px; border-radius: 4px; }
+  footer { border-top: 1px solid var(--line); }
+  .foot-inner { max-width: 760px; margin: 0 auto; padding: 24px 16px 40px; color: var(--muted); font-size: .9rem; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .foot-inner a { color: var(--muted); }
+  .foot-inner a:hover { color: var(--gold); }
+  ol { margin: 0 0 14px; padding-left: 1.4em; }
+  ol li { margin-bottom: 8px; }
+  ol li::marker { color: var(--gold); font-weight: 700; }
+  .cta { display: inline-block; margin: 6px 0 4px; padding: 11px 18px; border-radius: 999px; background: var(--gold); color: var(--bg); font-weight: 600; text-decoration: none; }
+  kbd { font: .9em var(--body); font-weight: 600; color: var(--cream); background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Roda home"><span class="dot"></span><b>RODA</b></a>
+    <nav class="nav-links" aria-label="Site">
+      <a href="/install" aria-current="page">Install</a>
+      <a href="/support">Support</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <p class="kicker">roda.fyi</p>
+  <h1>Put roda on your phone</h1>
+  <p class="lead">roda is a web app: there is nothing to download from a store. Add it to your home screen once, and it opens full-screen with its own icon, like any other app.</p>
+  <p><a class="cta" href="/app">Open roda</a></p>
+
+  <h2>iPhone and iPad</h2>
+  <p>Open <a href="/app">roda.fyi/app</a> in <strong>Safari</strong> and sign in. Then:</p>
+  <ol>
+    <li>Tap <kbd>⋯</kbd> at the bottom right, next to the address bar. (On older iPhones, tap the <kbd>Share</kbd> button, the square with an arrow, in the toolbar and skip to step 3.)</li>
+    <li>Tap <kbd>Share</kbd>.</li>
+    <li>Scroll down and tap <kbd>Add to Home Screen</kbd>. If you don't see it, tap <kbd>Edit Actions</kbd> at the bottom of the list and add it.</li>
+    <li>Keep <kbd>Open as Web App</kbd> turned on (it appears on iOS 26 and later).</li>
+    <li>Tap <kbd>Add</kbd>. The roda icon appears on your home screen.</li>
+  </ol>
+  <div class="note">
+    <p>Prefer pictures? These guides show each step with screenshots: <a href="https://iphonelife.com/content/tip-day-turn-your-favorite-website-home-screen-icon" rel="noopener">iPhone Life</a> and <a href="https://www.ithinkdiff.com/add-web-app-bookmark-iphone-home-screen-ios-26/" rel="noopener">iThinkDiff (iOS 26)</a>.</p>
+  </div>
+  <p>Notifications from roda, when they arrive, only work once roda is on your home screen (iOS 16.4 or later).</p>
+
+  <h2>Android</h2>
+  <p>Open <a href="/app">roda.fyi/app</a> in <strong>Chrome</strong> and sign in. Then:</p>
+  <ol>
+    <li>Tap <kbd>Install</kbd> if roda offers it on the Today screen, or tap the <kbd>⋮</kbd> menu at the top right.</li>
+    <li>Tap <kbd>Install app</kbd> (on some phones it says <kbd>Add to Home screen</kbd>).</li>
+    <li>Confirm with <kbd>Install</kbd>.</li>
+  </ol>
+
+  <h2>Computer</h2>
+  <p>In Chrome or Edge, open <a href="/app">roda.fyi/app</a> and click the install icon at the right end of the address bar, or choose <kbd>Install roda</kbd> from the browser menu. On a Mac with Safari, choose <kbd>File</kbd> → <kbd>Add to Dock</kbd>.</p>
+
+  <h2>Good to know</h2>
+  <ul>
+    <li>It's free, and the same app works on every phone and computer.</li>
+    <li>Updates arrive by themselves: there's nothing to update.</li>
+    <li>Your trainings are saved to your account, so you can sign in on another device and find everything there.</li>
+  </ul>
+  <p>Stuck? Email <a href="mailto:support@roda.fyi">support@roda.fyi</a>.</p>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <a href="/">Home</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/support">Support</a>
+  </div>
+</footer>
+</body>
+</html>
