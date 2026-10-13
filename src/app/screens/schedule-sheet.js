@@ -54,6 +54,11 @@ function buildForm(ctx, teaching, { planVersionId, target, onScheduled, close })
     el(document, 'label', { className: 'check-row' }, [visible, ` ${i18n.t('schedule.visible')}`]),
     status, submit,
   ]);
+  // Ruling 17: one key per class; changing any field means a different class.
+  const newKey = () => ctx.services.training.createIdempotencyKey?.() ?? null;
+  let requestKey = newKey();
+  form.addEventListener('input', () => { requestKey = newKey(); });
+  form.addEventListener('change', () => { requestKey = newKey(); });
   let busy = false;
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -75,6 +80,7 @@ function buildForm(ctx, teaching, { planVersionId, target, onScheduled, close })
     const [kind, id] = who.value.split(':');
     const common = {
       planVersionId: plan.value, localDate: date.value, startsAt, timezone: ctx.timezone, visibleInAdvance: visible.checked,
+      idempotencyKey: requestKey,
     };
     try {
       const result = kind === 'group'

@@ -142,6 +142,7 @@ export function createTrainingService(client, options = {}) {
         local_date: requireLocalDate(input.localDate),
         timezone: requireTimezone(input.timezone),
         visible_in_advance: input.visibleInAdvance !== false,
+        idempotency_key: input.idempotencyKey ?? null,
       });
     },
     async schedulePersonalClass(input) {
@@ -154,6 +155,7 @@ export function createTrainingService(client, options = {}) {
         local_date: requireLocalDate(input.localDate),
         timezone: requireTimezone(input.timezone),
         visible_in_advance: input.visibleInAdvance !== false,
+        idempotency_key: input.idempotencyKey ?? null,
       });
     },
     async cancelScheduledTraining(scheduleId, reason = null) {

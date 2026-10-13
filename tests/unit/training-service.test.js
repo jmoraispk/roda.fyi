@@ -107,7 +107,7 @@ describe('training service', () => {
         plan_version_id: 'version-1', student_profile_id: 'student-1',
         group_id: null, connection_id: 'connection-1',
         starts_at: '2026-09-25T18:00:00Z', local_date: '2026-09-25',
-        timezone: 'Europe/Lisbon', visible_in_advance: false,
+        timezone: 'Europe/Lisbon', visible_in_advance: false, idempotency_key: null,
       }],
       ['list_training_calendar', {
         month_start: '2026-09-01', month_end: '2026-10-01', profile_id: null,
@@ -406,5 +406,14 @@ describe('training service', () => {
     const { client, calls } = harness();
     await createTrainingService(client).addResource({ occurrenceId: 'o-1', kind: 'video', url: 'https://youtu.be/x', clientKey: 'c-1' });
     expect(calls).toEqual([['add_training_resource', { occurrence_id: 'o-1', kind: 'video', title: null, url: 'https://youtu.be/x', body: null, client_key: 'c-1' }]]);
+  });
+
+  it('sends the schedule request key', async () => {
+    const { client, calls } = harness();
+    await createTrainingService(client).scheduleGroupTraining({
+      planVersionId: 'v', groupId: 'g', startsAt: '2026-11-03T18:00:00Z', localDate: '2026-11-03',
+      timezone: 'Europe/Lisbon', idempotencyKey: 'sk1',
+    });
+    expect(calls[0][1]).toMatchObject({ idempotency_key: 'sk1' });
   });
 });

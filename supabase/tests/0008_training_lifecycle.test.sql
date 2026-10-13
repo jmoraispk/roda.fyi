@@ -14,8 +14,8 @@ select has_function('public', 'create_workout_plan', array['text','text','uuid',
 select has_function('public', 'save_workout_plan_draft', array['uuid','text','text','integer','text','jsonb','timestamp with time zone']);
 select has_function('public', 'publish_workout_plan', array['uuid']);
 select has_function('public', 'list_workout_plans', array['uuid']);
-select has_function('public', 'schedule_group_training', array['uuid','uuid','timestamp with time zone','date','text','boolean']);
-select has_function('public', 'schedule_personal_class', array['uuid','uuid','uuid','uuid','timestamp with time zone','date','text','boolean']);
+select has_function('public', 'schedule_group_training', array['uuid','uuid','timestamp with time zone','date','text','boolean','uuid']);
+select has_function('public', 'schedule_personal_class', array['uuid','uuid','uuid','uuid','timestamp with time zone','date','text','boolean','uuid']);
 select has_function('public', 'cancel_scheduled_training', array['uuid','text']);
 select has_function('public', 'record_alone_training', array['date','text','integer','text','jsonb','uuid','timestamp with time zone']);
 select has_function('public', 'complete_group_training', array['uuid','jsonb','integer','uuid','jsonb','timestamp with time zone']);
