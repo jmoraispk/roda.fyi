@@ -642,6 +642,11 @@ const STRINGS = Object.freeze({
     'groupCard.requested': 'Request sent. The group will reply.',
     'groupCard.cancel': 'Cancel request',
     'groupCard.member': "You're in this group.",
+    'groupDiscover.title': 'On the Discover map',
+    'groupDiscover.place': 'Group city',
+    'groupDiscover.hidden': "This group isn't discoverable, so it stays off the map until you make it discoverable.",
+    'sentRequests.title': 'Requests you sent',
+    'sentRequests.canceled': 'Request canceled.',
   }),
   pt: Object.freeze({
     'dashboard.changeLanguage': 'Mudar idioma',
@@ -1283,6 +1288,11 @@ const STRINGS = Object.freeze({
     'groupCard.requested': 'Pedido enviado. O grupo vai responder.',
     'groupCard.cancel': 'Cancelar pedido',
     'groupCard.member': 'Fazes parte deste grupo.',
+    'groupDiscover.title': 'No mapa Descobrir',
+    'groupDiscover.place': 'Cidade do grupo',
+    'groupDiscover.hidden': 'Este grupo não é público, por isso fica fora do mapa até o tornares público.',
+    'sentRequests.title': 'Pedidos que enviaste',
+    'sentRequests.canceled': 'Pedido cancelado.',
   }),
 });
 

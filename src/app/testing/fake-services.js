@@ -240,6 +240,21 @@ export function createE2EGroupService({ window }) {
       record({ type: 'cancel-request', requestId });
       return { status: 'cancelled', request_id: requestId };
     },
+    async listMyJoinRequests() {
+      const state = readState();
+      const known = [...state.groups, ...E2E_DISCOVER_GROUPS];
+      return Object.entries(state.joinRequests).flatMap(([groupId, requests]) => requests
+        .filter(({ profile_id: id }) => id === 'practitioner-1')
+        .map((request) => {
+          const group = known.find(({ id }) => id === groupId);
+          return {
+            id: request.id, group_id: groupId, profile_id: request.profile_id, requested_access: request.requested_access,
+            state: request.state, expires_at: request.expires_at ?? '2099-01-01T00:00:00Z', decided_at: null,
+            created_at: request.created_at ?? null,
+            group: group ? { id: group.id, slug: group.slug ?? group.id, name: group.name, picture_path: group.picture_path ?? null, location: group.location ?? null } : null,
+          };
+        }));
+    },
 
     async createGroup({ name, description, location, discoverable, timezone }) {
       const state = readState();
