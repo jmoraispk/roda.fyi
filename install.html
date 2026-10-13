@@ -62,6 +62,11 @@
   ol li::marker { color: var(--gold); font-weight: 700; }
   .cta { display: inline-block; margin: 6px 0 4px; padding: 11px 18px; border-radius: 999px; background: var(--gold); color: var(--bg); font-weight: 600; text-decoration: none; }
   kbd { font: .9em var(--body); font-weight: 600; color: var(--cream); background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+  @media (max-width: 420px) {
+    .nav-inner { gap: 8px; padding: 12px 12px; }
+    .brand { font-size: .95rem; gap: 8px; }
+    .nav-links a { padding: 8px 7px; letter-spacing: .04em; font-size: .68rem; }
+  }
 </style>
 </head>
 <body>
@@ -70,6 +75,7 @@
     <a class="brand" href="/" aria-label="Roda home"><span class="dot"></span><b>RODA</b></a>
     <nav class="nav-links" aria-label="Site">
       <a href="/install" aria-current="page">Install</a>
+      <a href="/privacy">Privacy</a>
       <a href="/support">Support</a>
     </nav>
   </div>
@@ -118,8 +124,10 @@
 <footer>
   <div class="foot-inner">
     <a href="/">Home</a>
+    <a href="/install">Install</a>
     <a href="/privacy">Privacy</a>
     <a href="/support">Support</a>
+    <a href="mailto:support@roda.fyi">support@roda.fyi</a>
   </div>
 </footer>
 </body>
