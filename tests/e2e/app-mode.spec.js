@@ -36,7 +36,7 @@ test('a coach records a past class from +', async ({ page }, testInfo) => {
   await openCreate(page, testInfo);
   await page.getByRole('dialog').getByRole('button', { name: /Record a past class/ }).click();
   await expect(page).toHaveURL(/#\/me\/teaching\/record$/);
-  await expect(page.locator('input[name="attendee"]')).toHaveCount(3);
+  await expect(page.locator('input[name="attendee"]')).toHaveCount(4); // three members, then "You" (unchecked while others are listed)
   await page.locator('input[name="attendee"]').nth(2).uncheck();
   const box = page.getByLabel('Write a round');
   await box.fill('ginga 10 min');
