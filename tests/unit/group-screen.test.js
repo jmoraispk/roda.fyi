@@ -75,7 +75,7 @@ describe('group page', () => {
 
   it('explains a group I am not in', async () => {
     const group = groupServices({ listMyMemberships: vi.fn().mockResolvedValue([]) });
-    const view = await renderGroup(appCtx({ services: { group } }), route);
+    const view = await renderGroup(appCtx({ services: { group, discover: { group: vi.fn().mockResolvedValue(null) } } }), route);
     expect(view.textContent).toContain("This group isn't available.");
   });
 

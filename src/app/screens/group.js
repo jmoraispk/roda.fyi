@@ -1,6 +1,7 @@
 // src/app/screens/group.js
 import { el, pageHeader } from '../shell/page.js';
 import { confirmButton } from './confirm-button.js';
+import { renderGroupCard } from './discover-cards.js';
 import { renderOwnerTools } from './group-owner.js';
 import { linkBox } from './link-box.js';
 
@@ -33,7 +34,8 @@ export async function renderGroup(ctx, route) {
   }
   const membership = memberships.find((item) => item.group_id === groupId && item.state === 'active' && item.group && !item.group.archived_at);
   // Ruling R14: Plan 3 replaces this branch with the Discover group card.
-  if (!membership) return notAvailable(t('groupPage.unavailable'));
+  // Not a member, coach, or owner: show the Discover card (with request to join) instead.
+  if (!membership) return renderGroupCard(ctx, route);
   const { group } = membership;
   const isOwner = group.owner_id === profile.id;
   const isCoach = membership.access_level === 'coach';
