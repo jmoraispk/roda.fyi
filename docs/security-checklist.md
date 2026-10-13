@@ -111,6 +111,18 @@ or pull request; do not check an item based only on dashboard appearance.
   future work; no placeholder activity is presented as real history.
 - [ ] Data retention, account deletion, privacy notice, and support contact are
   approved before collecting real training/feedback history.
+- [ ] Discover stores and returns only city-level places (two-decimal
+  coordinates). Nobody-visible and unfinished profiles never appear in map
+  points, city lists, cards, search, or profile-picture reads; contacts are
+  returned only with a visible card.
+- [ ] Discover read functions are not executable by `anon` until the public
+  "Find a class" page is reviewed; the private functions already apply the
+  anonymous (Everyone-only) rule.
+- [ ] Map tiles and city search go from the browser directly to OpenStreetMap.
+  The in-app note on Discover and in Discover settings says so; Nominatim
+  requests are user-initiated, at most one per second, cached, never bulk, and
+  OSM attribution is visible on every map. The service worker never caches
+  third-party responses.
 
 ## Incident drill
 

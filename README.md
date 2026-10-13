@@ -40,8 +40,13 @@ Groups, Catalog for curators, and Settings. New accounts start with a short
 welcome, and a Train · Both · Teach setting in Me changes what **+** offers and
 whether Teaching is listed, without removing any data. The app has a bottom tab
 bar on phones and a sidebar on desktop and can be added to a phone's home
-screen. Discover is not rebuilt yet and links to the classic dashboard at
-`/dashboard`.
+screen.
+
+Discover (`#/discover`) shows people per city and discoverable groups on an
+OpenStreetMap map, with search and person and group cards. People choose their
+city, who can find them, and their contacts in Me → Settings; group owners set
+the group's city and contacts on the group's page. Only city-level places are
+stored, and Train-mode profiles stay hidden until the person chooses otherwise.
 
 ## Local browser development
 
