@@ -5,9 +5,9 @@ import { renderGroupDiscoverForm } from './group-discover-form.js';
 import { openGroupForm } from './group-form.js';
 import { linkBox } from './link-box.js';
 
-// Ruling R15: links keep pointing at /dashboard until the switch-over.
+// The app is the only place these links open (Plan 4, Ruling 5).
 export function discoveryLink(origin, token) {
-  return `${origin}/dashboard?group_link=${encodeURIComponent(token)}`;
+  return `${origin}/app?group_link=${encodeURIComponent(token)}`;
 }
 
 function sheetForm(ctx, { title, label, name, options, submitText, submitClass = 'button-primary', onSubmit }) {

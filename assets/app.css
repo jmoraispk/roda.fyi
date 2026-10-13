@@ -313,3 +313,10 @@ input, select, textarea { font-size: 16px; }
 /* Long unbroken words (pasted links, typos) wrap instead of widening the page. */
 .screen, .sheet { overflow-wrap: anywhere; }
 .chapter-text, .recent-card, .round-card, .day-item, .round-chip, .segment, .chip, .tag { min-width: 0; max-width: 100%; }
+.app-demo { margin: 0; padding: 4px 12px; text-align: center; font-size: .75rem; background: var(--card-2); color: var(--sand); border-bottom: 1px solid var(--line); }
+/* Desktop: the sidebar spans every row; banners and the panes stay in the content column. */
+@media (min-width: 900px) {
+  .app { grid-template-rows: auto auto 1fr; }
+  .app > .app-nav { grid-column: 1; grid-row: 1 / -1; }
+  .app > .app-demo, .app > .app-offline, .app > .app-panes { grid-column: 2; }
+}

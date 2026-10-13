@@ -21,7 +21,6 @@ import { signOutSafely } from '../screens/sign-out.js';
 import { renderPlan } from '../screens/plan.js';
 import { renderStudent } from '../screens/student.js';
 import { renderTeaching } from '../screens/teaching.js';
-import { renderPlaceholder } from '../screens/placeholder.js';
 import { renderToday } from '../screens/today.js';
 import { renderWelcome } from '../screens/welcome.js';
 import { renderTraining } from '../screens/training.js';
@@ -29,6 +28,7 @@ import { modeOf, plusActions, redirectFor } from '../shell/access.js';
 import { openPlusMenu } from '../screens/plus-menu.js';
 import { renderRecordClass } from '../screens/record-class.js';
 import { createLayout } from '../shell/layout.js';
+import { runEntryLinks, takeEntryLinks } from '../shell/entry-links.js';
 import { el } from '../shell/page.js';
 import { createRouter, isDetail, tabFor } from '../shell/router.js';
 import { closeSheet, openSheet } from '../shell/sheet.js';
@@ -46,12 +46,19 @@ async function main() {
   const params = new URLSearchParams(location.search);
   const demoMode = params.get('demo') === '1';
   if (demoMode) seedDemoData(localStorage);
+  const tabStorage = (() => {
+    try {
+      return window.sessionStorage;
+    } catch {
+      return null;
+    }
+  })();
   const localMode = __RODA_E2E__ || demoMode;
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
   const services = createServices({ window, localMode, e2e: __RODA_E2E__, language: () => i18n.locale() });
   const root = document.querySelector('#appRoot');
 
-  const toSignIn = () => location.replace(`/?next=${encodeURIComponent(`/app${location.hash}`)}`);
+  const toSignIn = () => location.replace(`/?next=${encodeURIComponent(`${location.pathname}${location.search}${location.hash}`)}`);
   const startup = await loadStartup({ auth: services.auth, profile: services.profile });
   if (startup.status === 'signed-out') {
     toSignIn();
@@ -65,6 +72,7 @@ async function main() {
     return;
   }
   const { profile, session } = startup;
+  takeEntryLinks(window, tabStorage);
   let isCoach = Boolean(startup.coachProfile);
   services.auth.onAuthStateChange((_event, nextSession) => {
     if (!nextSession) toSignIn();
@@ -84,7 +92,7 @@ async function main() {
   let renderToken = 0;
   // Ruling R9: + follows the mode on phones and on the desktop sidebar.
   const layout = createLayout({
-    document, i18n,
+    document, i18n, demo: demoMode,
     onPlus: () => {
       const actions = plusActions(modeOf(profile));
       if (actions.length === 1) router.navigate('/log');
@@ -147,7 +155,8 @@ async function main() {
       }
       return renderCatalog(ctx, route);
     }
-    return renderPlaceholder(ctx, { title: i18n.t(`app.${section}`) });
+    router.replace('/me');
+    return null;
   }
 
   async function screenFor(route) {
@@ -173,7 +182,7 @@ async function main() {
       case 'group': return renderGroup(ctx, route);
       case 'discover': return renderDiscover(ctx, route);
       case 'person': return renderPerson(ctx, route);
-      default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
+      default: return renderToday(ctx, route);
     }
   }
 
@@ -210,6 +219,7 @@ async function main() {
     view.dataset.screen = route.name;
     target.replaceChildren(view);
     if (!sideBySide) layout.main.focus({ preventScroll: true });
+    if (route.name !== 'welcome') runEntryLinks(ctx, tabStorage);
   }
 
   const router = createRouter({ window, onRoute: (route) => { show(route); } });

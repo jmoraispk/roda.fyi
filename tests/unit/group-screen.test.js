@@ -42,7 +42,7 @@ describe('group page', () => {
     expect(document.body.textContent).toContain('Coach · Lisbon · Europe/Lisbon');
     document.querySelector('input[name="inviteEmail"]').value = 'caio@example.com';
     document.querySelector('[data-action="create-invite"]').click();
-    await vi.waitFor(() => expect(document.querySelector('input[aria-label="Invitation link"]').value).toMatch(/\/dashboard\?member_invite=invite-1$/));
+    await vi.waitFor(() => expect(document.querySelector('input[aria-label="Invitation link"]').value).toMatch(/\/app\?member_invite=invite-1$/));
     expect(group.createInvitation).toHaveBeenCalledWith('g1', 'caio@example.com');
     expect(document.querySelector('[data-join-request="r2"] [data-decision="approved"]')).toBeNull();
     document.querySelector('[data-join-request="r1"] [data-decision="approved"]').click();
@@ -103,7 +103,7 @@ describe('group page', () => {
     expect(document.querySelector('[data-action="leave-group"]')).toBeNull();
     expect(document.querySelector('[data-member="other"] [data-action="remove-member"]')).not.toBeNull();
     document.querySelector('[data-action="discovery-link"]').click();
-    await vi.waitFor(() => expect(document.querySelector('input[aria-label="Discovery link"]').value).toMatch(/\/dashboard\?group_link=discovery-1$/));
+    await vi.waitFor(() => expect(document.querySelector('input[aria-label="Discovery link"]').value).toMatch(/\/app\?group_link=discovery-1$/));
     document.querySelector('[data-action="revoke-link"]').click();
     await vi.waitFor(() => expect(group.revokeDiscoveryLink).toHaveBeenCalledWith('g1'));
     expect(document.querySelector('[data-group-status]').textContent).toBe('Discovery link revoked.');

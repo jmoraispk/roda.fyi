@@ -42,4 +42,10 @@ describe('layout', () => {
     layout.refreshCopy();
     expect(document.querySelector('.app-plus-side').textContent).toBe('+ Create');
   });
+
+  it('labels the demo so visitors know it stays in this browser', () => {
+    const layout = createLayout({ document, i18n, onPlus() {}, demo: true });
+    expect(layout.root.querySelector('.app-demo').textContent).toBe('Demo · browser only');
+    expect(createLayout({ document, i18n, onPlus() {} }).root.querySelector('.app-demo')).toBeNull();
+  });
 });

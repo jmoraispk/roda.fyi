@@ -5,9 +5,9 @@ import { renderGroupCard } from './discover-cards.js';
 import { renderOwnerTools } from './group-owner.js';
 import { linkBox } from './link-box.js';
 
-// Ruling R15: links keep pointing at /dashboard until the switch-over.
+// The app is the only place these links open (Plan 4, Ruling 5).
 export function inviteLink(origin, token) {
-  return `${origin}/dashboard?member_invite=${encodeURIComponent(token)}`;
+  return `${origin}/app?member_invite=${encodeURIComponent(token)}`;
 }
 
 function section(document, title, children) {
