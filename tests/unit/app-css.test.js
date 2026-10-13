@@ -26,4 +26,9 @@ describe('app styles', () => {
     const css = await readFile('assets/app.css', 'utf8');
     expect(css).toMatch(/input\[type="radio"\],\s*input\[type="checkbox"\]\s*\{[^}]*accent-color:\s*var\(--gold\)/);
   });
+
+  it('wraps very long words instead of widening the page', async () => {
+    const css = await readFile('assets/app.css', 'utf8');
+    expect(css).toMatch(/\.screen,\s*\.sheet\s*\{[^}]*overflow-wrap:\s*anywhere/);
+  });
 });

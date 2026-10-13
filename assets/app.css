@@ -309,3 +309,7 @@ input, select, textarea { font-size: 16px; }
 .discover-contact-list li { padding: 2px 0; }
 .discover-contact-list a { color: var(--gold); }
 .screen-welcome > .page-title { flex: none; }
+
+/* Long unbroken words (pasted links, typos) wrap instead of widening the page. */
+.screen, .sheet { overflow-wrap: anywhere; }
+.chapter-text, .recent-card, .round-card, .day-item, .round-chip, .segment, .chip, .tag { min-width: 0; max-width: 100%; }
