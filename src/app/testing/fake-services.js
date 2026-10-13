@@ -1003,8 +1003,15 @@ export function createE2ETrainingService({ window }) {
       const resource = normalizeResource(input);
       const occurrence = state.occurrences.find(({ id }) => id === input.occurrenceId);
       if (!occurrence || occurrence.recorded_by !== actorId()) throw new AppError('authorization', 'not_authorized');
+      if (input.clientKey) {
+        const existing = state.resources.find((item) => item.added_by === actorId() && item.client_key === input.clientKey);
+        if (existing) {
+          if (existing.occurrence_id !== occurrence.id) throw new AppError('validation', 'idempotency_conflict');
+          return { status: 'saved', resource_id: existing.id };
+        }
+      }
       const id = nextId(state, 'resource');
-      state.resources.push({ id, occurrence_id: occurrence.id, kind: input.kind, added_by: actorId(), ...resource });
+      state.resources.push({ id, occurrence_id: occurrence.id, kind: input.kind, added_by: actorId(), client_key: input.clientKey ?? null, ...resource });
       writeState(state);
       record({ type: 'add-resource', kind: input.kind });
       return { status: 'saved', resource_id: id };

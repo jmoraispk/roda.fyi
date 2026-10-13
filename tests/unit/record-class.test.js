@@ -60,7 +60,7 @@ describe('record a past class', () => {
       rounds: [expect.objectContaining({ source_text: 'ginga 10 min' })],
     }), expect.any(Date));
     expect(s.training.addResource).toHaveBeenCalledWith({
-      occurrenceId: 'o5', kind: 'video', title: '', url: 'https://youtu.be/VAI3JUKTwz0', body: null,
+      occurrenceId: 'o5', kind: 'video', title: '', url: 'https://youtu.be/VAI3JUKTwz0', body: null, clientKey: 'key-r',
     });
   });
 

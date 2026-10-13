@@ -39,4 +39,9 @@ describe('toAppError', () => {
       message,
     });
   });
+
+  it('explains a client key reused on another training', () => {
+    expect(toAppError({ code: 'P0001', message: 'idempotency_conflict' }).message)
+      .toBe('This item was already saved to another training.');
+  });
 });

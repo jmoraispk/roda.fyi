@@ -247,8 +247,8 @@ describe('training service', () => {
       attendees: [{ profileId: 's-1', durationMinutes: 77 }], rounds: null,
     }, new Date('2026-10-10T00:00:00Z'));
     expect(calls).toEqual([
-      ['add_training_resource', { occurrence_id: 'o-1', kind: 'video', title: 'Rec', url: 'https://youtu.be/x', body: null }],
-      ['add_training_resource', { occurrence_id: 'o-1', kind: 'summary', title: null, url: null, body: '# Notes' }],
+      ['add_training_resource', { occurrence_id: 'o-1', kind: 'video', title: 'Rec', url: 'https://youtu.be/x', body: null, client_key: null }],
+      ['add_training_resource', { occurrence_id: 'o-1', kind: 'summary', title: null, url: null, body: '# Notes', client_key: null }],
       ['update_training_resource', { resource_id: 'r-1', title: null, url: null, body: 'Updated' }],
       ['delete_training_resource', { resource_id: 'r-1' }],
       ['list_training_resource_kinds', { month_start: '2026-09-01', month_end: '2026-10-01', profile_id: null }],
@@ -400,5 +400,11 @@ describe('training service', () => {
     expect((await service.getScheduledClass(personal.schedule_id)).people).toEqual([{ profile_id: 'bia', display_name: 'Bia' }]);
     values.set('roda.e2e.session', JSON.stringify({ user: { id: 'ana' } }));
     await expect(service.getScheduledClass(group.schedule_id)).rejects.toMatchObject({ kind: 'authorization' });
+  });
+
+  it('sends the client key so a repeated resource is kept once', async () => {
+    const { client, calls } = harness();
+    await createTrainingService(client).addResource({ occurrenceId: 'o-1', kind: 'video', url: 'https://youtu.be/x', clientKey: 'c-1' });
+    expect(calls).toEqual([['add_training_resource', { occurrence_id: 'o-1', kind: 'video', title: null, url: 'https://youtu.be/x', body: null, client_key: 'c-1' }]]);
   });
 });

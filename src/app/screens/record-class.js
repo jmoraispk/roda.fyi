@@ -43,6 +43,11 @@ export async function renderRecordClass(ctx) {
   let kind = kinds[0];
   let saving = false;
   const idempotencyKey = training.createIdempotencyKey();
+  // One key per resource kind for the whole page, so pressing Save again after
+  // a failure never adds a resource twice.
+  const resourceKeys = {
+    video: training.createIdempotencyKey(), summary: training.createIdempotencyKey(), voice: training.createIdempotencyKey(),
+  };
 
   const kindButtons = kinds.map((value) => el(document, 'button', {
     text: i18n.t(value === 'group' ? 'training.group' : 'training.personalClass'),
@@ -114,7 +119,7 @@ export async function renderRecordClass(ctx) {
     const minutes = Number(duration.value);
     const extras = [['video', video.value, null], ['summary', null, summary.value], ['voice', null, transcript.value]]
       .filter(([, url, body]) => (url ?? body ?? '').trim())
-      .map(([resourceKind, url, body]) => ({ kind: resourceKind, title: '', url, body }));
+      .map(([resourceKind, url, body]) => ({ kind: resourceKind, title: '', url, body, clientKey: resourceKeys[resourceKind] }));
     try {
       extras.forEach((resource) => normalizeResource(resource));
     } catch (problem) {

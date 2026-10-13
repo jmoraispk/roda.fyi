@@ -38,3 +38,23 @@ test('very long words wrap instead of widening the page', async ({ page }) => {
   await expect(page.locator('.recent-card').first()).toBeVisible();
   expect(await sideways(page)).toBe(false);
 });
+
+test('saving again after a reload adds each resource once', async ({ page }) => {
+  await page.goto('/app#/log');
+  const box = page.getByLabel('Write a round');
+  await box.fill('ginga 10 min');
+  await box.press('Enter');
+  await page.getByRole('button', { name: '🎥 Link' }).click();
+  await page.getByRole('dialog').getByLabel('Link').fill('https://youtu.be/VAI3JUKTwz0');
+  await page.getByRole('dialog').getByRole('button', { name: 'Add' }).click();
+  // The draft as it is right before Save: what a reload mid-save finds again.
+  const draft = await page.evaluate(() => localStorage.getItem('roda.logDraft:practitioner-1'));
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page).toHaveURL(/#\/training\//);
+  const first = page.url();
+  await page.evaluate((saved) => localStorage.setItem('roda.logDraft:practitioner-1', saved), draft);
+  await page.goto('/app#/log');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page).toHaveURL(first);
+  await expect(page.locator('.resource-buttons button')).toHaveCount(1);
+});
