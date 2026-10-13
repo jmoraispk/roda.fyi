@@ -16,13 +16,14 @@ function profileService(overrides = {}) {
 }
 
 function setup(services, options = {}) {
+  const discover = { updateMine: vi.fn() };
   const ctx = appCtx({
     profile: { id: 'me', display_name: 'Capoeirista', usage_mode: 'train', completed_at: null, timezone_override: null, leaderboard_visible: true },
     user: { id: 'me', email: 'ana@example.com', user_metadata: { full_name: 'Ana Silva' } },
-    services: { profile: services },
+    services: { profile: services, discover, geocoder: { searchCities: vi.fn(), reverse: vi.fn() } },
   });
   const onDone = vi.fn();
-  return { onDone, render: () => renderWelcome(ctx, { name: 'welcome', params: {}, query: {} }, { onDone, ...options }) };
+  return { onDone, discover, render: () => renderWelcome(ctx, { name: 'welcome', params: {}, query: {} }, { onDone, ...options }) };
 }
 
 const press = (view, action) => view.querySelector(`[data-action="${action}"]`).click();
@@ -30,10 +31,10 @@ const press = (view, action) => view.querySelector(`[data-action="${action}"]`).
 describe('welcome', () => {
   it('walks through name and mode, then finishes', async () => {
     const services = profileService();
-    const { onDone, render } = setup(services);
+    const { onDone, discover, render } = setup(services);
     const view = await render();
     document.body.replaceChildren(view);
-    expect(view.querySelector('.welcome-progress').textContent).toBe('Step 1 of 2');
+    expect(view.querySelector('.welcome-progress').textContent).toBe('Step 1 of 3');
     const name = view.querySelector('input[name="displayName"]');
     expect(name.value).toBe('Ana Silva');
     name.value = '   ';
@@ -41,15 +42,18 @@ describe('welcome', () => {
     expect(view.querySelector('[role="status"]').textContent).toBe('Enter a name of up to 80 characters.');
     name.value = 'Ana Silva';
     press(view, 'welcome-next');
-    expect(view.querySelector('.welcome-progress').textContent).toBe('Step 2 of 2');
+    expect(view.querySelector('.welcome-progress').textContent).toBe('Step 2 of 3');
     expect(view.querySelector('.mode-means').textContent).toBe('The + button opens Log training. Teaching stays out of Me.');
     view.querySelector('[data-mode="teach"]').click();
     expect(view.querySelector('.mode-means').textContent).toBe('The + button schedules or records classes, and Today puts your classes first.');
+    press(view, 'welcome-next');
+    expect(view.querySelector('.welcome-progress').textContent).toBe('Step 3 of 3');
     press(view, 'welcome-next');
     await vi.waitFor(() => expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ usage_mode: 'teach' }), 'teach'));
     expect(services.setUsageMode).toHaveBeenCalledWith('teach');
     expect(services.completeProfile).toHaveBeenCalledWith({ displayName: 'Ana Silva', timezoneChoice: 'Automatic', leaderboardVisible: true });
     expect(services.uploadProfilePicture).not.toHaveBeenCalled();
+    expect(discover.updateMine).not.toHaveBeenCalled();
   });
 
   it('keeps the answers and never uploads the same photo twice after a failure', async () => {
@@ -61,6 +65,7 @@ describe('welcome', () => {
     document.body.replaceChildren(view);
     const file = new File(['x'], 'me.png', { type: 'image/png' });
     Object.defineProperty(view.querySelector('input[name="photo"]'), 'files', { value: [file] });
+    press(view, 'welcome-next');
     press(view, 'welcome-next');
     press(view, 'welcome-next');
     await vi.waitFor(() => expect(view.querySelector('[role="status"]').textContent).toBe('Timed out'));
@@ -86,7 +91,8 @@ describe('welcome', () => {
     document.body.replaceChildren(view);
     press(view, 'welcome-next');
     press(view, 'welcome-next');
-    expect(view.querySelector('.welcome-progress').textContent).toBe('Step 3 of 3');
+    press(view, 'welcome-next');
+    expect(view.querySelector('.welcome-progress').textContent).toBe('Step 4 of 4');
     press(view, 'welcome-next');
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(order).toEqual(['extra', 'complete']);

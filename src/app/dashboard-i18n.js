@@ -647,6 +647,8 @@ const STRINGS = Object.freeze({
     'groupDiscover.hidden': "This group isn't discoverable, so it stays off the map until you make it discoverable.",
     'sentRequests.title': 'Requests you sent',
     'sentRequests.canceled': 'Request canceled.',
+    'welcomeDiscover.title': 'Where do you train?',
+    'welcomeDiscover.intro': 'Optional. Only your city is shared, never an address. You can change this later in Settings.',
   }),
   pt: Object.freeze({
     'dashboard.changeLanguage': 'Mudar idioma',
@@ -1293,6 +1295,8 @@ const STRINGS = Object.freeze({
     'groupDiscover.hidden': 'Este grupo não é público, por isso fica fora do mapa até o tornares público.',
     'sentRequests.title': 'Pedidos que enviaste',
     'sentRequests.canceled': 'Pedido cancelado.',
+    'welcomeDiscover.title': 'Onde treinas?',
+    'welcomeDiscover.intro': 'Opcional. Só partilhamos a tua cidade, nunca uma morada. Podes mudar isto depois nas Definições.',
   }),
 });
 

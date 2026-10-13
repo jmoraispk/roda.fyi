@@ -14,6 +14,8 @@ test('a new person sets name and mode, then lands on Today', async ({ page }) =>
   await page.getByLabel('Name', { exact: true }).fill('Ana Silva');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('radio', { name: 'Both' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('heading', { name: 'Where do you train?' })).toBeVisible();
   await page.getByRole('button', { name: 'Finish' }).click();
   await expect(page).toHaveURL(/#\/$/);
   await expect(page.locator('.week-day')).toHaveCount(7);
@@ -54,7 +56,34 @@ test('the welcome shows no navigation on desktop either, so typed answers cannot
   await page.getByLabel('Name', { exact: true }).fill('Ana Silva');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('radio', { name: 'Both' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('heading', { name: 'Where do you train?' })).toBeVisible();
   await page.getByRole('button', { name: 'Finish' }).click();
   await expect(page).toHaveURL(/#\/$/);
   await expect(page.locator('.app-nav')).toBeVisible();
+});
+
+test('a new person can add a city and be findable from the welcome', async ({ page }) => {
+  await seedAccount(page, { profile: { display_name: 'Capoeirista', completed_at: null } });
+  await page.goto('/app');
+  await page.getByLabel('Name', { exact: true }).fill('Ana Silva');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('radio', { name: 'Teach' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  const city = page.getByRole('searchbox', { name: 'Search a city' });
+  await city.fill('Lisbon');
+  await city.press('Enter');
+  await page.getByRole('button', { name: 'Lisbon, Portugal' }).click();
+  await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page).toHaveURL(/#\/$/);
+  const profile = await page.evaluate(() => JSON.parse(localStorage.getItem('roda.e2e.profile')));
+  expect(profile).toMatchObject({ usage_mode: 'teach', place_city: 'Lisbon', discover_visibility: null });
+});
+
+test('the welcome title keeps its natural height', async ({ page }) => {
+  await seedAccount(page, { profile: { display_name: 'Capoeirista', completed_at: null } });
+  await page.goto('/app');
+  const title = page.locator('.screen-welcome .page-title');
+  await expect(title).toBeVisible();
+  expect((await title.boundingBox()).height).toBeLessThan(70);
 });

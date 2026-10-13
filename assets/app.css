@@ -308,3 +308,4 @@ input, select, textarea { font-size: 16px; }
 .discover-group-list a { text-decoration: none; font-weight: 600; }
 .discover-contact-list li { padding: 2px 0; }
 .discover-contact-list a { color: var(--gold); }
+.screen-welcome > .page-title { flex: none; }
