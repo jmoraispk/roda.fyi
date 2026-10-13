@@ -36,19 +36,26 @@ export function readPublicConfig(env) {
   return { supabaseUrl, supabasePublishableKey };
 }
 
+export const ENTRY_POINTS = Object.freeze({
+  'public-auth': 'src/app/entries/public-auth.js',
+  'auth-callback': 'src/app/entries/auth-callback.js',
+  dashboard: 'src/app/entries/dashboard.js',
+  app: 'src/app/entries/app.js',
+  'public-sequences': 'src/app/entries/public-sequences.js',
+});
+
+// Service workers are built to the site root so their scope can cover pages.
+export const WORKER_ENTRY_POINTS = Object.freeze({
+  'app-sw': 'src/app/sw/service-worker.js',
+});
+
 export async function buildBrowserBundles({
   test = false,
   outputDirectory = 'assets/generated',
 } = {}) {
   loadDotEnv({ path: '.env.local', quiet: true });
   const publicConfig = readPublicConfig(test ? TEST_CONFIG : process.env);
-  const entryPoints = {
-    'public-auth': 'src/app/entries/public-auth.js',
-    'auth-callback': 'src/app/entries/auth-callback.js',
-    dashboard: 'src/app/entries/dashboard.js',
-    app: 'src/app/entries/app.js',
-    'public-sequences': 'src/app/entries/public-sequences.js',
-  };
+  const entryPoints = ENTRY_POINTS;
 
   if (!test) {
     await Promise.all(Object.keys(entryPoints).map((name) => (
@@ -84,17 +91,18 @@ export async function buildBrowserBundles({
     loader: { '.png': 'dataurl', '.svg': 'dataurl' },
   });
 
-  await build({
-    entryPoints: ['src/app/sw/service-worker.js'],
-    outfile: 'app-sw.js',
+  const version = JSON.stringify(String(Date.now()));
+  await Promise.all(Object.entries(WORKER_ENTRY_POINTS).map(([name, entry]) => build({
+    entryPoints: [entry],
+    outfile: `${name}.js`,
     bundle: true,
     platform: 'browser',
     format: 'iife',
     target: ['es2020'],
     minify: !test,
     legalComments: 'none',
-    define: { __RODA_SW_VERSION__: JSON.stringify(String(Date.now())) },
-  });
+    define: { __RODA_SW_VERSION__: version },
+  })));
 }
 
 const isDirectRun = process.argv[1]
