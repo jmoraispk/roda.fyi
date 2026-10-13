@@ -19,3 +19,22 @@ test('an impossible calendar month opens the current month', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'October 2026' })).toBeVisible();
   await expect(page).toHaveURL(/#\/calendar$/);
 });
+
+const sideways = (page) => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+
+test('very long words wrap instead of widening the page', async ({ page }) => {
+  const word = 'a'.repeat(160);
+  await page.goto('/app#/log');
+  const box = page.getByLabel('Write a round');
+  await box.fill(`ginga ${word}`);
+  await box.press('Enter');
+  await expect(page.locator('textarea[data-round-text]')).toHaveCount(1);
+  expect(await sideways(page)).toBe(false);
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page).toHaveURL(/#\/training\//);
+  await expect(page.locator('.chapter')).toHaveCount(1);
+  expect(await sideways(page)).toBe(false);
+  await page.goto('/app#/');
+  await expect(page.locator('.recent-card').first()).toBeVisible();
+  expect(await sideways(page)).toBe(false);
+});
