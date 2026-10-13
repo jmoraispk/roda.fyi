@@ -84,9 +84,10 @@ export function createStatisticsView({
       statCard(i18n.t('statistics.totalSessions'), formatRankValue({
         metric: 'sessions', sessionCount: personalData.session_count,
       }, i18n.locale())),
-      statCard(i18n.t('statistics.streak'), i18n.t('statistics.days', {
-        count: personalData.current_streak ?? 0,
-      })),
+      statCard(i18n.t('statistics.streak'), i18n.t(
+        (personalData.current_streak ?? 0) === 1 ? 'statistics.dayOne' : 'statistics.days',
+        { count: personalData.current_streak ?? 0 },
+      )),
       statCard(i18n.t('statistics.weeklyAverage'), String(personalData.average_trainings_per_week ?? 0)),
       statCard(i18n.t('statistics.monthlyHours'), `${personalData.average_hours_per_month ?? 0}h`),
     );

@@ -26,8 +26,28 @@ const SAFE_MESSAGES = Object.freeze({
   relationship_expired: 'This group invitation has expired.',
 });
 
+export const SAFE_CODES = Object.freeze(Object.keys(SAFE_MESSAGES));
+
+let translate = null;
+
+// Ruling 16: the app passes its copy so these messages follow the chosen
+// language; pages that never load it (sign-in, callback) keep English.
+export function useErrorTranslations(i18n) {
+  translate = i18n ? (code) => {
+    try {
+      return i18n.t(`errors.${code}`);
+    } catch {
+      return null;
+    }
+  } : null;
+}
+
+function safeMessage(code) {
+  return translate?.(code) ?? SAFE_MESSAGES[code] ?? translate?.('generic') ?? 'Something went wrong.';
+}
+
 export class AppError extends Error {
-  constructor(kind, code, message = SAFE_MESSAGES[code] ?? 'Something went wrong.', options = {}) {
+  constructor(kind, code, message = safeMessage(code), options = {}) {
     super(message, options.cause ? { cause: options.cause } : undefined);
     this.name = 'AppError';
     this.kind = kind;
@@ -64,5 +84,5 @@ export function toAppError(error) {
         ? 'expired'
         : 'validation';
 
-  return new AppError(kind, code, SAFE_MESSAGES[code], { cause: error });
+  return new AppError(kind, code, undefined, { cause: error });
 }

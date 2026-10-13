@@ -5,6 +5,7 @@ import { clearLegacyDashboardKeys } from '../local-data.js';
 import { E2E_TILES, OSM_TILES } from '../map-tiles.js';
 import { createLeafletMap } from '../screens/discover-map.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
+import { useErrorTranslations } from '../errors.js';
 import { seedDemoData } from '../demo-data.js';
 import { renderCatalog } from '../screens/catalog.js';
 import { renderProgress } from '../screens/progress.js';
@@ -55,6 +56,7 @@ async function main() {
   })();
   const localMode = __RODA_E2E__ || demoMode;
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
+  useErrorTranslations(i18n);
   const services = createServices({ window, localMode, e2e: __RODA_E2E__, language: () => i18n.locale() });
   const root = document.querySelector('#appRoot');
 
