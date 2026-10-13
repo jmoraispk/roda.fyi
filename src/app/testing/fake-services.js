@@ -1908,3 +1908,31 @@ export function createE2EDiscoverService({ window }) {
     },
   };
 }
+
+export const E2E_CITIES = Object.freeze([
+  { city: 'Lisbon', region: 'Lisbon', country: 'Portugal', lat: 38.72, lng: -9.14 },
+  { city: 'Rio de Janeiro', region: 'Rio de Janeiro', country: 'Brazil', lat: -22.91, lng: -43.17 },
+  { city: 'Salvador', region: 'Bahia', country: 'Brazil', lat: -12.97, lng: -38.5 },
+]);
+
+export function createE2EGeocoder({ window }) {
+  const record = (event) => window.__RODA_E2E_EVENTS__?.push(event);
+  const failing = () => window.localStorage.getItem('roda.e2e.failGeocoder') === 'true';
+  const down = () => new AppError('network', 'geocoder_unavailable', 'City search is not available right now.', { retryable: true });
+  return {
+    async searchCities(query) {
+      const text = foldText(query);
+      if (text.length < 2) return [];
+      record({ type: 'geocode-search', query: String(query).trim() });
+      if (failing()) throw down();
+      return E2E_CITIES.filter(({ city }) => foldText(city).includes(text)).map((place) => ({ ...place }));
+    },
+    async reverse({ lat, lng }) {
+      record({ type: 'geocode-reverse', lat: roundCoordinate(lat), lng: roundCoordinate(lng) });
+      if (failing()) throw down();
+      const nearest = [...E2E_CITIES]
+        .sort((a, b) => Math.hypot(a.lat - lat, a.lng - lng) - Math.hypot(b.lat - lat, b.lng - lng))[0];
+      return Math.hypot(nearest.lat - lat, nearest.lng - lng) < 2 ? { ...nearest } : null;
+    },
+  };
+}
