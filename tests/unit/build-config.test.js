@@ -1,4 +1,4 @@
-import { access, mkdtemp, rm } from 'node:fs/promises';
+import { access, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -45,6 +45,9 @@ describe('buildBrowserBundles', () => {
     const priorKey = process.env.RODA_SUPABASE_PUBLISHABLE_KEY;
     try {
       await buildBrowserBundles({ test: true, outputDirectory });
+      const leafletCss = await readFile(join(outputDirectory, 'leaflet.css'), 'utf8');
+      expect(leafletCss).toContain('.leaflet-container');
+      expect(leafletCss).not.toMatch(/url\(["']?images\//);
       await expect(access(join(outputDirectory, 'public-auth.js.map'))).resolves.toBeUndefined();
 
       process.env.RODA_SUPABASE_URL = 'https://example.supabase.co';
