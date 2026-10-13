@@ -23,12 +23,14 @@ export async function renderLog(ctx) {
   const storage = window.localStorage;
   const training = ctx.services.training;
   const todayIso = ctx.today();
+  // Each staged resource keeps one key, so a repeated Save cannot add it twice.
+  const withKey = (resource) => (resource.clientKey ? resource : { ...resource, clientKey: training.createIdempotencyKey() });
   const saved = loadDraft(storage, profile.id);
   const state = {
     localDate: saved?.localDate ?? todayIso,
     durationMinutes: saved?.durationMinutes ?? 45,
     notes: saved?.notes ?? '',
-    resources: saved?.resources ?? [],
+    resources: (saved?.resources ?? []).map(withKey),
     idempotencyKey: saved?.idempotencyKey ?? training.createIdempotencyKey(),
     startTime: saved?.startTime ?? null,
     startTouched: saved?.startTouched ?? false,
@@ -142,7 +144,7 @@ export async function renderLog(ctx) {
         error.textContent = problem.message;
         return;
       }
-      state.resources.push(resource);
+      state.resources.push(withKey(resource));
       renderResources();
       persistNow();
       sheet.close();

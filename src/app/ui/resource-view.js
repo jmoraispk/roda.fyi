@@ -20,7 +20,7 @@ function titleFor(i18n, resource) {
 
 // The queue lives in memory and is mirrored to browser storage when possible,
 // so unsynced resources survive a reload but saving never depends on storage.
-function pendingStore(document, occurrenceId) {
+function pendingStore(document, occurrenceId, newKey) {
   const key = `roda.pendingResources:${occurrenceId}`;
   let storage = null;
   try {
@@ -35,7 +35,7 @@ function pendingStore(document, occurrenceId) {
   } catch {
     items = [];
   }
-  return {
+  const store = {
     read() {
       return [...items];
     },
@@ -49,10 +49,16 @@ function pendingStore(document, occurrenceId) {
       }
     },
   };
+  // Items queued before keys existed get one now, saved so it never changes.
+  if (items.some((item) => !item?.clientKey)) {
+    store.write(items.map((item) => (item?.clientKey ? item : { ...item, clientKey: newKey() })));
+  }
+  return store;
 }
 
 export function createResourceSection({ document, i18n, item, service, onChanged }) {
-  const pending = pendingStore(document, item.occurrence_id);
+  const newKey = () => service.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID();
+  const pending = pendingStore(document, item.occurrence_id, newKey);
 
   async function syncPending(status) {
     let queue = pending.read();
@@ -185,16 +191,16 @@ export function createResourceSection({ document, i18n, item, service, onChanged
       const queued = [];
       const chosen = kind.value;
       if (chosen === 'video' && url.value.trim()) {
-        queued.push({ occurrenceId: item.occurrence_id, kind: 'video', title: title.value, url: url.value, body: null });
+        queued.push({ occurrenceId: item.occurrence_id, kind: 'video', title: title.value, url: url.value, body: null, clientKey: newKey() });
       }
       if (chosen !== 'video' && text.value.trim()) {
-        queued.push({ occurrenceId: item.occurrence_id, kind: chosen, title: title.value, url: null, body: text.value });
+        queued.push({ occurrenceId: item.occurrence_id, kind: chosen, title: title.value, url: null, body: text.value, clientKey: newKey() });
       }
       for (const file of files.files ?? []) {
         queued.push({
           occurrenceId: item.occurrence_id,
           kind: /\.md$/i.test(file.name) ? 'summary' : 'voice',
-          title: file.name, url: null, body: await file.text(),
+          title: file.name, url: null, body: await file.text(), clientKey: newKey(),
         });
       }
       if (!queued.length) {

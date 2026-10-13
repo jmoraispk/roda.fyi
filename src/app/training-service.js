@@ -231,7 +231,9 @@ export function createTrainingService(client, options = {}) {
     },
     async addResource(input) {
       const resource = normalizeResource(input);
-      return call('add_training_resource', { occurrence_id: input.occurrenceId, kind: input.kind, ...resource });
+      return call('add_training_resource', {
+        occurrence_id: input.occurrenceId, kind: input.kind, ...resource, client_key: input.clientKey ?? null,
+      });
     },
     async updateResource(input) {
       const resource = normalizeResource(input);

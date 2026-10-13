@@ -44,8 +44,8 @@ describe('resource view', () => {
     Object.defineProperty(form.querySelector('input[type="file"]'), 'files', { value: [file] });
     form.requestSubmit();
     await vi.waitFor(() => expect(service.addResource).toHaveBeenCalledTimes(2));
-    expect(service.addResource).toHaveBeenCalledWith({ occurrenceId: 'o1', kind: 'video', title: '', url: 'https://youtu.be/y', body: null });
-    expect(service.addResource).toHaveBeenCalledWith({ occurrenceId: 'o1', kind: 'voice', title: 'class-2.txt', url: null, body: 'transcript text' });
+    expect(service.addResource).toHaveBeenCalledWith({ occurrenceId: 'o1', kind: 'video', title: '', url: 'https://youtu.be/y', body: null, clientKey: expect.any(String) });
+    expect(service.addResource).toHaveBeenCalledWith({ occurrenceId: 'o1', kind: 'voice', title: 'class-2.txt', url: null, body: 'transcript text', clientKey: expect.any(String) });
     expect(onChanged).toHaveBeenCalled();
 
     document.querySelector('button[aria-label="Delete Zoom"]').click();
@@ -115,5 +115,33 @@ describe('resource view', () => {
     } finally {
       setItem.mockRestore();
     }
+  });
+
+  it('retries a queued resource with the same key it was queued with', async () => {
+    const service = {
+      createIdempotencyKey: vi.fn().mockReturnValueOnce('key-a'),
+      addResource: vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ status: 'saved' }),
+    };
+    const item = { occurrence_id: 'o3', can_add_resources: true, resources: [] };
+    document.body.replaceChildren(createResourceSection({ document, i18n, item, service, onChanged: vi.fn() }));
+    document.querySelector('button[data-action="open-resources"]').click();
+    const form = document.querySelector('form[data-resource-form]');
+    form.querySelector('input[name="url"]').value = 'https://youtu.be/y';
+    form.requestSubmit();
+    await vi.waitFor(() => expect(form.querySelector('[role="status"]').textContent).toBe('offline'));
+    document.body.replaceChildren(createResourceSection({ document, i18n, item, service, onChanged: vi.fn() }));
+    document.querySelector('button[data-action="retry-resources"]').click();
+    await vi.waitFor(() => expect(service.addResource).toHaveBeenCalledTimes(2));
+    expect(service.addResource.mock.calls.map(([input]) => input.clientKey)).toEqual(['key-a', 'key-a']);
+  });
+
+  it('gives a resource queued before keys existed one key and keeps it', () => {
+    localStorage.setItem('roda.pendingResources:o4', JSON.stringify([{ occurrenceId: 'o4', kind: 'summary', title: '', url: null, body: '# Old' }]));
+    const service = { createIdempotencyKey: vi.fn().mockReturnValueOnce('key-old'), addResource: vi.fn() };
+    const item = { occurrence_id: 'o4', can_add_resources: true, resources: [] };
+    createResourceSection({ document, i18n, item, service, onChanged: vi.fn() });
+    createResourceSection({ document, i18n, item, service, onChanged: vi.fn() });
+    expect(JSON.parse(localStorage.getItem('roda.pendingResources:o4'))[0].clientKey).toBe('key-old');
+    expect(service.createIdempotencyKey).toHaveBeenCalledTimes(1);
   });
 });

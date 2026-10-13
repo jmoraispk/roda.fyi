@@ -101,8 +101,9 @@ describe('log screen', () => {
     document.querySelector('button[data-action="save"]').click();
     await vi.waitFor(() => expect(context.navigate).toHaveBeenCalledWith('/training/o7'));
     expect(JSON.parse(localStorage.getItem('roda.pendingResources:o7'))).toEqual([
-      { occurrenceId: 'o7', kind: 'summary', title: '', url: null, body: '# Notes' },
+      { occurrenceId: 'o7', kind: 'summary', title: '', url: null, body: '# Notes', clientKey: 'k' },
     ]);
+    expect(training.addResource.mock.calls[0][0]).toMatchObject({ kind: 'video', clientKey: 'k' });
   });
 
   it('inserts a saved sequence as a round', async () => {
@@ -156,5 +157,22 @@ describe('log screen', () => {
     expect(document.querySelector('.log-status').textContent).toBe('That start time is still ahead. Choose a time that has passed.');
     expect(training.recordAloneTraining).not.toHaveBeenCalled();
     expect(document.querySelector('textarea[data-round-text]').value).toBe('ginga 10 min');
+  });
+
+  it('gives resources from an older draft a key before saving', async () => {
+    localStorage.setItem('roda.logDraft:p1', JSON.stringify({
+      localDate: '2026-10-11', durationMinutes: 45, notes: '', idempotencyKey: 'key-1',
+      rounds: [{ sourceText: 'ginga', ratings: [] }], resources: [{ kind: 'video', title: '', url: 'https://youtu.be/x', body: null }],
+    }));
+    const training = {
+      createIdempotencyKey: vi.fn(() => 'fresh'),
+      recordAloneTraining: vi.fn().mockResolvedValue({ status: 'completed', occurrence_id: 'o8' }),
+      addResource: vi.fn().mockResolvedValue({ status: 'saved' }),
+    };
+    const context = ctx(training);
+    document.body.replaceChildren(await renderLog(context));
+    document.querySelector('button[data-action="save"]').click();
+    await vi.waitFor(() => expect(context.navigate).toHaveBeenCalledWith('/training/o8'));
+    expect(training.addResource).toHaveBeenCalledWith(expect.objectContaining({ occurrenceId: 'o8', clientKey: 'fresh' }));
   });
 });
