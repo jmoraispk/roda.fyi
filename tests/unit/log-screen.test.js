@@ -101,7 +101,7 @@ describe('log screen', () => {
     document.querySelector('button[data-action="save"]').click();
     await vi.waitFor(() => expect(context.navigate).toHaveBeenCalledWith('/training/o7'));
     expect(JSON.parse(localStorage.getItem('roda.pendingResources:o7'))).toEqual([
-      { occurrenceId: 'o7', kind: 'summary', title: '', url: null, body: '# Notes', clientKey: 'k' },
+      { occurrenceId: 'o7', kind: 'summary', title: '', url: null, body: '# Notes', clientKey: 'k', profileId: 'p1' },
     ]);
     expect(training.addResource.mock.calls[0][0]).toMatchObject({ kind: 'video', clientKey: 'k' });
   });

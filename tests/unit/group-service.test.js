@@ -194,4 +194,12 @@ describe('createGroupService RPC contract', () => {
     })).rejects.toMatchObject({ code: 'picture_too_large' });
     expect(calls).toEqual([]);
   });
+
+  it('resolves a discovery token to one group row, or null when there is none', async () => {
+    const group = { id: 'g1', name: 'Grupo Lua', description: null, location: 'Lisbon', picture_path: null };
+    const found = rpcClient({ data: [group], error: null });
+    expect(await createGroupService(found.client).resolveDiscoveryToken('t1')).toEqual(group);
+    const missing = rpcClient({ data: [], error: null });
+    expect(await createGroupService(missing.client).resolveDiscoveryToken('t2')).toBeNull();
+  });
 });

@@ -87,3 +87,13 @@ test('the welcome title keeps its natural height', async ({ page }) => {
   await expect(title).toBeVisible();
   expect((await title.boundingBox()).height).toBeLessThan(70);
 });
+
+test('the desktop welcome uses the whole width', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.includes('mobile'), 'desktop layout');
+  await seedAccount(page, { profile: { display_name: 'Capoeirista', completed_at: null } });
+  await page.goto('/app');
+  await expect(page.locator('.screen-welcome')).toBeVisible();
+  const panes = await page.locator('.app-panes').boundingBox();
+  expect(panes.x).toBeLessThan(2);
+  expect(panes.width).toBeGreaterThan(page.viewportSize().width * 0.9);
+});

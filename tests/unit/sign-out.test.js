@@ -51,4 +51,25 @@ describe('sign out', () => {
     await vi.waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
     expect(localStorage.getItem('roda.pendingResources:o1')).toBeNull();
   });
+
+
+  it('signs out when only another account has something waiting', async () => {
+    localStorage.setItem('roda.pendingResources:o9', JSON.stringify([{ occurrenceId: 'o9', kind: 'summary', title: '', url: null, body: 'x', clientKey: 'k', profileId: 'other' }]));
+    const training = { addResource: vi.fn() };
+    const signOut = vi.fn().mockResolvedValue();
+    expect(await signOutSafely({ ...ctx(training), profile: { id: 'me' } }, { signOut })).toBe(true);
+    expect(training.addResource).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('explains a failed sign-out instead of doing nothing, and ignores a double tap', async () => {
+    const training = { addResource: vi.fn() };
+    const signOut = vi.fn().mockRejectedValue(new Error('The network request failed.'));
+    const context = { ...ctx(training), profile: { id: 'me' } };
+    const [first, second] = await Promise.all([signOutSafely(context, { signOut }), signOutSafely(context, { signOut })]);
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect([first, second]).toEqual([false, false]);
+    expect(document.querySelector('[role="dialog"]').textContent).toContain('The network request failed.');
+  });
+
 });

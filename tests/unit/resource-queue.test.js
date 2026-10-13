@@ -41,4 +41,13 @@ describe('resource queue', () => {
     ] });
     expect(service.addResource.mock.calls.map(([input]) => input.clientKey)).toEqual(['kept', 'made']);
   });
+
+
+  it('records whose resource is waiting', async () => {
+    const storage = memoryStorage();
+    const service = { addResource: vi.fn().mockRejectedValue(new Error('offline')) };
+    await saveResourcesOrQueue({ storage, service, occurrenceId: 'o3', resources: [{ kind: 'video', title: '', url: 'https://x', body: null }], profileId: 'me' });
+    expect(JSON.parse(storage.values.get('roda.pendingResources:o3'))).toEqual([expect.objectContaining({ profileId: 'me' })]);
+  });
+
 });
