@@ -90,4 +90,29 @@ describe('router', () => {
     expect(window.history.length).toBe(before);
     expect(onRoute).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'me' }));
   });
+
+  it.each([
+    ['#/calendar/2026-13', '/calendar', { month: null, day: null }],
+    ['#/calendar/2026-00', '/calendar', { month: null, day: null }],
+    ['#/calendar/2026-02-30', '/calendar/2026-02', { month: '2026-02', day: null }],
+    ['#/calendar/2026-10-00', '/calendar/2026-10', { month: '2026-10', day: null }],
+  ])('turns the impossible calendar date %s into %s', (hash, path, params) => {
+    expect(parseRoute(hash)).toMatchObject({ name: 'calendar', path, params, redirected: true });
+  });
+
+  it('keeps possible calendar dates as they are', () => {
+    const route = parseRoute('#/calendar/2028-02-29');
+    expect(route).toMatchObject({ name: 'calendar', path: '/calendar/2028-02-29', params: { month: '2028-02', day: '29' } });
+    expect(route.redirected).toBeUndefined();
+  });
+
+  it('rewrites an impossible calendar hash to the screen it shows', () => {
+    window.location.hash = '#/calendar/2026-13';
+    const onRoute = vi.fn();
+    const router = createRouter({ window, onRoute });
+    router.start();
+    expect(window.location.hash).toBe('#/calendar');
+    expect(onRoute).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'calendar', params: { month: null, day: null } }));
+    router.stop();
+  });
 });
