@@ -3,6 +3,7 @@ import { el, pageHeader } from '../shell/page.js';
 import { confirmButton } from './confirm-button.js';
 import { openGroupForm } from './group-form.js';
 import { openPeopleSearch } from './people-search.js';
+import { renderSentRequests } from './sent-requests.js';
 
 function roleKey(membership, profileId) {
   if (membership.group.owner_id === profileId) return 'groupsPage.owner';
@@ -53,6 +54,8 @@ export async function renderGroups(ctx) {
     ])))
     : el(document, 'p', { className: 'muted', text: i18n.t('groupsPage.empty') }));
   if (!ctx.isCoach()) screen.append(el(document, 'p', { className: 'muted', text: i18n.t('groupsPage.createHint') }));
+  const sent = await renderSentRequests(ctx);
+  if (sent) screen.append(sent);
 
   function coachRow(connection) {
     const name = connection.coach_display_name;

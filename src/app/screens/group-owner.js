@@ -1,6 +1,7 @@
 // src/app/screens/group-owner.js
 import { el } from '../shell/page.js';
 import { confirmButton } from './confirm-button.js';
+import { renderGroupDiscoverForm } from './group-discover-form.js';
 import { openGroupForm } from './group-form.js';
 import { linkBox } from './link-box.js';
 
@@ -128,6 +129,10 @@ export function renderOwnerTools(ctx, { group, roster, relationships, reload, st
     ]);
   }
 
+  // The Discover place and contacts load on their own; owner tools render without waiting.
+  const discoverSlot = el(document, 'div', { className: 'group-discover-slot' });
+  renderGroupDiscoverForm(ctx, group.id).then((form) => { if (form) discoverSlot.replaceWith(form); }).catch(() => {});
+
   return el(document, 'section', { className: 'owner-tools' }, [
     el(document, 'h2', { className: 'section-label', text: t('groupPage.ownerTools') }),
     tools,
@@ -135,6 +140,7 @@ export function renderOwnerTools(ctx, { group, roster, relationships, reload, st
     el(document, 'h2', { className: 'section-label', text: t('groupPage.hierarchy') }),
     el(document, 'p', { className: 'muted', text: t('groupPage.hierarchyNote') }),
     ...relationships.filter((relationship) => ['pending', 'active'].includes(relationship.state)).map(relationRow),
+    discoverSlot,
     confirmButton(document, {
       text: t('groupPage.archive'), confirmText: t('groupPage.confirmArchive'), className: 'button-danger', dataset: { action: 'archive-group' },
       onConfirm: () => act(async () => { await services.group.archiveGroup(group.id); ctx.navigate('/me/groups'); }),
