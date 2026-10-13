@@ -13,6 +13,7 @@
 * { box-sizing: border-box; }
 /* Component display rules must never override the hidden attribute. */
 [hidden] { display: none !important; }
+input[type="radio"], input[type="checkbox"] { accent-color: var(--gold); }
 html, body { margin: 0; background: var(--bg); color: var(--cream); font: 15px/1.4 var(--body); }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
@@ -243,3 +244,19 @@ input, select, textarea { font-size: 16px; }
 /* First sign-in: no navigation until the welcome is finished */
 .app.app-welcome .app-nav { display: none !important; }
 @media (min-width: 900px) { .app.app-welcome { grid-template-columns: 1fr; } }
+/* Discover settings and forms */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.discover-settings { margin-bottom: 18px; }
+.discover-city { display: grid; gap: 8px; }
+.discover-city-current { margin: 0; font-weight: 600; }
+.discover-city-search { display: flex; gap: 8px; }
+.discover-city-search .field-input { flex: 1; }
+.discover-city-results { display: grid; }
+.discover-pick-map { height: 50vh; border-radius: 14px; overflow: hidden; isolation: isolate; }
+.discover-visibility { border: 0; padding: 0; margin: 12px 0; }
+.discover-radio { display: flex; gap: 8px; align-items: center; padding: 8px 0; }
+.discover-privacy { font-size: .75rem; margin-top: 10px; }
+.discover-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: transparent; padding: 12px 4px; cursor: pointer; }
+.discover-row-title { font-weight: 600; }
+.field-error { color: var(--clay); font-size: .8rem; }
+.field-error:empty { display: none; }

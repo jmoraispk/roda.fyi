@@ -12,7 +12,7 @@ function ctx(overrides = {}) {
   return {
     document, i18n: createDashboardI18n({ document, storage, navigator: { languages: ['en'] } }),
     profile: { id: 'p1', display_name: 'João Morais', usage_mode: 'both' },
-    services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) } },
+    services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) }, discover: { loadMine: vi.fn().mockResolvedValue({ id: 'p1', usage_mode: 'train', discover_visibility: null, place_city: null }) }, geocoder: { searchCities: vi.fn(), reverse: vi.fn() } },
     navigate: vi.fn(), back: vi.fn(),
     ...overrides,
   };
@@ -38,6 +38,7 @@ describe('me screen', () => {
     const onSignOut = vi.fn();
     const context = ctx();
     const view = await renderSettings(context, { onLocaleChange, onSignOut });
+    expect(view.querySelector('.discover-settings')).not.toBeNull();
     view.querySelector('button[data-locale="pt"]').click();
     expect(context.i18n.locale()).toBe('pt');
     expect(onLocaleChange).toHaveBeenCalled();
@@ -61,7 +62,7 @@ describe('me screen', () => {
     const onProfileSaved = vi.fn();
     const context = ctx({
       profile: { id: 'p1', display_name: 'João Morais', completed_at: 'x', timezone_override: 'Europe/Lisbon', leaderboard_visible: false },
-      services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) }, profile },
+      services: { catalog: { amICurator: vi.fn().mockResolvedValue(false) }, profile, discover: { loadMine: vi.fn().mockResolvedValue({ id: 'p1', usage_mode: 'train', discover_visibility: null, place_city: null }) }, geocoder: { searchCities: vi.fn(), reverse: vi.fn() } },
     });
     const view = await renderSettings(context, { onLocaleChange() {}, onSignOut() {}, onProfileSaved });
     expect(view.querySelector('input[name="timezone"]').value).toBe('Europe/Lisbon');

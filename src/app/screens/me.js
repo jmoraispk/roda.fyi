@@ -1,6 +1,7 @@
 // src/app/screens/me.js
 import { listsTeaching, modeOf } from '../shell/access.js';
 import { el, initials, pageHeader } from '../shell/page.js';
+import { renderDiscoverSettings } from './discover-settings.js';
 import { createModeSlider } from './mode-slider.js';
 import { createProfileForm, saveProfile } from './profile-form.js';
 
@@ -104,6 +105,7 @@ export async function renderSettings(ctx, { onLocaleChange, onSignOut, onProfile
     pageHeader({ document, title: i18n.t('app.settings'), backLabel: i18n.t('app.back'), onBack: () => ctx.back('/me') }),
     el(document, 'h2', { className: 'section-label', text: i18n.t('profileForm.title') }),
     form.element, save, status,
+    await renderDiscoverSettings(ctx),
     el(document, 'h2', { className: 'section-label', text: i18n.t('app.language') }),
     languages,
     el(document, 'a', { className: 'button-secondary', text: i18n.t('app.classic'), attrs: { href: '/dashboard' } }),
