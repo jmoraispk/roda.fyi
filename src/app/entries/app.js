@@ -40,8 +40,8 @@ async function main() {
   const demoMode = params.get('demo') === '1';
   if (demoMode) seedDemoData(localStorage);
   const localMode = __RODA_E2E__ || demoMode;
-  const services = createServices({ window, localMode });
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
+  const services = createServices({ window, localMode, e2e: __RODA_E2E__, language: () => i18n.locale() });
   const root = document.querySelector('#appRoot');
 
   const toSignIn = () => location.replace(`/?next=${encodeURIComponent(`/app${location.hash}`)}`);
