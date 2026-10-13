@@ -21,4 +21,9 @@ describe('app styles', () => {
       expect(css).toContain(selector);
     }
   });
+
+  it('tints native radios and checkboxes with the app gold', async () => {
+    const css = await readFile('assets/app.css', 'utf8');
+    expect(css).toMatch(/input\[type="radio"\],\s*input\[type="checkbox"\]\s*\{[^}]*accent-color:\s*var\(--gold\)/);
+  });
 });
