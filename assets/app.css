@@ -260,3 +260,41 @@ input, select, textarea { font-size: 16px; }
 .discover-row-title { font-weight: 600; }
 .field-error { color: var(--clay); font-size: .8rem; }
 .field-error:empty { display: none; }
+/* Discover map */
+.screen-discover { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; bottom: calc(var(--tabbar) + var(--safe-bottom)); max-width: none; margin: 0; padding: 0; }
+.discover-map { position: absolute; inset: 0; z-index: 0; isolation: isolate; background: #1f1912; }
+.discover-search { position: absolute; z-index: 2; top: 12px; left: 12px; right: 12px; margin: 0; }
+.discover-search-input { border-radius: 999px; background: var(--card-2); box-shadow: 0 6px 18px #0008; }
+.discover-results { margin-top: 6px; max-height: 50vh; overflow: auto; background: var(--card-2); border: 1px solid var(--line); border-radius: 16px; padding: 4px 10px; }
+.discover-panel { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; background: var(--card-2); border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px #0008; }
+.discover-panel-handle { display: grid; justify-items: center; gap: 4px; width: 100%; border: 0; background: transparent; padding: 6px 16px 10px; cursor: pointer; }
+.discover-panel-handle .sheet-grab { margin: 0; }
+.discover-panel-body { display: none; max-height: 50vh; overflow: auto; padding: 0 16px 16px; }
+.discover-panel.expanded .discover-panel-body { display: grid; gap: 4px; }
+.discover-add-city { margin: 4px 0 8px; }
+.discover-pin-icon { background: transparent; border: 0; }
+.discover-pin { display: inline-block; transform: translate(-50%, -100%); white-space: nowrap; padding: 4px 10px; border-radius: 999px; font: 700 .75rem/1.2 var(--body); box-shadow: 0 3px 10px #0008; }
+.discover-pin.city { background: var(--gold); color: var(--bg); }
+.discover-pin.group { background: var(--teal); color: var(--bg); }
+/* Cities sit above their point and groups below it, so a group and its city's people never hide each other. */
+.discover-pin.group { transform: translate(-50%, 6px); }
+.screen-discover .leaflet-bar a { background: var(--card-2); color: var(--cream); border-bottom-color: var(--line); }
+.screen-discover .leaflet-bar a:hover { background: var(--card); }
+.screen-discover .leaflet-bar { border: 1px solid var(--line); box-shadow: 0 2px 8px #0008; }
+.screen-discover .leaflet-container { background: #1f1912; font: inherit; }
+.screen-discover .leaflet-bottom.leaflet-right { bottom: 64px; }
+.screen-discover .leaflet-control-attribution { background: #17120dcc; color: var(--sand); }
+.screen-discover .leaflet-control-attribution a { color: var(--gold); }
+@media (min-width: 900px) {
+  .screen-discover { position: relative; top: auto; bottom: auto; height: 100vh; display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .discover-search { position: relative; top: auto; left: auto; right: auto; grid-column: 1; grid-row: 1; padding: 16px 16px 8px; }
+  .discover-map { position: relative; inset: auto; grid-column: 2; grid-row: 1 / span 2; }
+  .discover-panel { position: relative; grid-column: 1; grid-row: 2; border-radius: 0; box-shadow: none; overflow: auto; }
+  .discover-panel-handle { pointer-events: none; justify-items: start; }
+  .discover-panel-handle .sheet-grab { display: none; }
+  .discover-panel-body { display: grid; gap: 4px; max-height: none; }
+  .screen-discover .leaflet-bottom.leaflet-right { bottom: 0; }
+  .app-panes:has(.app-detail:not(:empty)) .screen-discover { grid-template-columns: minmax(0, 1fr); }
+  .app-panes:has(.app-detail:not(:empty)) .discover-panel { display: none; }
+  .app-panes:has(.app-detail:not(:empty)) .discover-map { grid-column: 1; grid-row: 2; }
+}
