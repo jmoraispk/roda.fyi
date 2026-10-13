@@ -42,6 +42,8 @@ describe('app pages', () => {
     expect(html).toContain('Install app');
     expect(html).toContain('href="/app"');
     expect(html).not.toMatch(/<script/);
+    expect(html).toContain('iphonelife.com');
+    expect(html).not.toContain('ithinkdiff.com');
   });
 
   it.each(['install', 'privacy', 'support'])('the %s page links to every info page and marks itself', async (name) => {
@@ -53,6 +55,7 @@ describe('app pages', () => {
       expect(footer).toContain(`href="/${page}"`);
     }
     expect(nav).toContain(`href="/${name}" aria-current="page"`);
+    expect([...nav.matchAll(/href="\/(\w+)"/g)].map((match) => match[1])).toEqual(['install', 'support', 'privacy']);
     expect(nav.match(/aria-current/g)).toHaveLength(1);
   });
 });
