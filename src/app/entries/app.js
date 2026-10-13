@@ -10,6 +10,7 @@ import { renderProgress } from '../screens/progress.js';
 import { renderRepertoire } from '../screens/repertoire.js';
 import { renderCalendar } from '../screens/calendar.js';
 import { renderClass } from '../screens/class.js';
+import { renderPerson } from '../screens/discover-cards.js';
 import { renderDiscover } from '../screens/discover.js';
 import { renderGroup } from '../screens/group.js';
 import { renderGroups } from '../screens/groups.js';
@@ -166,6 +167,7 @@ async function main() {
       case 'teaching-student': return renderStudent(ctx, route);
       case 'group': return renderGroup(ctx, route);
       case 'discover': return renderDiscover(ctx, route);
+      case 'person': return renderPerson(ctx, route);
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }
   }
@@ -182,7 +184,9 @@ async function main() {
     // Ruling R23: a class, plan, or student opened from Teaching appears beside it on desktop.
     const besideTeaching = desktop.matches && ['class', 'teaching-plan', 'teaching-student'].includes(route.name)
       && layout.main.firstElementChild?.dataset.teachingHome !== undefined;
-    const sideBySide = (desktop.matches && route.name === 'training') || besideTeaching;
+    // Ruling 16 (Plan 3): person and group cards opened from Discover appear beside the map on desktop.
+    const besideDiscover = (route.name === 'person' || route.name === 'group') && lastTopLevel.name === 'discover';
+    const sideBySide = (desktop.matches && (route.name === 'training' || besideDiscover)) || besideTeaching;
     layout.setActive(tabFor(route) ?? tabFor(lastTopLevel));
     layout.setDetailMode(detailRoute && !sideBySide);
     // The welcome has no way out until it is finished, on phones and desktop alike.

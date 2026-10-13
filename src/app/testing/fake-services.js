@@ -231,6 +231,15 @@ export function createE2EGroupService({ window }) {
       record({ type: 'request-access', groupId, requestedAccess });
       return { status: 'pending', request_id: request.id };
     },
+    async cancelJoinRequest(requestId) {
+      const state = readState();
+      const request = Object.values(state.joinRequests).flat().find(({ id }) => id === requestId);
+      if (!request || request.profile_id !== 'practitioner-1') throw new AppError('authorization', 'not_authorized');
+      request.state = 'cancelled';
+      writeState(state);
+      record({ type: 'cancel-request', requestId });
+      return { status: 'cancelled', request_id: requestId };
+    },
 
     async createGroup({ name, description, location, discoverable, timezone }) {
       const state = readState();
