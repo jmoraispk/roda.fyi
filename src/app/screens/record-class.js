@@ -148,7 +148,9 @@ export async function renderRecordClass(ctx) {
         occurredAt: start.occurredAt, localDate: date.value, timezone: ctx.timezone, durationMinutes: minutes,
         attendees: kind === 'group' ? checked : [], rounds, idempotencyKey,
       }, ctx.now());
-      await saveResourcesOrQueue({ storage: ctx.window.localStorage, service: training, occurrenceId: result.occurrence_id, resources: extras });
+      await saveResourcesOrQueue({
+        storage: ctx.window.localStorage, service: training, occurrenceId: result.occurrence_id, resources: extras, profileId: ctx.profile?.id ?? null,
+      });
       ctx.navigate(`/training/${result.occurrence_id}`);
     } catch (error) {
       status.textContent = error?.message || i18n.t('record.saveError');

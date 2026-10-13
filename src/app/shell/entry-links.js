@@ -53,6 +53,14 @@ function forget(storage) {
 }
 
 const INVITE_MESSAGES = Object.freeze({ expired: 'links.expired', revoked: 'links.revoked', accepted: 'links.used' });
+// What the database raises for an invitation that can never be accepted by this person.
+const INVITE_REFUSALS = Object.freeze({
+  invitation_not_found: 'links.revoked',
+  invitation_revoked: 'links.revoked',
+  already_used: 'links.used',
+  invitation_expired: 'links.expired',
+  invitation_email_mismatch: 'links.otherEmail',
+});
 
 function showInvitation(ctx, token) {
   const { document, i18n } = ctx;
@@ -65,7 +73,8 @@ function showInvitation(ctx, token) {
     accept.disabled = true;
     try {
       const result = await ctx.services.group.acceptInvitation(token);
-      if (result?.status === 'accepted' && !result.already_used) {
+      // 'already_accepted': this same person accepted it before, so they are in the group.
+      if ((result?.status === 'accepted' && !result.already_used) || result?.status === 'already_accepted') {
         status.textContent = i18n.t('links.accepted');
         accept.replaceWith(el(document, 'button', {
           className: 'button-secondary', text: i18n.t('links.openGroups'), attrs: { type: 'button' }, dataset: { action: 'open-groups' },
@@ -75,6 +84,11 @@ function showInvitation(ctx, token) {
       }
       status.textContent = i18n.t(INVITE_MESSAGES[result?.status] ?? 'links.unavailable');
     } catch (error) {
+      const refusal = INVITE_REFUSALS[error?.code];
+      if (refusal) {
+        status.textContent = i18n.t(refusal);
+        return;
+      }
       status.textContent = error?.message || i18n.t('links.unavailable');
       accept.disabled = false;
     }

@@ -3,6 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
+import { AppError } from '../../src/app/errors.js';
 import { inviteLink } from '../../src/app/screens/group.js';
 import { discoveryLink } from '../../src/app/screens/group-owner.js';
 import { runEntryLinks, takeEntryLinks } from '../../src/app/shell/entry-links.js';
@@ -72,6 +73,41 @@ describe('entry links', () => {
     await runEntryLinks(ctx({ acceptInvitation: vi.fn().mockResolvedValue(result) }), storage);
     sheet().querySelector('[data-action="accept-invite"]').click();
     await vi.waitFor(() => expect(sheet().textContent).toContain(message));
+  });
+
+  it.each([
+    ['invitation_not_found', 'This invitation was revoked.'],
+    ['invitation_revoked', 'This invitation was revoked.'],
+    ['already_used', 'This invitation has already been used.'],
+    ['invitation_expired', 'This invitation has expired.'],
+    ['invitation_email_mismatch', 'This invitation was sent to a different email address.'],
+  ])('explains the database refusing an invitation with %s and stops offering Accept', async (code, message) => {
+    const storage = memory();
+    storage.setItem('roda.entryLinks', JSON.stringify({ member_invite: 'abc' }));
+    await runEntryLinks(ctx({ acceptInvitation: vi.fn().mockRejectedValue(new AppError('validation', code)) }), storage);
+    const accept = sheet().querySelector('[data-action="accept-invite"]');
+    accept.click();
+    await vi.waitFor(() => expect(sheet().textContent).toContain(message));
+    expect(accept.disabled).toBe(true);
+  });
+
+  it('treats an invitation already accepted by the same person as joined', async () => {
+    const storage = memory();
+    storage.setItem('roda.entryLinks', JSON.stringify({ member_invite: 'abc' }));
+    const context = ctx({ acceptInvitation: vi.fn().mockResolvedValue({ status: 'already_accepted', group_id: 'g1' }) });
+    await runEntryLinks(context, storage);
+    sheet().querySelector('[data-action="accept-invite"]').click();
+    await vi.waitFor(() => expect(sheet().textContent).toContain('Invitation accepted. You are now a group member.'));
+    expect(sheet().querySelector('[data-action="open-groups"]')).not.toBeNull();
+  });
+
+  it('lets a person try again after a network failure', async () => {
+    const storage = memory();
+    storage.setItem('roda.entryLinks', JSON.stringify({ member_invite: 'abc' }));
+    await runEntryLinks(ctx({ acceptInvitation: vi.fn().mockRejectedValue(new AppError('network', 'network_error')) }), storage);
+    const accept = sheet().querySelector('[data-action="accept-invite"]');
+    accept.click();
+    await vi.waitFor(() => expect(accept.disabled).toBe(false));
   });
 
   it('shows a linked group and asks to join with the link', async () => {

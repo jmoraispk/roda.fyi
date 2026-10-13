@@ -322,3 +322,7 @@ input, select, textarea { font-size: 16px; }
 }
 .training-elsewhere { margin: -4px 0 6px; }
 .discover-panel-handle:disabled { color: inherit; opacity: 1; cursor: default; }
+@media (min-width: 900px) {
+  /* The welcome has no sidebar, so everything sits in its single column. */
+  .app.app-welcome > .app-demo, .app.app-welcome > .app-offline, .app.app-welcome > .app-panes { grid-column: 1; }
+}

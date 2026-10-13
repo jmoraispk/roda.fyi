@@ -81,8 +81,10 @@ export function createGroupService(client, options = {}) {
         result_offset: resultOffset,
       });
     },
-    resolveDiscoveryToken(token) {
-      return call('resolve_group_discovery_token', { token: clean(token) });
+    // The database returns a table: one row for a valid token, none otherwise.
+    async resolveDiscoveryToken(token) {
+      const rows = await call('resolve_group_discovery_token', { token: clean(token) });
+      return Array.isArray(rows) ? rows[0] ?? null : rows ?? null;
     },
     listRoster(groupId) {
       return call('list_group_roster', { group_id: groupId });

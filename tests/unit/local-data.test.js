@@ -59,4 +59,37 @@ describe('waiting resources', () => {
     expect(await sendWaitingResources(blocked, { addResource: vi.fn() })).toBe(0);
     expect(() => clearLegacyDashboardKeys(null)).not.toThrow();
   });
+
+
+  it('keeps a resource the account can never accept without letting it block', async () => {
+    const storage = memory({ 'roda.pendingResources:o1': JSON.stringify([item('o1', 'k1'), item('o1', 'k2')]) });
+    const { AppError } = await import('../../src/app/errors.js');
+    const training = {
+      addResource: vi.fn()
+        .mockRejectedValueOnce(new AppError('authorization', 'not_authorized'))
+        .mockResolvedValueOnce({ status: 'saved' }),
+    };
+    expect(await sendWaitingResources(storage, training, 'me')).toBe(0);
+    expect(training.addResource).toHaveBeenCalledTimes(2);
+    const kept = JSON.parse(storage.getItem('roda.pendingResources:o1'));
+    expect(kept).toEqual([expect.objectContaining({ clientKey: 'k1', stuck: true })]);
+    expect(waitingCount(storage, 'me')).toBe(0);
+  });
+
+  it('leaves another account\'s waiting resources alone', async () => {
+    const storage = memory({ 'roda.pendingResources:o1': JSON.stringify([{ ...item('o1', 'k1'), profileId: 'someone-else' }]) });
+    const training = { addResource: vi.fn().mockResolvedValue({ status: 'saved' }) };
+    expect(waitingCount(storage, 'me')).toBe(0);
+    expect(await sendWaitingResources(storage, training, 'me')).toBe(0);
+    expect(training.addResource).not.toHaveBeenCalled();
+    expect(JSON.parse(storage.getItem('roda.pendingResources:o1'))).toHaveLength(1);
+  });
+
+  it('still holds a resource that only failed because the network is down', async () => {
+    const storage = memory({ 'roda.pendingResources:o1': JSON.stringify([item('o1', 'k1')]) });
+    const { AppError } = await import('../../src/app/errors.js');
+    const training = { addResource: vi.fn().mockRejectedValue(new AppError('network', 'network_failure')) };
+    expect(await sendWaitingResources(storage, training, 'me')).toBe(1);
+  });
+
 });

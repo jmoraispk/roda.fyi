@@ -32,29 +32,51 @@ function writeQueue(storage, key, queue) {
   }
 }
 
-export function waitingCount(storage) {
-  return storedKeys(storage)
-    .filter((key) => key.startsWith(PENDING_PREFIX))
-    .reduce((total, key) => total + readQueue(storage, key).length, 0);
+// A save the account will never accept (no permission any more, a canceled
+// training, a key already used elsewhere) is kept on the device, marked stuck,
+// and no longer counts as waiting, so it can never block signing out.
+const NEVER_SENDABLE = new Set(['authorization', 'validation', 'expired']);
+
+// Items record the profile that queued them; older items without one belong to
+// whoever is signed in. Another account's items are never sent or counted.
+function sendable(entry, profileId) {
+  return !entry?.stuck && (!profileId || !entry?.profileId || entry.profileId === profileId);
 }
 
-export async function sendWaitingResources(storage, training) {
+export function waitingCount(storage, profileId = null) {
+  return storedKeys(storage)
+    .filter((key) => key.startsWith(PENDING_PREFIX))
+    .reduce((total, key) => total + readQueue(storage, key).filter((entry) => sendable(entry, profileId)).length, 0);
+}
+
+export async function sendWaitingResources(storage, training, profileId = null) {
   let remaining = 0;
   for (const key of storedKeys(storage).filter((name) => name.startsWith(PENDING_PREFIX))) {
-    let queue = readQueue(storage, key).map((entry) => (
+    const queue = readQueue(storage, key).map((entry) => (
       entry?.clientKey ? entry : { ...entry, clientKey: training.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID() }
     ));
     writeQueue(storage, key, queue);
-    while (queue.length) {
-      try {
-        await training.addResource(queue[0]);
-      } catch {
-        break;
+    let offline = false;
+    for (let index = 0; index < queue.length && !offline;) {
+      const entry = queue[index];
+      if (!sendable(entry, profileId)) {
+        index += 1;
+        continue;
       }
-      queue = queue.slice(1);
+      try {
+        await training.addResource(entry);
+        queue.splice(index, 1);
+      } catch (error) {
+        if (NEVER_SENDABLE.has(error?.kind)) {
+          queue[index] = { ...entry, stuck: true };
+          index += 1;
+        } else {
+          offline = true;
+        }
+      }
       writeQueue(storage, key, queue);
     }
-    remaining += queue.length;
+    remaining += queue.filter((entry) => sendable(entry, profileId)).length;
   }
   return remaining;
 }

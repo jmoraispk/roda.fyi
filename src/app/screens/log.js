@@ -210,7 +210,7 @@ export async function renderLog(ctx) {
         notes: state.notes, rounds, idempotencyKey: state.idempotencyKey,
         occurredAt: start.occurredAt,
       });
-      await saveResourcesOrQueue({ storage, service: training, occurrenceId: result.occurrence_id, resources: state.resources });
+      await saveResourcesOrQueue({ storage, service: training, occurrenceId: result.occurrence_id, resources: state.resources, profileId: profile.id });
       finished = true;
       clearTimeout(timer);
       clearDraft(storage, profile.id);
