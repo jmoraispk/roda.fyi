@@ -44,7 +44,7 @@ describe('record a past class', () => {
     const ctx = appCtx({ services: s });
     document.body.replaceChildren(await renderRecordClass(ctx));
     const boxes = document.querySelectorAll('input[name="attendee"]');
-    expect([...boxes].map((box) => box.value)).toEqual(['caio', 'duda']);
+    expect([...boxes].map((box) => box.value)).toEqual(['caio', 'duda', 'me']);
     boxes[1].checked = false;
     document.querySelector('input[name="date"]').value = '2026-10-09';
     document.querySelector('input[name="time"]').value = '19:00';
@@ -103,5 +103,24 @@ describe('record a past class', () => {
     const view = await renderRecordClass(ctx);
     expect(view.textContent).toContain('Create a group or connect with a student first.');
     expect(view.querySelector('a[href="#/me/groups"]')).not.toBeNull();
+  });
+
+  it('lets a coach record a class when nobody else is in the group', async () => {
+    const s = services();
+    s.group.listRoster = vi.fn().mockResolvedValue([
+      { profile_id: 'me', display_name: 'Ana Silva', access_level: 'coach', membership_state: 'active' },
+    ]);
+    const ctx = appCtx({ services: s });
+    document.body.replaceChildren(await renderRecordClass(ctx));
+    const boxes = document.querySelectorAll('input[name="attendee"]');
+    expect([...boxes].map((box) => [box.value, box.checked])).toEqual([['me', true]]);
+    expect(boxes[0].closest('label').textContent).toContain('You');
+    send('ginga');
+    document.querySelector('input[name="time"]').value = '10:00';
+    save();
+    await vi.waitFor(() => expect(ctx.navigate).toHaveBeenCalledWith('/training/o5'));
+    expect(s.training.recordPastClass).toHaveBeenCalledWith(expect.objectContaining({
+      attendees: [{ profileId: 'me', durationMinutes: 60 }],
+    }), expect.any(Date));
   });
 });

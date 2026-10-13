@@ -1,5 +1,5 @@
 const DEMO_VERSION_KEY = 'roda.demo.version';
-const DEMO_VERSION = '3';
+const DEMO_VERSION = '4';
 
 function monthContext(now) {
   const year = now.getFullYear();
@@ -69,7 +69,7 @@ export function seedDemoData(storage, now = new Date()) {
     state: 'active', joined_at: `${date(1)}T12:00:00Z`, group,
   };
   const roster = [
-    { profile_id: 'practitioner-1', display_name: 'Demo Capoeirista', access_level: 'member', membership_state: 'active', leaderboard_visible: true, graduation: 'Aluno' },
+    { profile_id: 'practitioner-1', display_name: 'Demo Capoeirista', access_level: 'coach', membership_state: 'active', leaderboard_visible: true, graduation: 'Aluno' },
     { profile_id: 'student-bia', display_name: 'Bia Santos', access_level: 'member', membership_state: 'active', leaderboard_visible: true, graduation: 'Graduada' },
     { profile_id: 'student-caio', display_name: 'Caio Lima', access_level: 'member', membership_state: 'active', leaderboard_visible: true, graduation: 'Aluno' },
     { profile_id: 'student-duda', display_name: 'Duda Reis', access_level: 'member', membership_state: 'active', leaderboard_visible: true, graduation: 'Instrutora' },

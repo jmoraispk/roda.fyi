@@ -59,11 +59,15 @@ export async function renderRecordClass(ctx) {
   function renderAttendees() {
     const members = (teaching.rosters[group.node.value] ?? []).filter((member) => member.access_level === 'member'
       && (member.membership_state ?? 'active') === 'active' && member.profile_id !== ctx.profile.id);
-    attendees.replaceChildren(el(document, 'legend', { text: i18n.t('record.attendees') }), ...members.map((member) => {
-      const box = el(document, 'input', { attrs: { type: 'checkbox', name: 'attendee', value: member.profile_id } });
-      box.checked = true;
-      return el(document, 'label', { className: 'check-row' }, [box, ` ${member.display_name}`]);
-    }));
+    const box = (value, checked, label) => {
+      const input = el(document, 'input', { attrs: { type: 'checkbox', name: 'attendee', value } });
+      input.checked = checked;
+      return el(document, 'label', { className: 'check-row' }, [input, ` ${label}`]);
+    };
+    // Ruling 20: the coach can be the one attendee when nobody else is in the group.
+    attendees.replaceChildren(el(document, 'legend', { text: i18n.t('record.attendees') }),
+      ...members.map((member) => box(member.profile_id, true, member.display_name)),
+      box(ctx.profile.id, !members.length, i18n.t('record.you')));
   }
   function sync() {
     for (const button of kindButtons) button.setAttribute('aria-pressed', String(button.dataset.kind === kind));

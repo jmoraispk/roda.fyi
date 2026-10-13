@@ -198,9 +198,11 @@ async function main() {
     const token = ++renderToken;
     closeSheet();
     const detailRoute = isDetail(route);
-    // Ruling R23: a class, plan, or student opened from Teaching appears beside it on desktop.
-    const besideTeaching = desktop.matches && ['class', 'teaching-plan', 'teaching-student'].includes(route.name)
-      && layout.main.firstElementChild?.dataset.teachingHome !== undefined;
+    // Ruling R23 (Plan 2): a class, plan, or student opened from Teaching appears beside it on desktop,
+    // and so does the training a class beside Teaching turns into when it is finished.
+    const teachingOnLeft = layout.main.firstElementChild?.dataset.teachingHome !== undefined;
+    const besideTeaching = desktop.matches && teachingOnLeft
+      && ['class', 'teaching-plan', 'teaching-student', 'training'].includes(route.name);
     // Ruling 16 (Plan 3): person and group cards opened from Discover appear beside the map on desktop.
     const besideDiscover = (route.name === 'person' || route.name === 'group') && lastTopLevel.name === 'discover';
     const sideBySide = (desktop.matches && (route.name === 'training' || besideDiscover)) || besideTeaching;

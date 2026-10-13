@@ -69,4 +69,12 @@ describe('demo data', () => {
       profile_id: 'practitioner-1', source_text: '10x (armada, aú)',
     }));
   });
+
+  it('lists the demo owner as a coach of the demo group', () => {
+    const localStorage = storage();
+    seedDemoData(localStorage, new Date('2026-09-22T12:00:00Z'));
+    const groups = JSON.parse(localStorage.getItem('roda.e2e.groupState'));
+    expect(groups.rosters['demo-group'].find(({ profile_id: id }) => id === 'practitioner-1').access_level).toBe('coach');
+    expect(localStorage.getItem('roda.demo.version')).toBe('4');
+  });
 });
