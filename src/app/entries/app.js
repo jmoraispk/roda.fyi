@@ -13,7 +13,7 @@ import { renderRepertoire } from '../screens/repertoire.js';
 import { renderCalendar } from '../screens/calendar.js';
 import { renderClass } from '../screens/class.js';
 import { renderPerson } from '../screens/discover-cards.js';
-import { renderDiscover } from '../screens/discover.js';
+import { releaseDiscoverMap, renderDiscover } from '../screens/discover.js';
 import { renderGroup } from '../screens/group.js';
 import { renderGroups } from '../screens/groups.js';
 import { renderLog } from '../screens/log.js';
@@ -194,6 +194,7 @@ async function main() {
       router.replace(redirect);
       return;
     }
+    if (!['discover', 'person', 'group'].includes(route.name)) releaseDiscoverMap();
     const token = ++renderToken;
     closeSheet();
     const detailRoute = isDetail(route);

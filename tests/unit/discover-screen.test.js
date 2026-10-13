@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
-import { renderDiscover, resetDiscoverMemory } from '../../src/app/screens/discover.js';
+import { releaseDiscoverMap, renderDiscover, resetDiscoverMemory } from '../../src/app/screens/discover.js';
 
 const LISBON = {
   kind: 'city', city: 'Lisbon', region: 'Lisbon', country: 'Portugal', lat: 38.72, lng: -9.14,
@@ -242,5 +242,37 @@ describe('discover screen', () => {
     expect(view.querySelector('.discover-panel-body .section-label').textContent).toContain('Porto');
     const people = [...view.querySelectorAll('.discover-row[data-kind="person"] .discover-row-title')].map((node) => node.textContent);
     expect(people).toEqual(['Rui Alves']);
+  });
+
+  it('lets go of the map when Discover is left, and keeps the view for next time', async () => {
+    const { ctx, maps } = setup();
+    await mount(ctx);
+    maps[0].options.onMove({ bounds: WORLD.bounds, view: { lat: 38.7, lng: -9.1, zoom: 9 } });
+    releaseDiscoverMap();
+    releaseDiscoverMap();
+    expect(maps[0].destroy).toHaveBeenCalledTimes(1);
+    await mount(ctx);
+    expect(maps[1].options.view).toEqual({ lat: 38.7, lng: -9.1, zoom: 9 });
+  });
+
+  it('shows the list without a toggle on desktop', async () => {
+    const { ctx } = setup();
+    ctx.window = Object.assign(Object.create(window), { matchMedia: vi.fn(() => ({ matches: true, addEventListener() {} })) });
+    const view = await mount(ctx);
+    const handle = view.querySelector('.discover-panel-handle');
+    expect(handle.disabled).toBe(true);
+    expect(handle.hasAttribute('aria-expanded')).toBe(false);
+    expect(view.querySelector('.discover-panel').classList.contains('expanded')).toBe(true);
+  });
+
+  it('keeps the desktop handle a plain label after a city is chosen', async () => {
+    const { ctx, maps } = setup();
+    ctx.window = Object.assign(Object.create(window), { matchMedia: vi.fn(() => ({ matches: true, addEventListener() {} })) });
+    const view = await mount(ctx);
+    maps[0].options.onMove(WORLD);
+    await vi.advanceTimersByTimeAsync(250);
+    maps[0].options.onSelect(LISBON);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(view.querySelector('.discover-panel-handle').hasAttribute('aria-expanded')).toBe(false);
   });
 });

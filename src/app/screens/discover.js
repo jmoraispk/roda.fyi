@@ -12,6 +12,13 @@ export function resetDiscoverMemory() {
   rememberedView = null;
 }
 
+// Called by the app whenever another screen opens: Leaflet keeps listeners and
+// timers alive until its map is removed.
+export function releaseDiscoverMap() {
+  activeMap?.destroy();
+  activeMap = null;
+}
+
 function counted(i18n, key, count) {
   return i18n.t(`${key}.${count === 1 ? 'one' : 'other'}`, { count });
 }
@@ -54,9 +61,28 @@ export async function renderDiscover(ctx) {
   ]);
 
   function setExpanded(open) {
+    // On desktop the list is always open and the handle is only a label.
+    if (wide?.matches) {
+      panel.classList.add('expanded');
+      return;
+    }
     handle.setAttribute('aria-expanded', String(open));
     panel.classList.toggle('expanded', open);
   }
+  // On desktop the list is always shown, so the handle is only a label.
+  const wide = ctx.window?.matchMedia?.('(min-width: 900px)');
+  function syncWide() {
+    if (wide?.matches) {
+      handle.disabled = true;
+      handle.removeAttribute('aria-expanded');
+      panel.classList.add('expanded');
+    } else {
+      handle.disabled = false;
+      handle.setAttribute('aria-expanded', String(panel.classList.contains('expanded')));
+    }
+  }
+  wide?.addEventListener?.('change', syncWide);
+  syncWide();
 
   function row(title, detail, onClick, dataset = {}) {
     return el(document, 'button', { className: 'discover-row', attrs: { type: 'button' }, dataset, on: { click: onClick } }, [
