@@ -27,7 +27,9 @@ select columns_are(
   'profiles',
   array[
     'id', 'display_name', 'avatar_path', 'timezone_override',
-    'leaderboard_visible', 'usage_mode', 'completed_at', 'created_at', 'updated_at'
+    'leaderboard_visible', 'usage_mode', 'completed_at', 'created_at', 'updated_at',
+    'discover_visibility', 'place_city', 'place_region', 'place_country', 'place_lat', 'place_lng',
+    'contact_instagram', 'contact_website', 'contact_whatsapp', 'contact_email'
   ],
   'profiles exposes only the contracted columns'
 );
@@ -45,7 +47,9 @@ select columns_are(
   array[
     'id', 'slug', 'owner_id', 'name', 'description', 'location',
     'picture_path', 'is_discoverable', 'archived_at', 'archived_by',
-    'created_at', 'updated_at', 'timezone'
+    'created_at', 'updated_at', 'timezone',
+    'place_city', 'place_region', 'place_country', 'place_lat', 'place_lng',
+    'contact_instagram', 'contact_website', 'contact_email'
   ],
   'groups exposes only the contracted columns'
 );
