@@ -25,3 +25,13 @@ test('the install page explains every phone and leads to the app', async ({ page
   await page.getByRole('link', { name: 'Open roda' }).click();
   await expect(page).toHaveURL(/\/(app|\?next=)/);
 });
+
+test('the install, privacy, and support pages fit a narrow phone and link to each other', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  for (const name of ['install', 'privacy', 'support']) {
+    await page.goto(`/${name}`);
+    const nav = page.getByRole('navigation', { name: 'Site' });
+    for (const label of ['Install', 'Privacy', 'Support']) await expect(nav.getByRole('link', { name: label })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});

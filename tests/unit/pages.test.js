@@ -43,4 +43,16 @@ describe('app pages', () => {
     expect(html).toContain('href="/app"');
     expect(html).not.toMatch(/<script/);
   });
+
+  it.each(['install', 'privacy', 'support'])('the %s page links to every info page and marks itself', async (name) => {
+    const html = await readFile(`${name}.html`, 'utf8');
+    const nav = html.match(/<nav class="nav-links"[\s\S]*?<\/nav>/)[0];
+    const footer = html.match(/<div class="foot-inner">[\s\S]*?<\/div>/)[0];
+    for (const page of ['install', 'privacy', 'support']) {
+      expect(nav).toContain(`href="/${page}"`);
+      expect(footer).toContain(`href="/${page}"`);
+    }
+    expect(nav).toContain(`href="/${name}" aria-current="page"`);
+    expect(nav.match(/aria-current/g)).toHaveLength(1);
+  });
 });

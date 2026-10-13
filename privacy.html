@@ -57,6 +57,11 @@
   .foot-inner { max-width: 760px; margin: 0 auto; padding: 24px 16px 40px; color: var(--muted); font-size: .9rem; display: flex; flex-wrap: wrap; gap: 8px 18px; }
   .foot-inner a { color: var(--muted); }
   .foot-inner a:hover { color: var(--gold); }
+  @media (max-width: 420px) {
+    .nav-inner { gap: 8px; padding: 12px 12px; }
+    .brand { font-size: .95rem; gap: 8px; }
+    .nav-links a { padding: 8px 7px; letter-spacing: .04em; font-size: .68rem; }
+  }
 </style>
 </head>
 <body>
@@ -64,6 +69,7 @@
   <div class="nav-inner">
     <a class="brand" href="/" aria-label="Roda home"><span class="dot"></span><b>RODA</b></a>
     <nav class="nav-links" aria-label="Site">
+      <a href="/install">Install</a>
       <a href="/privacy" aria-current="page">Privacy</a>
       <a href="/support">Support</a>
     </nav>
@@ -238,6 +244,8 @@
 <footer>
   <div class="foot-inner">
     <a href="/">Home</a>
+    <a href="/install">Install</a>
+    <a href="/privacy">Privacy</a>
     <a href="/support">Support</a>
     <a href="mailto:support@roda.fyi">support@roda.fyi</a>
   </div>
