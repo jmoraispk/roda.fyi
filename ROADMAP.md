@@ -34,8 +34,20 @@ Delivered in the training-input increment
 - text class resources (video link, voice transcript, summary), and
 - recording past classes.
 
+Delivered in the mobile-first app
+(`docs/superpowers/specs/2026-10-11-mobile-first-app-design.md`), the only
+signed-in app, at `/app`:
+
+- Today, Calendar, Log training with a chat box, and a video-first training page,
+- Teaching, Progress, Repertoire, Groups, Catalog, and Settings under Me,
+- a Train · Both · Teach setting in place of the My Training / Coaching switch,
+- Discover v1: people at city level and groups on an OpenStreetMap map, and
+- an installable web app.
+
 Next:
 
+- **App-store packaging** (Plan 5, Capacitor) and **offline data access**; the
+  web app currently caches only its own files.
 - **Locations and class map** (spec pending): coaches' teaching addresses and
   online classes, weekly class times, students' training places, optional home
   location, an address deduplicator, and an OpenStreetMap-based map on the

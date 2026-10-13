@@ -98,6 +98,13 @@ The browser supplies the initial IANA timezone. Timestamps are stored in UTC,
 while practice records preserve their local date and timezone so later travel
 does not move historical activity between calendar days.
 
+**Update (2026-10):** the mobile-first app at `/app` replaced the binary switch
+with a Train · Both · Teach setting stored on the profile. It changes emphasis
+(what **+** does, which Today cards come first, whether Teaching is listed under
+Me, and the default Discover visibility), never access. Choosing Both or Teach
+creates the coach profile; choosing Train never deletes plans, groups, or
+students. See `docs/superpowers/specs/2026-10-11-mobile-first-app-design.md`.
+
 ## Decision 4: Text-first training input
 
 Training content is written as free text, one round at a time. The original

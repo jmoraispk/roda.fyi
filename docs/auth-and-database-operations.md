@@ -8,7 +8,7 @@ configuration from privileged credentials.
 
 | Concern | Owner | Repository-driven? |
 |---|---|---|
-| Static site, callback, dashboard, browser bundles | Vercel | Yes, from GitHub |
+| Static site, callback, the app at /app, service worker, browser bundles | Vercel | Yes, from GitHub |
 | User registration, Google/email sign-in, sessions | Supabase Auth | Code yes; provider settings no |
 | Application data and authorization | Supabase Postgres + RLS | Yes, through migrations |
 | Profile/group pictures | Supabase Storage + RLS | Yes, through migrations |
@@ -16,8 +16,8 @@ configuration from privileged credentials.
 | Passwordless-email delivery | External SMTP through Supabase | No |
 
 The public movement library remains available without an account. Every
-signed-in account is a practitioner. “Register as a coach” adds a capability
-to the same profile; it does not create another user.
+signed-in account is a practitioner. Choosing Both or Teach in the app adds
+coaching to the same profile; it does not create another user.
 
 `https://roda.fyi` was rechecked on 2026-09-14 and responds directly from
 Vercel without redirecting to a different host. It is therefore the canonical
@@ -286,15 +286,18 @@ delete from public.catalog_curators where profile_id = '<profile id>';
   one active parent and cycles are rejected.
 - `Named progress` and `Full coaching access` apply only to the immediate
   parent. They do not cascade to higher ancestors.
-- Query-string tokens are captured before sign-in when necessary and scrubbed
-  from the address bar as soon as the dashboard receives them.
+- The app creates `/app?member_invite=…` and `/app?group_link=…` links; links
+  shared earlier as `/dashboard?…` forward to `/app` with their query. Tokens
+  survive sign-in through the `next` return route and are removed from the
+  address bar as soon as the app starts; the token then waits in that tab's
+  session storage until the invitation or group sheet opens.
 
 ## Smoke tests after configuration
 
 Use disposable accounts and inspect the browser network panel while testing:
 
 1. New Google account → callback → profile completion → sign out → sign in.
-2. Email link in a new tab → same safe callback → profile/dashboard.
+2. Email link in a new tab → same safe callback → welcome or the app.
 3. Google and email for the same verified address → one Supabase user/profile.
 4. Cancelled Google consent, malformed callback, and expired email link.
 5. Member invitation before sign-in, then resume and accept once.
@@ -302,7 +305,7 @@ Use disposable accounts and inspect the browser network panel while testing:
 7. Owner, direct coach, member, immediate-parent coach, and higher ancestor:
    confirm every allowed and forbidden group action.
 8. Revoke membership/relationship access and confirm the next private read
-   fails and clears the private dashboard surface.
+   fails and clears the private app screens.
 9. Record an Alone session, create a direct coaching connection, arrange Group
    and Personal class sessions, confirm attendance, and verify that only
    confirmed participation changes calendars and statistics.
@@ -316,6 +319,53 @@ Use disposable accounts and inspect the browser network panel while testing:
 13. Verify named or full access from the immediate parent group, then verify a
     higher ancestor receives anonymous aggregates only and cannot search member
     names or fetch raw training history.
+
+## App switch-over (2026-10)
+
+`/app` is the only signed-in app. Every sign-in defaults to `/app`;
+`dashboard.html` is a small page that forwards `/dashboard` to `/app` with the
+same query and hash; keep it so old bookmarks and shared links keep working.
+The service worker (`/app-sw.js`, scope `/app`) and the manifest did not move.
+
+Production smoke checklist after deploying the switch-over:
+
+1. `curl -s https://roda.fyi/dashboard | grep -c "location.replace('/app'"`
+   prints 1, and `curl -s https://roda.fyi/app | grep -c 'assets/generated/app.js'`
+   prints 1.
+2. Open `https://roda.fyi/dashboard#/calendar` → the address becomes
+   `https://roda.fyi/app#/calendar` and the month shows.
+3. Sign in with Google and with an email link from the public site → both land
+   on `/app` (or the welcome, for a new account).
+4. Open `https://roda.fyi/app?demo=1` → "Demo · browser only" and Today.
+5. In a private window, open `https://roda.fyi/app#/me/settings` → sign in →
+   you return to Settings.
+6. Create a member invitation in a group page; the link starts with
+   `https://roda.fyi/app?member_invite=`. Open it in a private window, sign in,
+   accept once; the address bar never shows the token after the app opens.
+   Open it again → "already been used". Repeat with an old
+   `/dashboard?member_invite=…` link → same result.
+7. Create a discovery link for an unlisted group, open it signed in → the
+   group sheet, request access; the request appears for the group's coach.
+8. With the device or profile time zone set to America/New_York, open a class
+   recorded in Europe/Lisbon → the page shows the New York time first and
+   "… in Lisbon" below it; Today shows the same New York time.
+9. Add a resource on a training page while offline (developer tools) so it
+   waits to sync; still offline, sign out from Settings → "1 item is still
+   waiting to sync — connect to the internet and try again" and you stay
+   signed in. Go online, tap Try again → signed out; after signing back in,
+   the resource is on the training.
+10. Schedule a class, throttle the network until the request times out, and
+    tap Schedule again → only one class appears in Teaching and Calendar.
+11. On a phone, log a training whose round contains a long pasted link → the
+    page never scrolls sideways.
+12. Switch to Português, go offline in developer tools, and save Notes on a
+    training → the error reads "O pedido de rede falhou. Tenta novamente."
+13. Run the bundle scan from the security checklist on the production build;
+    it prints nothing.
+
+Rollback: use Vercel's instant rollback to the previous deployment. The four
+`2026102500NN` migrations only add columns, defaulted arguments, a search cap,
+and a calendar filter, so earlier code keeps working against them.
 
 ## Preview and production rollout
 
@@ -344,7 +394,7 @@ HTTPS preview:
    allowlist. Never use a broad Vercel wildcard.
 5. Complete the smoke checks above with disposable coach, student, unrelated,
    immediate-parent, and higher-ancestor accounts. Confirm Google returns to
-   the exact HTTPS preview callback and then `/dashboard`.
+   the exact HTTPS preview callback and then `/app`.
 6. Inspect the generated bundles before promoting:
 
    ```bash

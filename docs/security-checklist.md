@@ -91,8 +91,9 @@ or pull request; do not check an item based only on dashboard appearance.
   removed from the visible URL immediately after capture.
 - [ ] Revoked membership/relationship access fails on the next private read and
   clears cached private UI.
-- [ ] Coaches remain practitioners and can record their own training; Coaching
-  is an explicit binary mode, not a separate account.
+- [ ] Coaches remain practitioners and can record their own training; teaching
+  is a Train · Both · Teach setting on the same profile, not a separate
+  account, and changing it never removes access or data.
 - [ ] Leaderboard participation remains optional. Opted-out members are unnamed,
   their confirmed activity contributes only to anonymous aggregates, and no
   client-calculated total is trusted.
@@ -123,6 +124,8 @@ or pull request; do not check an item based only on dashboard appearance.
   requests are user-initiated, at most one per second, cached, never bulk, and
   OSM attribution is visible on every map. The service worker never caches
   third-party responses.
+- [ ] Signing out sends every resource still waiting to sync first; if one
+  cannot be sent, the person stays signed in and nothing is deleted.
 
 ## Incident drill
 
