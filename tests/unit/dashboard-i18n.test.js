@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDashboardI18n, DASHBOARD_STRINGS } from '../../src/app/dashboard-i18n.js';
+import { AppError, SAFE_CODES } from '../../src/app/errors.js';
 
 function harness({ savedLocale = null, languages = ['en-US'] } = {}) {
   const values = new Map(savedLocale ? [['roda.dashboard.locale', savedLocale]] : []);
@@ -57,5 +58,13 @@ describe('dashboard i18n', () => {
     const { AppError } = await import('../../src/app/errors.js');
     const english = [...Object.values(DASHBOARD_STRINGS.en), new AppError('conflict', 'cancelled_training').message].join('\n');
     expect(english).not.toMatch(/cancell/i);
+  });
+
+  it('translates every safe error message, keeping the English text', () => {
+    for (const code of SAFE_CODES) {
+      expect(DASHBOARD_STRINGS.en[`errors.${code}`]).toBe(new AppError('validation', code).message);
+      expect(DASHBOARD_STRINGS.pt[`errors.${code}`]).toEqual(expect.any(String));
+    }
+    expect(DASHBOARD_STRINGS.pt['errors.generic']).toBe('Algo correu mal.');
   });
 });

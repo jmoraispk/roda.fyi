@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { AppError, toAppError } from '../../src/app/errors.js';
+import { createDashboardI18n } from '../../src/app/dashboard-i18n.js';
+import { AppError, SAFE_CODES, toAppError, useErrorTranslations } from '../../src/app/errors.js';
+
+afterEach(() => useErrorTranslations(null));
 
 describe('toAppError', () => {
   it.each([
@@ -43,5 +46,15 @@ describe('toAppError', () => {
   it('explains a client key reused on another training', () => {
     expect(toAppError({ code: 'P0001', message: 'idempotency_conflict' }).message)
       .toBe('This item was already saved to another training.');
+  });
+
+  it('speaks the chosen language once the app passes its copy', () => {
+    const pt = createDashboardI18n({ document: null, storage: { getItem: () => 'pt', setItem() {} }, navigator: { languages: ['pt'] } });
+    useErrorTranslations(pt);
+    expect(toAppError({ code: 'PT403' }).message).toBe('Não tens permissão para fazer isso.');
+    expect(new AppError('network', 'network_failure').message).toBe('O pedido de rede falhou. Tenta novamente.');
+    expect(new AppError('validation', 'something_new').message).toBe('Algo correu mal.');
+    useErrorTranslations(null);
+    expect(toAppError({ code: 'PT403' }).message).toBe('You do not have permission to do that.');
   });
 });

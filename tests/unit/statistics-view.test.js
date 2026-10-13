@@ -197,4 +197,12 @@ describe('statistics view', () => {
     expect(document.querySelector('[data-hardest-transitions]').textContent)
       .toContain('Rate transitions in your rounds to see which ones are hardest.');
   });
+
+  it('says "1 day" for a one-day streak', async () => {
+    const api = service({ getPersonal: vi.fn().mockResolvedValue({ ...personal(), current_streak: 1 }) });
+    await view(api).loadPersonal();
+    const text = document.querySelector('#trainingStatisticsPanel').textContent;
+    expect(text).toContain('1 day');
+    expect(text).not.toContain('1 days');
+  });
 });
