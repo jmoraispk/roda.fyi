@@ -103,4 +103,15 @@ describe('training screen', () => {
     expect(document.querySelector('[role="dialog"]').getAttribute('aria-label')).toBe('Add resources');
     expect(context.window.history.replaceState).toHaveBeenCalledWith(null, '', '#/training/o1');
   });
+
+  it('shows the time in my zone and the class zone below it', async () => {
+    const view = await renderTraining({ ...ctx({ getTraining: vi.fn().mockResolvedValue(base) }), timezone: 'America/New_York' }, { params: { id: 'o1' } });
+    expect(view.querySelector('.training-meta').textContent).toContain('Sat, Sep 26 · 09:19 AM');
+    expect(view.querySelector('.training-elsewhere').textContent).toBe('02:19 PM in Lisbon');
+  });
+
+  it('adds no extra line when I am in the class zone', async () => {
+    const view = await renderTraining(ctx({ getTraining: vi.fn().mockResolvedValue(base) }), { params: { id: 'o1' } });
+    expect(view.querySelector('.training-elsewhere')).toBeNull();
+  });
 });

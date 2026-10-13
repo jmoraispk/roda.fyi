@@ -130,4 +130,14 @@ describe('class page', () => {
       vi.useRealTimers();
     }
   });
+
+  it('shows the class time in my zone and its own zone below it', async () => {
+    const training = { completeGroupTraining: vi.fn() };
+    training.getScheduledClass = vi.fn().mockResolvedValue(base);
+    training.createIdempotencyKey = vi.fn(() => 'k1');
+    const ctx = appCtx({ services: { training }, timezone: 'America/New_York' });
+    const view = await renderClass(ctx, { name: 'class', params: { id: 's1' }, query: {} });
+    expect(view.querySelector('.training-meta').textContent).toContain('Sun, Oct 11 · 06:00 AM');
+    expect(view.querySelector('.training-elsewhere').textContent).toBe('11:00 AM in Lisbon');
+  });
 });
