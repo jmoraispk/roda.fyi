@@ -34,4 +34,13 @@ describe('app pages', () => {
     const topLevel = (await readdir('assets')).filter((name) => name.endsWith('.css')).map((name) => `assets/${name}`);
     expect(topLevel.filter((path) => !linked.has(path))).toEqual([]);
   });
+
+  it('has a shareable install page with steps for iPhone and Android', async () => {
+    const html = await readFile('install.html', 'utf8');
+    expect(html).toContain('Add to Home Screen');
+    expect(html).toContain('Open as Web App');
+    expect(html).toContain('Install app');
+    expect(html).toContain('href="/app"');
+    expect(html).not.toMatch(/<script/);
+  });
 });

@@ -30,6 +30,7 @@ import { openPlusMenu } from '../screens/plus-menu.js';
 import { renderRecordClass } from '../screens/record-class.js';
 import { createLayout } from '../shell/layout.js';
 import { runEntryLinks, takeEntryLinks } from '../shell/entry-links.js';
+import { installMode, renderInstallHint } from '../shell/install-hint.js';
 import { el } from '../shell/page.js';
 import { createRouter, isDetail, tabFor } from '../shell/router.js';
 import { closeSheet, openSheet } from '../shell/sheet.js';
@@ -44,6 +45,13 @@ function zoneFor(profile) {
 
 async function main() {
   clearLegacyDashboardKeys(localStorage);
+  // Browsers that can install the app (Chrome, Edge, Android) offer it once;
+  // keep the offer so Today can show a real Install button.
+  let installOffer = null;
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    installOffer = event;
+  });
   const params = new URLSearchParams(location.search);
   const demoMode = params.get('demo') === '1';
   if (demoMode) seedDemoData(localStorage);
@@ -119,6 +127,15 @@ async function main() {
     refreshTermMappings,
     isCoach: () => isCoach,
     markCoach: () => { isCoach = true; },
+    installHint: () => renderInstallHint({
+      document, i18n, storage: localStorage, installPrompt: installOffer,
+      mode: installMode({
+        userAgent: navigator.userAgent,
+        standalone: window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true,
+        canPrompt: Boolean(installOffer),
+        touchPoints: navigator.maxTouchPoints ?? 0,
+      }),
+    }),
     createMap: (options) => createLeafletMap({ document, tiles, ...options }),
     openSheet: (options) => openSheet({ document, closeLabel: i18n.t('app.close'), ...options }),
   };
