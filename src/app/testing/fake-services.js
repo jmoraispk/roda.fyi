@@ -1,4 +1,8 @@
 import { consumeReturnRoute } from '../return-route.js';
+import {
+  VISIBILITIES, canSeePerson, cityKey, contactColumns, contactsFromRow, effectiveVisibility, foldText, inBounds,
+  normalizeContacts, normalizePlace, placeColumns, roundCoordinate, validateContacts,
+} from '../discover-rules.js';
 import { requireUsageMode, resolveTimezoneOverride } from '../profile-service.js';
 import { AppError } from '../errors.js';
 import { normalizeSequenceInput } from '../repertoire-service.js';
@@ -1631,6 +1635,276 @@ export function createE2ECatalogService({ window }) {
       requireCurator();
       upsert(requireTerm(term), { needs_video: Boolean(needsVideo) });
       return { status: 'saved' };
+    },
+  };
+}
+
+const LISBON_PLACE = { place_city: 'Lisbon', place_region: 'Lisbon', place_country: 'Portugal' };
+const NO_CONTACTS = { contact_instagram: null, contact_website: null, contact_whatsapp: null, contact_email: null };
+
+export const E2E_DISCOVER_PEOPLE = Object.freeze([
+  {
+    id: 'discover-lua', display_name: 'Mestre Lua', avatar_path: null, usage_mode: 'teach', discover_visibility: null,
+    completed_at: '2026-09-01T00:00:00Z', ...LISBON_PLACE, place_lat: 38.72, place_lng: -9.14,
+    ...NO_CONTACTS, contact_instagram: 'mestrelua', contact_website: 'https://lua.example',
+    trains_in: [], teaches: [{ group_id: 'discover-group-lua', name: 'Grupo Lua', role: 'owner' }],
+  },
+  {
+    id: 'discover-bia', display_name: 'Bia Santos', avatar_path: null, usage_mode: 'train', discover_visibility: 'signed_in',
+    completed_at: '2026-09-01T00:00:00Z', ...LISBON_PLACE, place_lat: 38.72, place_lng: -9.14, ...NO_CONTACTS,
+    trains_in: [{ group_id: 'discover-group-lua', name: 'Grupo Lua' }], teaches: [],
+  },
+  {
+    id: 'discover-caio', display_name: 'Caio Lima', avatar_path: null, usage_mode: 'train', discover_visibility: null,
+    completed_at: '2026-09-01T00:00:00Z', ...LISBON_PLACE, place_lat: 38.72, place_lng: -9.14, ...NO_CONTACTS,
+    trains_in: [], teaches: [],
+  },
+  {
+    id: 'discover-duda', display_name: 'Duda Reis', avatar_path: null, usage_mode: 'both', discover_visibility: null,
+    completed_at: '2026-09-01T00:00:00Z', place_city: 'Rio de Janeiro', place_region: 'Rio de Janeiro',
+    place_country: 'Brazil', place_lat: -22.91, place_lng: -43.17, ...NO_CONTACTS, trains_in: [], teaches: [],
+  },
+]);
+
+export const E2E_DISCOVER_GROUPS = Object.freeze([
+  {
+    id: 'discover-group-lua', owner_id: 'discover-lua', name: 'Grupo Lua', picture_path: null, location: 'Arroios, Lisbon',
+    is_discoverable: true, archived_at: null, ...LISBON_PLACE, place_lat: 38.73, place_lng: -9.13,
+    contact_instagram: 'grupolua', contact_website: null, contact_email: 'ola@grupolua.example', coaches: ['discover-lua'],
+  },
+  {
+    id: 'discover-group-hidden', owner_id: 'discover-lua', name: 'Roda Fechada', picture_path: null, location: 'Porto',
+    is_discoverable: false, archived_at: null, place_city: 'Porto', place_region: 'Porto', place_country: 'Portugal',
+    place_lat: 41.15, place_lng: -8.61, contact_instagram: null, contact_website: null, contact_email: null,
+    coaches: ['discover-lua'],
+  },
+]);
+
+function checkedContacts(contacts) {
+  const clean = normalizeContacts(contacts);
+  const [code] = Object.values(validateContacts(clean));
+  if (code) throw new AppError('validation', code);
+  return clean;
+}
+
+function checkedPlace(place) {
+  if (!place) return null;
+  const clean = normalizePlace(place);
+  if (!clean) throw new AppError('validation', 'invalid_place');
+  return clean;
+}
+
+function presentContacts(entries) {
+  return Object.fromEntries(entries.filter(([, value]) => value));
+}
+
+export function createE2EDiscoverService({ window }) {
+  const { localStorage: storage } = window;
+  const read = (key, fallback) => {
+    try {
+      return JSON.parse(storage.getItem(key)) ?? fallback;
+    } catch {
+      return fallback;
+    }
+  };
+  const record = (event) => window.__RODA_E2E_EVENTS__?.push(event);
+  const viewer = () => storage.getItem('roda.e2e.discoverViewer') || readSession(storage)?.user?.id || null;
+  const groupState = () => read('roda.e2e.groupState', {});
+  const memberships = () => groupState().memberships ?? read('roda.e2e.memberships', []);
+
+  function people() {
+    const self = read('roda.e2e.profile', null);
+    const mine = memberships().filter((membership) => (
+      membership.profile_id === self?.id && membership.state === 'active' && membership.group?.is_discoverable
+    ));
+    const selfEntry = self && {
+      ...self,
+      usage_mode: self.usage_mode ?? 'train',
+      trains_in: mine.filter(({ access_level: level }) => level === 'member')
+        .map(({ group_id: id, group }) => ({ group_id: id, name: group.name })),
+      teaches: mine.filter(({ access_level: level }) => level === 'coach')
+        .map(({ group_id: id, group }) => ({ group_id: id, name: group.name, role: group.owner_id === self.id ? 'owner' : 'coach' })),
+    };
+    return [...structuredClone(read('roda.e2e.discoverPeople', E2E_DISCOVER_PEOPLE)), ...(selfEntry ? [selfEntry] : [])];
+  }
+
+  function groups() {
+    return [...structuredClone(E2E_DISCOVER_GROUPS), ...(groupState().groups ?? [])];
+  }
+
+  const visiblePeople = () => people().filter((person) => canSeePerson(viewer(), person));
+
+  return {
+    async loadMine() {
+      const profile = read('roda.e2e.profile', {});
+      return {
+        id: profile.id, usage_mode: profile.usage_mode ?? 'train', discover_visibility: profile.discover_visibility ?? null,
+        ...placeColumns(null), ...contactColumns(null),
+        ...Object.fromEntries(Object.entries(profile).filter(([key]) => key.startsWith('place_') || key.startsWith('contact_'))),
+      };
+    },
+
+    async updateMine({ visibility = null, place = null, contacts = {} } = {}) {
+      if (visibility !== null && !VISIBILITIES.includes(visibility)) throw new AppError('validation', 'invalid_visibility');
+      const cleanPlace = checkedPlace(place);
+      const cleanContacts = checkedContacts(contacts);
+      const profile = {
+        ...read('roda.e2e.profile', {}), discover_visibility: visibility,
+        ...placeColumns(cleanPlace), ...contactColumns(cleanContacts),
+      };
+      storage.setItem('roda.e2e.profile', JSON.stringify(profile));
+      record({ type: 'discover-update', visibility, place: cleanPlace, contacts: cleanContacts });
+      return { status: 'updated', profile_id: profile.id };
+    },
+
+    async loadGroup(groupId) {
+      const group = groups().find(({ id }) => id === groupId);
+      if (!group) throw new AppError('authorization', 'not_authorized');
+      return { ...placeColumns(null), contact_instagram: null, contact_website: null, contact_email: null, ...group };
+    },
+
+    async updateGroup(groupId, { place = null, contacts = {} } = {}) {
+      const state = groupState();
+      const group = (state.groups ?? []).find(({ id }) => id === groupId);
+      if (!group || group.owner_id !== viewer()) throw new AppError('authorization', 'not_authorized');
+      const cleanPlace = checkedPlace(place);
+      const { contact_whatsapp: _whatsapp, ...cleanContacts } = contactColumns(checkedContacts({ ...contacts, whatsapp: null }));
+      const values = { ...placeColumns(cleanPlace), ...cleanContacts };
+      Object.assign(group, values);
+      for (const membership of state.memberships ?? []) {
+        if (membership.group_id === groupId && membership.group) Object.assign(membership.group, values);
+      }
+      storage.setItem('roda.e2e.groupState', JSON.stringify(state));
+      record({ type: 'group-discover-update', groupId, ...values });
+      return { status: 'updated', group_id: groupId };
+    },
+
+    async points(bounds) {
+      const clusters = new Map();
+      for (const person of visiblePeople()) {
+        if (person.place_lat == null || !inBounds(Number(person.place_lat), Number(person.place_lng), bounds)) continue;
+        const place = { city: person.place_city, region: person.place_region ?? null, country: person.place_country ?? null };
+        const entry = clusters.get(cityKey(place)) ?? {
+          kind: 'city', ...place, lat: 0, lng: 0, person_count: 0, group_id: null, name: null, location: null,
+        };
+        entry.lat += Number(person.place_lat);
+        entry.lng += Number(person.place_lng);
+        entry.person_count += 1;
+        clusters.set(cityKey(place), entry);
+      }
+      const cities = [...clusters.values()].map((entry) => ({
+        ...entry, lat: roundCoordinate(entry.lat / entry.person_count), lng: roundCoordinate(entry.lng / entry.person_count),
+      }));
+      const pins = groups()
+        .filter((group) => group.is_discoverable && !group.archived_at && group.place_lat != null
+          && inBounds(Number(group.place_lat), Number(group.place_lng), bounds))
+        .map((group) => ({
+          kind: 'group', lat: group.place_lat, lng: group.place_lng, city: group.place_city,
+          region: group.place_region ?? null, country: group.place_country ?? null, person_count: null,
+          group_id: group.id, name: group.name, location: group.location ?? null,
+        }));
+      return [...cities, ...pins].sort((a, b) => (b.person_count ?? 1) - (a.person_count ?? 1)).slice(0, 500);
+    },
+
+    async cityPeople({ city, region = null, country = null }) {
+      const me = viewer();
+      return visiblePeople()
+        .filter((person) => person.place_city === city && (person.place_region ?? null) === region
+          && (person.place_country ?? null) === country)
+        .sort((a, b) => Number(b.id === me) - Number(a.id === me) || a.display_name.localeCompare(b.display_name))
+        .map((person) => ({
+          profile_id: person.id, display_name: person.display_name, avatar_path: person.avatar_path ?? null,
+          usage_mode: person.usage_mode ?? 'train',
+        }));
+    },
+
+    async person(profileId) {
+      const person = visiblePeople().find(({ id }) => id === profileId);
+      if (!person) return null;
+      const isSelf = person.id === viewer();
+      const contacts = contactsFromRow(person);
+      return {
+        profile_id: person.id, display_name: person.display_name, avatar_path: person.avatar_path ?? null,
+        usage_mode: person.usage_mode ?? 'train', city: person.place_city ?? null, region: person.place_region ?? null,
+        country: person.place_country ?? null, lat: person.place_lat ?? null, lng: person.place_lng ?? null,
+        is_self: isSelf, visibility: isSelf ? effectiveVisibility(person) : null,
+        contacts: presentContacts(Object.entries(contacts)),
+        trains_in: person.trains_in ?? [], teaches: person.teaches ?? [],
+      };
+    },
+
+    async group(groupId) {
+      const me = viewer();
+      const state = groupState();
+      const group = groups().find(({ id }) => id === groupId);
+      const membership = memberships().find((entry) => (
+        entry.group_id === groupId && entry.profile_id === me && entry.state === 'active'
+      ));
+      if (!group || group.archived_at || (!group.is_discoverable && !membership)) return null;
+      const visible = visiblePeople();
+      const coachIds = group.coaches ?? (state.rosters?.[groupId] ?? [])
+        .filter(({ access_level: level }) => level === 'coach').map(({ profile_id: id }) => id);
+      const pending = (state.joinRequests?.[groupId] ?? [])
+        .find((request) => request.profile_id === me && request.state === 'pending');
+      return {
+        group_id: group.id, name: group.name, picture_path: group.picture_path ?? null, location: group.location ?? null,
+        city: group.place_city ?? null, region: group.place_region ?? null, country: group.place_country ?? null,
+        lat: group.place_lat ?? null, lng: group.place_lng ?? null, is_discoverable: group.is_discoverable,
+        contacts: presentContacts([
+          ['instagram', group.contact_instagram], ['website', group.contact_website], ['email', group.contact_email],
+        ]),
+        coaches: coachIds.map((id) => visible.find((person) => person.id === id)).filter(Boolean)
+          .map((person) => ({ profile_id: person.id, display_name: person.display_name, is_owner: person.id === group.owner_id })),
+        my_status: group.owner_id === me ? 'owner'
+          : membership ? (membership.access_level === 'coach' ? 'coach' : 'member')
+            : pending ? 'pending' : null,
+        my_request_id: pending?.id ?? null,
+      };
+    },
+
+    async search(text, limit = 20) {
+      const needle = foldText(text);
+      if (needle.length < 2) return [];
+      const cap = Math.min(Math.max(limit, 1), 20);
+      const visible = visiblePeople();
+      const cities = new Map();
+      for (const person of visible) {
+        if (!person.place_city || !foldText(person.place_city).includes(needle)) continue;
+        const place = { city: person.place_city, region: person.place_region ?? null, country: person.place_country ?? null };
+        const entry = cities.get(cityKey(place)) ?? {
+          kind: 'city', profile_id: null, group_id: null, label: place.city, ...place,
+          lat: Number(person.place_lat), lng: Number(person.place_lng), person_count: 0,
+        };
+        entry.person_count += 1;
+        cities.set(cityKey(place), entry);
+      }
+      const lists = [
+        [...cities.values()].sort((a, b) => b.person_count - a.person_count || a.label.localeCompare(b.label)),
+        visible.filter((person) => foldText(person.display_name).includes(needle))
+          .sort((a, b) => a.display_name.localeCompare(b.display_name))
+          .map((person) => ({
+            kind: 'person', profile_id: person.id, group_id: null, label: person.display_name,
+            city: person.place_city ?? null, region: person.place_region ?? null, country: person.place_country ?? null,
+            lat: person.place_lat ?? null, lng: person.place_lng ?? null, person_count: null,
+          })),
+        groups().filter((group) => group.is_discoverable && !group.archived_at
+          && foldText(`${group.name} ${group.location ?? ''} ${group.place_city ?? ''}`).includes(needle))
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((group) => ({
+            kind: 'group', profile_id: null, group_id: group.id, label: group.name,
+            city: group.place_city ?? null, region: group.place_region ?? null, country: group.place_country ?? null,
+            lat: group.place_lat ?? null, lng: group.place_lng ?? null, person_count: null,
+          })),
+      ];
+      const rows = [];
+      for (let index = 0; rows.length < cap && lists.some((list) => index < list.length); index += 1) {
+        for (const list of lists) if (index < list.length && rows.length < cap) rows.push(list[index]);
+      }
+      return rows;
+    },
+
+    async pictureUrl() {
+      return null;
     },
   };
 }
