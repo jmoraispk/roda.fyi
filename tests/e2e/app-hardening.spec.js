@@ -58,3 +58,57 @@ test('saving again after a reload adds each resource once', async ({ page }) => 
   await expect(page).toHaveURL(first);
   await expect(page.locator('.resource-buttons button')).toHaveCount(1);
 });
+
+async function trainingWithWaitingResource(page) {
+  await page.goto('/app#/log');
+  const box = page.getByLabel('Write a round');
+  await box.fill('ginga 10 min');
+  await box.press('Enter');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page).toHaveURL(/#\/training\//);
+  const occurrenceId = page.url().split('#/training/')[1];
+  await page.evaluate((id) => localStorage.setItem(`roda.pendingResources:${id}`, JSON.stringify([
+    { occurrenceId: id, kind: 'summary', title: 'Notes', url: null, body: '# Class notes', clientKey: 'waiting-1' },
+  ])), occurrenceId);
+}
+
+const savedResources = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('roda.e2e.trainingState')).resources.length);
+
+test('signing out sends waiting resources first', async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem('roda.dashboard.mode', 'coaching'));
+  await trainingWithWaitingResource(page);
+  expect(await page.evaluate(() => localStorage.getItem('roda.dashboard.mode'))).toBeNull();
+  await page.goto('/app#/me/settings');
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(await savedResources(page)).toBe(1);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('roda.pendingResources:')))).toEqual([]);
+  expect(await page.evaluate(() => localStorage.getItem('roda.e2e.session'))).toBeNull();
+});
+
+test('signing out offline keeps waiting resources and asks to try again', async ({ page }) => {
+  await trainingWithWaitingResource(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('roda.e2e.trainingState'));
+    localStorage.setItem('roda.e2e.trainingState', JSON.stringify({ ...state, failNext: 'addResource' }));
+  });
+  await page.goto('/app#/me/settings');
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: 'Waiting to sync' });
+  await expect(sheet).toContainText('One item is still waiting to sync — connect to the internet and try again.');
+  await expect(sheet.getByRole('button', { name: /sign out/i })).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('roda.e2e.session'))).not.toBeNull();
+  await sheet.getByRole('button', { name: 'Try again' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(await savedResources(page)).toBe(1);
+});
+
+test('an expired session keeps unsaved work for after sign-in', async ({ page }) => {
+  await page.goto('/app#/log');
+  const box = page.getByLabel('Write a round');
+  await box.fill('ginga 10 min');
+  await box.press('Enter');
+  await page.evaluate(() => window.__RODA_E2E_EXPIRE__());
+  await expect(page).toHaveURL(/\?next=/);
+  expect(await page.evaluate(() => localStorage.getItem('roda.logDraft:practitioner-1'))).not.toBeNull();
+});
