@@ -75,6 +75,16 @@ export async function buildBrowserBundles({
   });
 
   await build({
+    entryPoints: { leaflet: 'node_modules/leaflet/dist/leaflet.css' },
+    outdir: outputDirectory,
+    entryNames: '[name]',
+    bundle: true,
+    minify: !test,
+    legalComments: 'none',
+    loader: { '.png': 'dataurl', '.svg': 'dataurl' },
+  });
+
+  await build({
     entryPoints: ['src/app/sw/service-worker.js'],
     outfile: 'app-sw.js',
     bundle: true,

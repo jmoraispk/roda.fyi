@@ -8,7 +8,9 @@ const req = (path, extra = {}) => ({ url: new URL(path, origin).href, method: 'G
 
 describe('cache policy', () => {
   it('precaches the app shell only', () => {
-    expect(APP_SHELL).toEqual(expect.arrayContaining(['/app', '/assets/app.css', '/assets/generated/app.js', '/manifest.webmanifest']));
+    expect(APP_SHELL).toEqual(expect.arrayContaining([
+      '/app', '/assets/app.css', '/assets/generated/app.js', '/assets/generated/leaflet.css', '/manifest.webmanifest',
+    ]));
     expect(APP_SHELL.every((path) => path.startsWith('/'))).toBe(true);
   });
 

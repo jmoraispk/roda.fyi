@@ -5,6 +5,7 @@ export const APP_SHELL = Object.freeze([
   '/assets/training-forms.css',
   '/assets/training-statistics.css',
   '/assets/generated/app.js',
+  '/assets/generated/leaflet.css',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/assets/fonts/syne-800-latin.woff2',

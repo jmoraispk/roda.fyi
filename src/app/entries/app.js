@@ -1,6 +1,8 @@
 // src/app/entries/app.js
 import { loadStartup } from '../app-startup.js';
 import { createServices } from '../create-services.js';
+import { E2E_TILES, OSM_TILES } from '../map-tiles.js';
+import { createLeafletMap } from '../screens/discover-map.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
 import { seedDemoData } from '../demo-data.js';
 import { renderCatalog } from '../screens/catalog.js';
@@ -90,6 +92,7 @@ async function main() {
   window.addEventListener('online', () => layout.setOffline(false));
   window.addEventListener('offline', () => layout.setOffline(true));
 
+  const tiles = __RODA_E2E__ ? E2E_TILES : OSM_TILES;
   const ctx = {
     document, window, i18n, services, profile, timezone: zoneFor(profile), user: session.user,
     navigate: (path) => router.navigate(path),
@@ -101,6 +104,7 @@ async function main() {
     refreshTermMappings,
     isCoach: () => isCoach,
     markCoach: () => { isCoach = true; },
+    createMap: (options) => createLeafletMap({ document, tiles, ...options }),
     openSheet: (options) => openSheet({ document, closeLabel: i18n.t('app.close'), ...options }),
   };
 
