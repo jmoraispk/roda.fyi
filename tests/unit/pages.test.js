@@ -1,5 +1,5 @@
 // tests/unit/pages.test.js
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 
 import { describe, expect, it } from 'vitest';
 
@@ -22,5 +22,16 @@ describe('app pages', () => {
     const html = await readFile('auth/callback.html', 'utf8');
     expect(html).toContain('<a href="/app">Open Roda</a>');
     expect(html).not.toContain('href="/dashboard"');
+  });
+
+  it('links stylesheets that exist and leaves none unused', async () => {
+    const linked = new Set();
+    for (const page of ['index.html', 'app.html', 'dashboard.html', 'studio.html', 'auth/callback.html']) {
+      const html = await readFile(page, 'utf8');
+      for (const match of html.matchAll(/<link rel="stylesheet" href="\/?(assets\/[^"]+\.css)"/g)) linked.add(match[1]);
+    }
+    for (const path of linked) await expect(stat(path)).resolves.toBeTruthy();
+    const topLevel = (await readdir('assets')).filter((name) => name.endsWith('.css')).map((name) => `assets/${name}`);
+    expect(topLevel.filter((path) => !linked.has(path))).toEqual([]);
   });
 });

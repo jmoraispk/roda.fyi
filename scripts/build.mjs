@@ -39,7 +39,6 @@ export function readPublicConfig(env) {
 export const ENTRY_POINTS = Object.freeze({
   'public-auth': 'src/app/entries/public-auth.js',
   'auth-callback': 'src/app/entries/auth-callback.js',
-  dashboard: 'src/app/entries/dashboard.js',
   app: 'src/app/entries/app.js',
   'public-sequences': 'src/app/entries/public-sequences.js',
 });
