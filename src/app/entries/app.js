@@ -10,6 +10,7 @@ import { renderProgress } from '../screens/progress.js';
 import { renderRepertoire } from '../screens/repertoire.js';
 import { renderCalendar } from '../screens/calendar.js';
 import { renderClass } from '../screens/class.js';
+import { renderDiscover } from '../screens/discover.js';
 import { renderGroup } from '../screens/group.js';
 import { renderGroups } from '../screens/groups.js';
 import { renderLog } from '../screens/log.js';
@@ -164,7 +165,7 @@ async function main() {
       case 'teaching-plan': return renderPlan(ctx, route);
       case 'teaching-student': return renderStudent(ctx, route);
       case 'group': return renderGroup(ctx, route);
-      case 'discover': return renderPlaceholder(ctx, { title: i18n.t('app.discover') });
+      case 'discover': return renderDiscover(ctx, route);
       default: return renderPlaceholder(ctx, { title: i18n.t('app.today') });
     }
   }

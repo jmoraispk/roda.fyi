@@ -61,3 +61,15 @@ test('Progress shows its stat cards two per row on a phone', async ({ page }, te
   const [a, b] = [await cards.nth(0).boundingBox(), await cards.nth(1).boundingBox()];
   expect(Math.abs(a.y - b.y)).toBeLessThan(2);
 });
+
+test('a group pin and its city pin at the same place do not cover each other', async ({ page }) => {
+  await page.goto('/app?demo=1#/discover');
+  const city = page.locator('.discover-pin.city', { hasText: 'Lisbon' });
+  const group = page.locator('.discover-pin.group', { hasText: 'Grupo Lua' });
+  await expect(city).toBeVisible();
+  await expect(group).toBeVisible();
+  const [a, b] = [await city.boundingBox(), await group.boundingBox()];
+  const overlap = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y))
+    * Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+  expect(overlap).toBe(0);
+});

@@ -33,11 +33,9 @@ test('shows the navigation and moves between destinations', async ({ page }, tes
   }
 });
 
-test('sends unknown routes to Today and placeholders to the classic dashboard', async ({ page }) => {
+test('sends unknown routes to Today', async ({ page }) => {
   await page.goto('/app#/does-not-exist');
   await expect(page).toHaveURL(/#\/$/);
-  await page.goto('/app#/discover');
-  await expect(page.getByRole('link', { name: 'Open the classic dashboard' })).toHaveAttribute('href', '/dashboard');
 });
 
 test('signed-out visitors go to sign-in and keep the route', async ({ page }) => {
