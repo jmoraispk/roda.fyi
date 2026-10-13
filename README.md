@@ -1,7 +1,7 @@
 # roda.fyi
 
 A visual field guide and training-platform foundation for capoeira. The public
-movement library is account-free; the authenticated dashboard uses one
+movement library is account-free; the signed-in app at `/app` uses one
 practitioner profile with optional coaching capabilities and self-managed group
 hierarchies.
 
@@ -28,12 +28,12 @@ Trainings can carry text resources: a video link, a voice transcript, and a
 markdown summary. Coaches can record a class that already happened, including
 its attendees and resources.
 
-Catalog curators see a Catalog tab listing uncatalogued words with totals only
+Catalog curators see Catalog under Me, listing uncatalogued words with totals only
 and can map, merge, or ignore them.
 
-### The new app (`/app`)
+### The app (`/app`)
 
-A mobile-first version of the dashboard is being built at `/app`: Today,
+Signed-in people use a mobile-first app at `/app`: Today,
 Calendar, Log training, the training page, the coach's class page, and Me with
 Progress, Repertoire, Teaching (plans, students, scheduling, past classes),
 Groups, Catalog for curators, and Settings. New accounts start with a short
@@ -47,6 +47,11 @@ OpenStreetMap map, with search and person and group cards. People choose their
 city, who can find them, and their contacts in Me → Settings; group owners set
 the group's city and contacts on the group's page. Only city-level places are
 stored, and Train-mode profiles stay hidden until the person chooses otherwise.
+
+Every sign-in lands on `/app`. The old address `/dashboard` forwards there and
+keeps the rest of the link, so older bookmarks, invitation links, and group
+links keep working. Times are shown in your own time zone; a class recorded in
+another zone also shows its local time, for example "07:00 PM in Lisbon".
 
 ## Local browser development
 
