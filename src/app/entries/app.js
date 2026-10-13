@@ -1,6 +1,7 @@
 // src/app/entries/app.js
 import { loadStartup } from '../app-startup.js';
 import { createServices } from '../create-services.js';
+import { clearLegacyDashboardKeys } from '../local-data.js';
 import { E2E_TILES, OSM_TILES } from '../map-tiles.js';
 import { createLeafletMap } from '../screens/discover-map.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
@@ -16,6 +17,7 @@ import { renderGroup } from '../screens/group.js';
 import { renderGroups } from '../screens/groups.js';
 import { renderLog } from '../screens/log.js';
 import { renderMe, renderSettings } from '../screens/me.js';
+import { signOutSafely } from '../screens/sign-out.js';
 import { renderPlan } from '../screens/plan.js';
 import { renderStudent } from '../screens/student.js';
 import { renderTeaching } from '../screens/teaching.js';
@@ -40,6 +42,7 @@ function zoneFor(profile) {
 }
 
 async function main() {
+  clearLegacyDashboardKeys(localStorage);
   const params = new URLSearchParams(location.search);
   const demoMode = params.get('demo') === '1';
   if (demoMode) seedDemoData(localStorage);
@@ -121,7 +124,9 @@ async function main() {
     if (section === 'settings') {
       return renderSettings(ctx, {
         onLocaleChange: () => { layout.refreshCopy(); show(route); },
-        onSignOut: async () => { await services.auth.signOut(); location.replace('/'); },
+        onSignOut: () => signOutSafely(ctx, {
+          signOut: async () => { await services.auth.signOut(); location.replace('/'); },
+        }),
         onProfileSaved: profileSaved,
       });
     }

@@ -649,6 +649,9 @@ const STRINGS = Object.freeze({
     'sentRequests.canceled': 'Request canceled.',
     'welcomeDiscover.title': 'Where do you train?',
     'welcomeDiscover.intro': 'Optional. Only your city is shared, never an address. You can change this later in Settings.',
+    'signOut.waitingTitle': 'Waiting to sync',
+    'signOut.waitingOne': 'One item is still waiting to sync — connect to the internet and try again.',
+    'signOut.waitingMany': '{count} items are still waiting to sync — connect to the internet and try again.',
   }),
   pt: Object.freeze({
     'dashboard.changeLanguage': 'Mudar idioma',
@@ -1297,6 +1300,9 @@ const STRINGS = Object.freeze({
     'sentRequests.canceled': 'Pedido cancelado.',
     'welcomeDiscover.title': 'Onde treinas?',
     'welcomeDiscover.intro': 'Opcional. Só partilhamos a tua cidade, nunca uma morada. Podes mudar isto depois nas Definições.',
+    'signOut.waitingTitle': 'À espera de sincronizar',
+    'signOut.waitingOne': 'Um item ainda está à espera de sincronizar — liga-te à internet e tenta novamente.',
+    'signOut.waitingMany': '{count} itens ainda estão à espera de sincronizar — liga-te à internet e tenta novamente.',
   }),
 });
 
