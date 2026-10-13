@@ -26,6 +26,26 @@ const DETAIL = new Set([
   'teaching-record', 'welcome',
 ]);
 
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+function daysIn(month) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+}
+
+// A hand-edited calendar URL falls back to a date that exists instead of
+// leaving the screen stuck while it tries to draw an impossible month.
+function checkCalendar(route) {
+  const { month, day } = route.params;
+  if (month && !MONTH.test(month)) {
+    return { ...route, path: '/calendar', params: { month: null, day: null }, redirected: true };
+  }
+  if (day && (Number(day) < 1 || Number(day) > daysIn(month))) {
+    return { ...route, path: `/calendar/${month}`, params: { month, day: null }, redirected: true };
+  }
+  return route;
+}
+
 export function parseRoute(hash) {
   const [rawPath, rawQuery = ''] = String(hash ?? '').replace(/^#/, '').split('?');
   const path = rawPath || '/';
@@ -33,7 +53,8 @@ export function parseRoute(hash) {
   for (const [name, pattern, keys] of ROUTES) {
     const match = pattern.exec(path);
     if (match) {
-      return { name, path, params: Object.fromEntries(keys.map((key, index) => [key, match[index + 1] ?? null])), query };
+      const route = { name, path, params: Object.fromEntries(keys.map((key, index) => [key, match[index + 1] ?? null])), query };
+      return name === 'calendar' ? checkCalendar(route) : route;
     }
   }
   return { name: 'today', path: '/', params: {}, query: {}, redirected: true };
@@ -55,8 +76,8 @@ export function createRouter({ window, onRoute }) {
 
   function handle() {
     const route = parseRoute(window.location.hash);
-    if (route.redirected && window.location.hash && window.location.hash !== '#/') {
-      window.history.replaceState(null, '', '#/');
+    if (route.redirected && window.location.hash && window.location.hash !== `#${route.path}`) {
+      window.history.replaceState(null, '', `#${route.path}`);
     }
     onRoute(route);
   }

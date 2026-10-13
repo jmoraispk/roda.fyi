@@ -29,10 +29,12 @@ describe('today state', () => {
     expect(nowNextCard({ calendarItems: [old], recent: [], profileId: 'me', now })).toBeNull();
   });
 
-  it('asks how a recent class went when it is not rated', () => {
-    const training = { occurrence_id: 'o1', role: 'participant', kind: 'group', occurred_at: '2026-10-11T10:00:00Z', has_rating: false };
+  it('asks how a recent class went until it has a felt rating', () => {
+    const training = { occurrence_id: 'o1', role: 'participant', kind: 'group', occurred_at: '2026-10-11T10:00:00Z', has_rating: false, felt: null };
     expect(nowNextCard({ calendarItems: [], recent: [training], profileId: 'me', now })).toEqual({ type: 'rate', training });
-    expect(nowNextCard({ calendarItems: [], recent: [{ ...training, has_rating: true }], profileId: 'me', now })).toBeNull();
+    const partsOnly = { ...training, has_rating: true };
+    expect(nowNextCard({ calendarItems: [], recent: [partsOnly], profileId: 'me', now })).toEqual({ type: 'rate', training: partsOnly });
+    expect(nowNextCard({ calendarItems: [], recent: [{ ...training, has_rating: true, felt: 'okay' }], profileId: 'me', now })).toBeNull();
     expect(nowNextCard({ calendarItems: [], recent: [{ ...training, kind: 'alone' }], profileId: 'me', now })).toBeNull();
   });
 

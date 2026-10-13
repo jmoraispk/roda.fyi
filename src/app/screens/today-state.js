@@ -58,7 +58,7 @@ export function nowNextCard({ calendarItems, recent, profileId, now, todayIso: l
     },
     rate() {
       const training = recent.find((entry) => entry.role === 'participant' && entry.kind !== 'alone'
-        && !entry.has_rating && time - new Date(entry.occurred_at).getTime() < 12 * HOUR);
+        && !entry.felt && time - new Date(entry.occurred_at).getTime() < 12 * HOUR);
       return training ? { type: 'rate', training } : null;
     },
     next: () => nextOf(upcoming),
