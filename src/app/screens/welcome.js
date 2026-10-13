@@ -3,6 +3,7 @@ import { modeOf } from '../shell/access.js';
 import { el } from '../shell/page.js';
 import { createModeSlider } from './mode-slider.js';
 import { createProfileForm, nameProblem, saveProfile } from './profile-form.js';
+import { discoverStep } from './welcome-discover.js';
 
 const profileStep = {
   id: 'profile',
@@ -40,7 +41,7 @@ const modeStep = {
 
 // Ruling R1: Plan 3 appends its city and "Who can find you" step to this list.
 export function welcomeSteps() {
-  return [profileStep, modeStep];
+  return [profileStep, modeStep, discoverStep];
 }
 
 export async function renderWelcome(ctx, _route, { steps = welcomeSteps(), onDone }) {
