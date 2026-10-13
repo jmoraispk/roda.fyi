@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { appModules, sourceOf } from './helpers/module-graph.js';
 
 // Task 9 flips this once this plan's own ports exist.
-const PORTS_DONE = false;
+const PORTS_DONE = true;
 const active = (row) => PORTS_DONE || row.owner !== 'plan-4';
 
 // Method names too common to match without their service's name.

@@ -7,7 +7,7 @@ import { sanitizeReturnRoute } from '../return-route.js';
 
 function intendedRoute(location) {
   const next = new URLSearchParams(location.search).get('next');
-  return next === null ? '/dashboard' : sanitizeReturnRoute(next);
+  return next === null ? '/app' : sanitizeReturnRoute(next);
 }
 
 async function main() {
