@@ -160,3 +160,11 @@ test('keeps the map beside an open card on desktop', async ({ page }, testInfo) 
   await expect(page.locator('#appDetail').getByRole('heading', { name: 'Mestre Lua' })).toBeVisible();
   await expect(page.locator('#appMain .discover-map')).toBeVisible();
 });
+
+test('pins repeat on every world copy shown on a very wide screen', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.includes('mobile'), 'needs a wide desktop map');
+  await page.setViewportSize({ width: 2800, height: 900 });
+  await page.goto('/app?demo=1#/discover');
+  await expect(page.locator('.discover-pin.city', { hasText: 'Lisbon' }).first()).toBeVisible();
+  expect(await page.locator('.discover-pin.city', { hasText: 'Lisbon' }).count()).toBeGreaterThanOrEqual(2);
+});

@@ -71,3 +71,13 @@ export function contactLinks(contacts = {}) {
   }
   return links;
 }
+
+// Leaflet draws a marker on one world copy only; place a pin on every copy in view
+// (wide desktops at world zoom, or a view that crosses the antimeridian).
+export function markerLongitudes(lng, west, east) {
+  const copies = [];
+  for (let k = Math.ceil((west - lng) / 360); lng + k * 360 <= east; k += 1) {
+    copies.push(Math.round((lng + k * 360) * 100) / 100);
+  }
+  return copies.length ? copies : [lng];
+}

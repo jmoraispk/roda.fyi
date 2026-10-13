@@ -2,9 +2,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 
-import {
-  contactLinks, initialView, normalizeBounds, pinElement, pinLabel, sortForPanel, summarize, WORLD_VIEW,
-} from '../../src/app/screens/discover-state.js';
+import { WORLD_VIEW, contactLinks, initialView, markerLongitudes, normalizeBounds, pinElement, pinLabel, sortForPanel, summarize } from '../../src/app/screens/discover-state.js';
 
 describe('discover state', () => {
   it.each([
@@ -52,5 +50,13 @@ describe('discover state', () => {
     ]);
     expect(contactLinks({ instagram: 'x/../evil', website: 'javascript:alert(1)', email: 'a@b.co?cc=x@y.z' })).toEqual([]);
     expect(contactLinks({ website: 'http://ana.example', whatsapp: '12' })).toEqual([]);
+  });
+
+  it('places a pin on every world copy that is in view', () => {
+    expect(markerLongitudes(-9.14, -221, 221)).toEqual([-9.14]);
+    expect(markerLongitudes(-178, 170, 190)).toEqual([182]);
+    expect(markerLongitudes(179, -200, 200)).toEqual([-181, 179]);
+    expect(markerLongitudes(-9.14, -400, 400)).toEqual([-369.14, -9.14, 350.86]);
+    expect(markerLongitudes(10, 20, 30)).toEqual([10]);
   });
 });
