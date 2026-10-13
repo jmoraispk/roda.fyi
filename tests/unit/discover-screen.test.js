@@ -224,4 +224,23 @@ describe('discover screen', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(rowKinds(view)).toEqual(['city']);
   });
+
+  it('shows the last chosen city when city lists arrive out of order', async () => {
+    let releaseLisbon;
+    const cityPeople = vi.fn((place) => (place.city === 'Lisbon'
+      ? new Promise((resolve) => { releaseLisbon = () => resolve([{ profile_id: 'p2', display_name: 'Mestre Lua', usage_mode: 'teach' }]); })
+      : Promise.resolve([{ profile_id: 'p9', display_name: 'Rui Alves', usage_mode: 'both' }])));
+    const { ctx, maps } = setup({ discover: { cityPeople } });
+    const view = await mount(ctx);
+    maps[0].options.onMove(WORLD);
+    await vi.advanceTimersByTimeAsync(250);
+    maps[0].options.onSelect(LISBON);
+    maps[0].options.onSelect({ ...LISBON, city: 'Porto', region: 'Porto', lat: 41.15, lng: -8.61 });
+    await vi.advanceTimersByTimeAsync(0);
+    releaseLisbon();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(view.querySelector('.discover-panel-body .section-label').textContent).toContain('Porto');
+    const people = [...view.querySelectorAll('.discover-row[data-kind="person"] .discover-row-title')].map((node) => node.textContent);
+    expect(people).toEqual(['Rui Alves']);
+  });
 });

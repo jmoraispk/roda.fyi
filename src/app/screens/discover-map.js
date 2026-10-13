@@ -1,7 +1,7 @@
 // src/app/screens/discover-map.js
 import * as L from 'leaflet';
 
-import { pinElement, pinLabel } from './discover-state.js';
+import { markerLongitudes, pinElement, pinLabel } from './discover-state.js';
 
 const LEAFLET_LINK = '<a href="https://leafletjs.com" target="_blank" rel="noopener noreferrer">Leaflet</a>';
 
@@ -15,6 +15,22 @@ export function createLeafletMap({
     attribution: tiles.attribution, maxZoom: 14, referrerPolicy: 'strict-origin-when-cross-origin',
   }).addTo(map);
   const markers = L.layerGroup().addTo(map);
+  let shown = [];
+
+  function drawPoints() {
+    markers.clearLayers();
+    const bounds = map.getBounds();
+    for (const point of shown) {
+      for (const lng of markerLongitudes(Number(point.lng), bounds.getWest(), bounds.getEast())) {
+        L.marker([Number(point.lat), lng], {
+          icon: L.divIcon({ className: 'discover-pin-icon', html: pinElement(document, point), iconSize: null }),
+          keyboard: true,
+          title: pinLabel(point),
+          riseOnHover: true,
+        }).on('click', () => onSelect(point)).addTo(markers);
+      }
+    }
+  }
 
   function snapshot() {
     const bounds = map.getBounds();
@@ -25,7 +41,7 @@ export function createLeafletMap({
     };
   }
 
-  map.on('moveend', () => onMove(snapshot()));
+  map.on('moveend', () => { drawPoints(); onMove(snapshot()); });
   if (onTap) {
     map.on('click', (event) => {
       const point = event.latlng.wrap();
@@ -39,15 +55,8 @@ export function createLeafletMap({
 
   return {
     setPoints(points) {
-      markers.clearLayers();
-      for (const point of points) {
-        L.marker([Number(point.lat), Number(point.lng)], {
-          icon: L.divIcon({ className: 'discover-pin-icon', html: pinElement(document, point), iconSize: null }),
-          keyboard: true,
-          title: pinLabel(point),
-          riseOnHover: true,
-        }).on('click', () => onSelect(point)).addTo(markers);
-      }
+      shown = points;
+      drawPoints();
     },
     flyTo({ lat, lng, zoom }) {
       map.setView([lat, lng], zoom ?? Math.max(map.getZoom(), 10));

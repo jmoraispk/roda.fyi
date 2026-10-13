@@ -85,7 +85,9 @@ export async function renderDiscover(ctx) {
     body.replaceChildren(...[hint, ...(rows.length ? rows : [empty]), privacy].filter(Boolean));
   }
 
+  let cityToken = 0;
   async function showCity(point) {
+    const token = ++cityToken;
     panelMode = 'city';
     setExpanded(true);
     const back = el(document, 'button', {
@@ -96,10 +98,12 @@ export async function renderDiscover(ctx) {
     try {
       people = await services.discover.cityPeople({ city: point.city, region: point.region ?? null, country: point.country ?? null });
     } catch (error) {
+      if (token !== cityToken) return;
       body.replaceChildren(el(document, 'p', { className: 'muted', text: error?.message || i18n.t('app.loadError') }), back, privacy);
       return;
     }
-    if (panelMode !== 'city') return;
+    // Only the most recently chosen city may fill the panel.
+    if (panelMode !== 'city' || token !== cityToken) return;
     body.replaceChildren(
       el(document, 'h2', { className: 'section-label', text: i18n.t('discover.cityPeople', { city: point.city }) }),
       ...people.map((person) => row(
