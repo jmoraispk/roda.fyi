@@ -824,6 +824,9 @@ export function createE2ETrainingService({ window }) {
       const state = readState();
       guard(state, 'scheduleGroupTraining');
       if (!isCoach()) throw new AppError('authorization', 'not_authorized');
+      const repeat = input.idempotencyKey
+        && state.schedules.find((item) => item.arranged_by === actorId() && item.idempotency_key === input.idempotencyKey);
+      if (repeat) return { status: 'scheduled', schedule_id: repeat.id };
       const plan = state.plans.find(({ version_id: id }) => id === input.planVersionId);
       if (!plan || plan.state !== 'published') {
         throw new AppError('validation', 'plan_not_published');
@@ -833,6 +836,7 @@ export function createE2ETrainingService({ window }) {
         plan_version_id: input.planVersionId, group_id: input.groupId,
         student_profile_id: null, connection_id: null,
         arranged_by: actorId(), starts_at: input.startsAt,
+        idempotency_key: input.idempotencyKey ?? null,
         local_date: input.localDate, timezone: input.timezone,
         duration_minutes: plan.expected_duration_minutes,
         visible_in_advance: input.visibleInAdvance !== false,
@@ -846,6 +850,9 @@ export function createE2ETrainingService({ window }) {
       const state = readState();
       guard(state, 'schedulePersonalClass');
       if (!isCoach()) throw new AppError('authorization', 'not_authorized');
+      const repeat = input.idempotencyKey
+        && state.schedules.find((item) => item.arranged_by === actorId() && item.idempotency_key === input.idempotencyKey);
+      if (repeat) return { status: 'scheduled', schedule_id: repeat.id };
       const plan = state.plans.find(({ version_id: id }) => id === input.planVersionId);
       if (!plan || plan.state !== 'published') {
         throw new AppError('validation', 'plan_not_published');
@@ -856,6 +863,7 @@ export function createE2ETrainingService({ window }) {
         student_profile_id: input.studentProfileId,
         connection_id: input.connectionId ?? null,
         arranged_by: actorId(), starts_at: input.startsAt,
+        idempotency_key: input.idempotencyKey ?? null,
         local_date: input.localDate, timezone: input.timezone,
         duration_minutes: plan.expected_duration_minutes,
         visible_in_advance: input.visibleInAdvance !== false,
