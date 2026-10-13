@@ -160,8 +160,10 @@ Then verify the production bundles contain none of the forbidden operator or
 test values:
 
 ```bash
-rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test|__RODA_E2E_EVENTS__" assets/generated
+rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test" assets/generated
 ```
+
+Demo mode ships the browser-only fake services on purpose, so their `__RODA_E2E_*` hooks are expected in production bundles; a test build is caught by `sb_publishable_e2e_test` instead. `tests/unit/release-scan.test.js` runs this exact pattern against a production build.
 
 The secret scan must produce no output. Manually record results for HTTPS OAuth
 return, connection revocation, hidden-plan visibility, context-scoped feedback,

@@ -348,7 +348,7 @@ HTTPS preview:
 6. Inspect the generated bundles before promoting:
 
    ```bash
-   rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test|__RODA_E2E_EVENTS__" assets/generated
+   rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test" assets/generated
    ```
 
    The command must print nothing after the final production build.
