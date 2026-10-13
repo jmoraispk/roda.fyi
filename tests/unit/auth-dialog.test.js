@@ -112,7 +112,7 @@ describe('createAuthDialog', () => {
 
     document.querySelector('#tryDemo').click();
 
-    expect(navigate).toHaveBeenCalledWith('/dashboard?demo=1');
+    expect(navigate).toHaveBeenCalledWith('/app?demo=1');
     expect(calls).toEqual([]);
   });
 
@@ -202,7 +202,7 @@ describe('createAuthDialog', () => {
     expect(document.querySelector('#authEntrySignedIn')).not.toBeNull();
     expect(document.querySelector('#authEntrySignedOut').hidden).toBe(true);
     expect(document.querySelector('#authEntrySignedIn').hidden).toBe(false);
-    expect(navigations).toEqual(['/dashboard']);
+    expect(navigations).toEqual(['/app']);
     expect(document.querySelector('#authDialog').hasAttribute('open')).toBe(false);
   });
 

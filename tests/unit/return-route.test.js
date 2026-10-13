@@ -30,7 +30,7 @@ describe('sanitizeReturnRoute', () => {
     '',
     null,
   ])('rejects unsafe return route %s', (candidate) => {
-    expect(sanitizeReturnRoute(candidate)).toBe('/dashboard');
+    expect(sanitizeReturnRoute(candidate)).toBe('/app');
   });
 });
 
@@ -40,7 +40,7 @@ describe('rememberReturnRoute', () => {
 
     rememberReturnRoute(storage, 'https://evil.example');
 
-    expect(storage.getItem('roda.auth.returnRoute')).toBe('/dashboard');
+    expect(storage.getItem('roda.auth.returnRoute')).toBe('/app');
   });
 });
 
@@ -66,5 +66,9 @@ describe('consumeReturnRoute', () => {
       search: '?next=https%3A%2F%2Fevil.example',
       storage,
     })).toBe('/dashboard?group_link=group-token');
+  });
+
+  it('keeps an old dashboard link so it can forward to the app', () => {
+    expect(sanitizeReturnRoute('/dashboard?member_invite=abc')).toBe('/dashboard?member_invite=abc');
   });
 });

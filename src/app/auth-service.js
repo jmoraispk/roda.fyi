@@ -27,7 +27,7 @@ function unwrap(result) {
 
 export function createAuthService({ client, origin, storage }) {
   return {
-    async signInWithGoogle(next = '/dashboard') {
+    async signInWithGoogle(next = '/app') {
       const route = sanitizeReturnRoute(next);
       rememberReturnRoute(storage, route);
       const result = await client.auth.signInWithOAuth({
@@ -37,7 +37,7 @@ export function createAuthService({ client, origin, storage }) {
       return unwrap(result);
     },
 
-    async sendEmailLink(email, next = '/dashboard') {
+    async sendEmailLink(email, next = '/app') {
       const normalizedEmail = email?.trim() ?? '';
       if (!validEmail(normalizedEmail)) {
         throw new AppError('validation', 'invalid_email');

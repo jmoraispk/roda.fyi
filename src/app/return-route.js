@@ -8,7 +8,7 @@ function isSafeLocalRoute(candidate) {
     && !/[\u0000-\u001f\u007f]/.test(candidate);
 }
 
-export function sanitizeReturnRoute(candidate, fallback = '/dashboard') {
+export function sanitizeReturnRoute(candidate, fallback = '/app') {
   const route = typeof candidate === 'string' ? candidate.trim() : candidate;
   return isSafeLocalRoute(route) ? route : fallback;
 }
@@ -20,7 +20,7 @@ export function rememberReturnRoute(storage, candidate) {
 export function consumeReturnRoute({ search = '', storage }) {
   const remembered = sanitizeReturnRoute(
     storage.getItem(RETURN_ROUTE_KEY),
-    '/dashboard',
+    '/app',
   );
   storage.removeItem(RETURN_ROUTE_KEY);
 

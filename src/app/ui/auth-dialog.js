@@ -1,7 +1,7 @@
 export function createAuthDialog({
   document,
   authService,
-  returnRoute = () => '/dashboard',
+  returnRoute = () => '/app',
   navigate = (route) => globalThis.location.assign(route),
 }) {
   const entry = document.querySelector('#authEntry');
@@ -34,7 +34,7 @@ export function createAuthDialog({
 
   function open() {
     if (session) {
-      navigate('/dashboard');
+      navigate('/app');
       return;
     }
     actions.hidden = false;
@@ -61,7 +61,7 @@ export function createAuthDialog({
 
   demo.addEventListener('click', () => {
     if (busy) return;
-    navigate('/dashboard?demo=1');
+    navigate('/app?demo=1');
   });
 
   emailForm.addEventListener('submit', async (event) => {
