@@ -1,6 +1,7 @@
 // src/app/screens/training.js
 import { renderMarkdown } from '../markdown-lite.js';
 import { el, pageHeader } from '../shell/page.js';
+import { whenParts } from '../time-display.js';
 import { createResourceSection, RESOURCE_ICONS } from '../ui/resource-view.js';
 import { createRoundDetail } from '../ui/round-detail.js';
 import { kindLabel } from './today-state.js';
@@ -48,13 +49,11 @@ export async function renderTraining(ctx, route) {
       el(document, 'figcaption', { className: 'muted', text: video.title || i18n.t('trainingPage.recording') }),
     ]));
   }
-  const time = new Intl.DateTimeFormat(i18n.locale() === 'pt' ? 'pt-PT' : 'en-US', {
-    hour: '2-digit', minute: '2-digit', timeZone: training.timezone || ctx.timezone,
-  }).format(new Date(training.occurred_at));
-  const meta = [i18n.formatDate(`${training.local_date}T12:00:00`, { weekday: 'short', day: 'numeric', month: 'short' }),
-    time, training.kind === 'alone' ? null : training.coach_name].filter(Boolean).join(' · ');
+  const when = whenParts({ i18n, iso: training.occurred_at, viewerZone: ctx.timezone, classZone: training.timezone });
+  const meta = [when.date, when.time, training.kind === 'alone' ? null : training.coach_name].filter(Boolean).join(' · ');
   screen.append(el(document, 'h1', { className: 'training-title', text: titleFor(i18n, training) }),
     el(document, 'p', { className: 'training-meta muted', text: meta }));
+  if (when.elsewhere) screen.append(el(document, 'p', { className: 'training-elsewhere muted', text: when.elsewhere }));
   const tags = el(document, 'div', { className: 'training-tags' }, [
     el(document, 'span', { className: 'tag', text: `⏱ ${i18n.formatDuration(training.duration_minutes)}` }),
     training.kind === 'group' ? el(document, 'span', { className: 'tag', text: `👥 ${i18n.t('today.attended', { count: training.attendee_count })}` }) : null,

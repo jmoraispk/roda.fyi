@@ -1,13 +1,8 @@
 // src/app/screens/class.js
+import { whenParts } from '../time-display.js';
 import { roundText } from '../training-plan-state.js';
 import { el, pageHeader } from '../shell/page.js';
 import { kindLabel } from './today-state.js';
-
-function timeOf(ctx, iso, timezone) {
-  return new Intl.DateTimeFormat(ctx.i18n.locale() === 'pt' ? 'pt-PT' : 'en-US', {
-    hour: '2-digit', minute: '2-digit', timeZone: timezone || ctx.timezone,
-  }).format(new Date(iso));
-}
 
 function cancelSheet(ctx, data) {
   const { document, i18n } = ctx;
@@ -53,15 +48,16 @@ export async function renderClass(ctx, route) {
     : [];
   screen.append(pageHeader({ document, title: '', backLabel: i18n.t('app.back'), onBack: back, actions: editPlan }));
   const second = data.group_name ?? (data.student_name ? i18n.t('trainingPage.with', { name: data.student_name }) : null);
+  const when = whenParts({ i18n, iso: data.starts_at, viewerZone: ctx.timezone, classZone: data.timezone });
   const meta = [
-    i18n.formatDate(`${data.local_date}T12:00:00`, { weekday: 'short', day: 'numeric', month: 'short' }),
-    timeOf(ctx, data.starts_at, data.timezone), i18n.t('today.youTeach'),
+    when.date, when.time, i18n.t('today.youTeach'),
     data.plan_title ? i18n.t('classPage.plan', { title: data.plan_title }) : null,
   ].filter(Boolean).join(' · ');
   const coming = el(document, 'span', { className: 'tag' });
   screen.append(
     el(document, 'h1', { className: 'training-title', text: [kindLabel(i18n, data.kind), second].filter(Boolean).join(' · ') }),
     el(document, 'p', { className: 'training-meta muted', text: meta }),
+    ...(when.elsewhere ? [el(document, 'p', { className: 'training-elsewhere muted', text: when.elsewhere })] : []),
     el(document, 'div', { className: 'training-tags' }, [
       el(document, 'span', { className: 'tag', text: `⏱ ${i18n.formatDuration(data.duration_minutes)}` }), coming,
     ]),
