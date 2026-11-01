@@ -172,6 +172,19 @@ Supabase access token, Google secret, SMTP password, or any service-role/secret
 API key in a static Vercel build. `vercel.json` already runs `npm ci`,
 `npm run build`, and serves this repository root with clean URLs.
 
+## Keeping the free project awake
+
+Free Supabase projects pause after about a week without activity; while paused,
+sign-in and every account screen fail although the site still loads. The
+GitHub Actions workflow `.github/workflows/keep-supabase-awake.yml` runs a
+read-only public lookup every three days (and on demand from the Actions tab)
+and fails with a clear message if the project answers anything but 200. It reads
+two repository secrets, `RODA_SUPABASE_URL` and `RODA_SUPABASE_PUBLISHABLE_KEY`
+(the same public values the site uses). GitHub stops scheduled workflows in a
+repository with no commits for 60 days; re-enable it from the Actions tab if
+that happens. If the project does pause, restore it from the Supabase
+dashboard: restoring keeps all data.
+
 ## Supabase GitHub integration
 
 In the connected Supabase deployment settings, verify all of the following:

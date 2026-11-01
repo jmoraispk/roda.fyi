@@ -1,0 +1,37 @@
+# Free Supabase projects pause after about a week without activity, which takes
+# sign-in and every account screen down. This runs a small read-only database
+# query every three days (and on demand) so the project stays awake.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '17 12 */3 * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Query the database
+        env:
+          RODA_SUPABASE_URL: ${{ secrets.RODA_SUPABASE_URL }}
+          RODA_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.RODA_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$RODA_SUPABASE_URL" ] || [ -z "$RODA_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Add the RODA_SUPABASE_URL and RODA_SUPABASE_PUBLISHABLE_KEY repository secrets."
+            exit 1
+          fi
+          # A public, read-only lookup that always answers 200 with an empty list.
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 30 --retry 3 --retry-delay 20 \
+            --request POST "$RODA_SUPABASE_URL/rest/v1/rpc/resolve_group_discovery_token" \
+            --header "apikey: $RODA_SUPABASE_PUBLISHABLE_KEY" \
+            --header 'Content-Type: application/json' \
+            --data '{"token":"keep-awake"}')
+          echo "Supabase answered $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::Supabase answered $status. The project may be paused: restore it in the Supabase dashboard."
+            exit 1
+          fi
