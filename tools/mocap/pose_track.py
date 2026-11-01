@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["mediapipe>=0.10.14", "numpy"]
+# dependencies = ["mediapipe>=0.10.14", "numpy", "imageio-ffmpeg>=0.5"]
 # ///
 """Per-frame 3D pose over a whole video -> out/<name>.track.json.
 
@@ -11,7 +11,7 @@ world landmarks (+visibility) per frame.
 Run:
   uv run tools/mocap/pose_track.py videos/first_5_moves.mp4 --fps 30
 """
-import argparse, json, os, subprocess, sys, time, urllib.request
+import argparse, json, os, re, shutil, subprocess, sys, time, urllib.request
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +31,23 @@ MP_NAMES = [
 ]
 
 
+def _ffmpeg():
+    """System ffmpeg if present, else the static binary bundled by imageio-ffmpeg."""
+    if shutil.which("ffmpeg"):
+        return "ffmpeg"
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
 def ffprobe(path):
+    if not shutil.which("ffprobe"):             # parse `ffmpeg -i` instead
+        err = subprocess.run([_ffmpeg(), "-hide_banner", "-i", path], capture_output=True, text=True).stderr
+        m = re.search(r"Video:.*?(\d{2,5})x(\d{2,5}).*?(\d+(?:\.\d+)?) fps", err)
+        d = re.search(r"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)", err)
+        if not m:
+            raise RuntimeError(f"cannot probe {path}:\n{err[-800:]}")
+        dur = int(d.group(1)) * 3600 + int(d.group(2)) * 60 + float(d.group(3)) if d else 0.0
+        return int(m.group(1)), int(m.group(2)), float(m.group(3)), dur
     cmd = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
            "stream=width,height,r_frame_rate:format=duration", "-of", "json", path]
     j = json.loads(subprocess.check_output(cmd))
@@ -46,7 +62,7 @@ def decode_frames(path, sample_fps, max_w):
     W, H, _src_fps, dur = ffprobe(path)
     ow = min(max_w, W); ow -= ow % 2
     oh = round(H * ow / W); oh -= oh % 2
-    cmd = ["ffmpeg", "-v", "error", "-i", path, "-vf",
+    cmd = [_ffmpeg(), "-v", "error", "-i", path, "-vf",
            f"fps={sample_fps},scale={ow}:{oh}", "-f", "rawvideo",
            "-pix_fmt", "rgb24", "pipe:1"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -89,6 +105,7 @@ def main():
     ap.add_argument("video")
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--max-w", type=int, default=960)
+    ap.add_argument("--out", default=None, help="track.json path (default out/<name>[.image].track.json)")
     ap.add_argument("--mode", choices=["video", "image"], default="video",
                     help="image = per-frame detection (no temporal tracker -> no lag on fast motion)")
     args = ap.parse_args()
@@ -117,15 +134,17 @@ def main():
         world = [[round(p.x, 4), round(p.y, 4), round(p.z, 4), round(getattr(p, "visibility", 1.0), 3)] for p in wl]
         c = round(float(np.mean([p[2] for p in img])), 3)
         frames_out.append({"t": round(i / args.fps, 3), "c": c, "img": img, "world": world})
+        if i % 15 == 0:
+            print(f"@@progress {i} {max(1, int(dur * args.fps))}", flush=True)
         if i % 300 == 0:
             print(f"    frame {i}  ({found} detected)  {i/max(time.perf_counter()-t0,1e-6):.1f} fps")
 
     doc = {"file": os.path.basename(args.video), "backend": "mediapipe-heavy",
            "fps": args.fps, "w": ow, "h": oh, "n": len(frames_out),
            "detected": found, "mp_names": MP_NAMES, "frames": frames_out}
-    os.makedirs(OUT, exist_ok=True)
     suffix = ".image" if args.mode == "image" else ""
-    path = os.path.join(OUT, f"{name}{suffix}.track.json")
+    path = args.out or os.path.join(OUT, f"{name}{suffix}.track.json")
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, separators=(",", ":"))
     print(f"  pose found in {found}/{len(frames_out)} frames -> {path}")

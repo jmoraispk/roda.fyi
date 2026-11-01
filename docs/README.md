@@ -21,7 +21,8 @@ hand-held training video to the animated figure on a move page.
 | `assets/moves*.js`, `ginga.keyframes.js` | Move catalog + the hero ginga keyframes. |
 | `tools/mocap/` | The Python motion-capture pipeline (own footage → animations) + the YouTube move library. See `tools/mocap/README.md` and `tools/mocap/CAPTURE.md`. |
 | `tools/mocap/capture/` | Pure, unit-tested pipeline modules (`geom`, `segment`, `align`, `fuse`, `retarget`, `io_formats`). |
-| `tools/segment/` | Browser tool to review the tracked skeleton on the video and label move spans. |
+| `tools/segment/` | Browser tools: `capture.html` (two-view capture workflow: upload, mark, track, fuse, QA) and the legacy single-video segment tool. |
+| `assets/motion/v2/` | **Generated** motion format v2 (29 joints, metres) — see [`motion-format-v2.md`](motion-format-v2.md). v1 `assets/moves3d/*.js` is derived from it. |
 | `tools/serve.py` | Tiny dev server with HTTP-range support (so the segment tool can scrub video) + an on-demand YouTube clip endpoint. |
 | `docs/` | This overview + planning specs under `docs/superpowers/plans/`. |
 
@@ -138,6 +139,16 @@ tests:
 
 ```bash
 uv run tools/mocap/capture/run_tests.py
+```
+
+## Two-view capture tool (`tools/segment/capture.html`)
+The current way to capture moves: one phone on a tripod, a front take and a side
+take. The tool handles upload, sequential marking, GPU pose jobs, DTW-aligned fusion
+and QA, and writes [motion format v2](motion-format-v2.md). Step by step in
+`tools/mocap/CAPTURE.md`:
+
+```bash
+RODA_CAPTURE_GPUS=1 uv run tools/serve.py 8140   # then /tools/segment/capture.html
 ```
 
 ## Segment labelling tool (`tools/segment/`)

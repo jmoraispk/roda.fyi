@@ -6,6 +6,7 @@
 
   uv run tools/mocap/capture_moves.py --propose          # -> capture/segments.json
   uv run tools/mocap/capture_moves.py --build --qa       # -> assets/moves3d/*.js
+  uv run tools/mocap/capture_moves.py --from-v2          # assets/motion/v2 -> assets/moves3d/*.js
 """
 import argparse, os, sys
 import numpy as np
@@ -14,7 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, os.path.join(HERE, "capture"))   # import the pure modules as siblings
 
-import geom, segment, fuse, retarget                 # noqa: E402
+import geom, segment, fuse, retarget, motion_v2      # noqa: E402
 import io_formats as io                               # noqa: E402
 
 OUT = os.path.join(HERE, "out")
@@ -22,6 +23,7 @@ SEG_PATH = os.path.join(HERE, "capture", "segments.json")
 MANIFEST = os.path.join(HERE, "capture_manifest.json")
 MOVES3D = os.path.join(ROOT, "assets", "moves3d")
 SHOTS = os.path.join(ROOT, "tools", "shots")
+V2_DIR = os.path.join(ROOT, "assets", "motion", "v2")
 
 
 def load_track_world(track):
@@ -204,6 +206,59 @@ def build(track, manifest, do_qa):
         print(f"  wrote assets/moves3d/{slug}.js  variants={list(variants)}")
 
 
+def write_v2_index():
+    """assets/motion/v2/index.json = {slug: [variantKey, ...]}."""
+    idx = {}
+    for slug in sorted(os.listdir(V2_DIR)) if os.path.isdir(V2_DIR) else []:
+        d = os.path.join(V2_DIR, slug)
+        if os.path.isdir(d):
+            keys = sorted(f[:-5] for f in os.listdir(d) if f.endswith(".json"))
+            if keys:
+                idx[slug] = keys
+    io.save_json(idx, os.path.join(V2_DIR, "index.json"))
+    return idx
+
+
+def v1_variant_label(variant):
+    """Readable v1 variant name from a v2 variant (shown on the site's variant button)."""
+    parts = []
+    if variant.get("start", "default") != "default":
+        parts.append("from " + variant["start"])
+    if variant.get("middle", "default") != "default":
+        parts.append(variant["middle"])
+    if variant.get("end", "default") != "default":
+        parts.append("to " + variant["end"])
+    return " · ".join(parts) or "default"
+
+
+def build_from_v2(slugs=None):
+    """Derive assets/moves3d/<slug>.js (v1, 13 joints) from the v2 documents.
+    Slugs without v2 files are left untouched."""
+    idx = write_v2_index()
+    for slug in slugs or list(idx):
+        keys = idx.get(slug)
+        if not keys:
+            print(f"  {slug}: no v2 files — v1 left untouched")
+            continue
+        variants, fps, sources = {}, None, []
+        for key in keys:
+            doc = io.load_json(os.path.join(V2_DIR, slug, key + ".json"))
+            motion_v2.validate_doc(doc)
+            fps = fps or doc["fps"]
+            frames = retarget.normalize_sequence(motion_v2.v2_to_v1_array(doc["frames"]))
+            variants[v1_variant_label(doc["variant"])] = frames
+            sources.append(doc["source"].get("session", "?"))
+        if "default" not in variants:
+            variants = {"default": next(iter(variants.values())), **variants}
+        obj = {"source": f"motion v2 ({', '.join(sorted(set(sources)))}; two-view fused)",
+               "fps": fps, "frameMs": round(1000.0 / fps, 2),
+               "viewBox": [120, 160], "joints": geom.JOINTS3D,
+               "mirrorAxis": 60, "variants": variants}
+        io.save_js(obj, f"window.RODA_MOCAP['{slug}']", os.path.join(MOVES3D, f"{slug}.js"),
+                   header="// Generated from assets/motion/v2 by tools/mocap/capture_moves.py --from-v2 — do not edit by hand.")
+        print(f"  wrote assets/moves3d/{slug}.js  variants={list(variants)}")
+
+
 def _qa_report(slug, variant, frames, fps):
     from PIL import Image, ImageDraw
     J = {j: np.array([f[j] for f in frames], float) for j in geom.JOINTS3D}
@@ -241,7 +296,11 @@ def main():
     ap.add_argument("--build", action="store_true")
     ap.add_argument("--qa", action="store_true")
     ap.add_argument("--track", default=None)
+    ap.add_argument("--from-v2", action="store_true", help="derive v1 moves3d files from assets/motion/v2")
+    ap.add_argument("--slug", action="append", help="with --from-v2: only these slugs")
     args = ap.parse_args()
+    if args.from_v2:
+        return build_from_v2(args.slug)
     manifest = io.load_json(MANIFEST)
     stem = os.path.splitext(manifest["file"])[0]
     if args.track:
@@ -258,7 +317,7 @@ def main():
     if args.build:
         build(track, manifest, args.qa)
     if not (args.propose or args.build):
-        ap.error("pass --propose or --build")
+        ap.error("pass --propose, --build or --from-v2")
 
 
 if __name__ == "__main__":

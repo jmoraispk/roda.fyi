@@ -18,7 +18,7 @@ def register(fn):
 
 def main():
     # Importing a module runs its `@register`-decorated test defs.
-    import geom, segment, align, fuse, retarget  # noqa: F401
+    import geom, segment, align, fuse, retarget, motion_v2, dtw, twoview  # noqa: F401
     passed = failed = 0
     for fn in _TESTS:
         try:

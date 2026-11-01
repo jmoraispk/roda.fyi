@@ -30,7 +30,7 @@ from posepipe.pose2d import SapiensPose, Sapiens2Pose  # noqa: E402
 from posepipe import lift3d  # noqa: E402
 
 OUT = os.path.join(HERE, "out")
-MODELS = os.path.join(HERE, "models")
+MODELS = os.environ.get("RODA_MOCAP_MODELS") or os.path.join(HERE, "models")
 MOTIONBERT_CKPT = os.path.join(MODELS, "checkpoint", "pose3d", "FT_MB_release_MB_ft_h36m", "best_epoch.bin")
 
 # 2D backends: torchscript Sapiens-1B (default) or safetensors Sapiens2-5B (newer SOTA).
@@ -54,7 +54,10 @@ MP_G = np.asarray(MP_TO_GOLIATH)
 COCO_G = np.asarray(COCO17_TO_GOLIATH)
 
 
-def run_2d(video, fps, batch, device, pose, limit=None):
+def run_2d(video, fps, batch, device, pose, limit=None, ranges=None):
+    """`@@progress done total` lines on stdout feed the capture tool's job runner.
+    ranges: optional [[start, end), ...] in sampled-frame indices; frames outside are
+    skipped (no decode-to-RGB, no inference) and recorded as undetected."""
     cap = cv2.VideoCapture(video)
     W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -64,6 +67,13 @@ def run_2d(video, fps, batch, device, pose, limit=None):
     print(f"  {W}x{H} src_fps={src_fps:.2f} frames={n_total} sampling every {step} -> ~{fps}fps")
 
     detector = PersonDetector(device=device)
+    n_sampled = max(1, n_total // step)
+    keep = None
+    if ranges:
+        keep = np.zeros(n_sampled + 1, bool)
+        for a, b in ranges:
+            keep[max(0, int(a)):max(0, min(n_sampled + 1, int(b)))] = True
+    todo = int(keep.sum()) if keep is not None else n_sampled
 
     mp_xy, mp_sc, coco_xy, coco_sc, det = [], [], [], [], []
     buf_frames, buf_idx = [], []
@@ -90,27 +100,43 @@ def run_2d(video, fps, batch, device, pose, limit=None):
                 coco_xy.append(g_xy[COCO_G]); coco_sc.append(g_sc[COCO_G])
                 det.append(True); kept += 1
             else:
-                mp_xy.append(np.zeros((33, 2), np.float32)); mp_sc.append(np.zeros(33, np.float32))
-                coco_xy.append(np.zeros((17, 2), np.float32)); coco_sc.append(np.zeros(17, np.float32))
-                det.append(False)
+                add_empty()
         buf_frames.clear(); buf_idx.clear()
 
+    def add_empty():
+        mp_xy.append(np.zeros((33, 2), np.float32)); mp_sc.append(np.zeros(33, np.float32))
+        coco_xy.append(np.zeros((17, 2), np.float32)); coco_sc.append(np.zeros(17, np.float32))
+        det.append(False)
+
+    sampled = processed = 0
     while True:
-        ok, frame = cap.read()
-        if not ok:
-            break
-        if read % step == 0:
+        if read % step != 0:                     # not a sampled frame
+            if not cap.grab():
+                break
+            read += 1
+            continue
+        if keep is not None and not keep[min(sampled, len(keep) - 1)]:
+            if not cap.grab():                   # decode only (keeps the stream in sync)
+                break
+            flush()                              # keep frame order: pending frames first
+            add_empty()
+        else:
+            ok, frame = cap.read()
+            if not ok:
+                break
             buf_frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             buf_idx.append(read)
+            processed += 1
             if len(buf_frames) >= batch:
                 flush()
-                done = len(det)
-                if done % (batch * 20) < batch:
+                print(f"@@progress {processed} {todo}", flush=True)
+                if processed % (batch * 20) < batch:
                     el = time.perf_counter() - t0
-                    print(f"    frame {done}  ({kept} detected)  {done/max(el,1e-6):.1f} fps")
-                if limit and done >= limit:
-                    break
+                    print(f"    frame {len(det)}  ({kept} detected)  {processed/max(el,1e-6):.1f} fps")
+        sampled += 1
         read += 1
+        if limit and len(det) >= limit:
+            break
     flush()
     cap.release()
     return dict(W=W, H=H, mp_xy=np.array(mp_xy), mp_sc=np.array(mp_sc),
@@ -118,7 +144,7 @@ def run_2d(video, fps, batch, device, pose, limit=None):
                 det=np.array(det), n=len(det))
 
 
-def build_track(video, fps, data, device, tag):
+def build_track(video, fps, data, device, tag, out_path=None):
     W, H, n = data["W"], data["H"], data["n"]
     det = data["det"]
     world17, _wvis = lift3d.lift(data["coco_xy"], data["coco_sc"], det, MOTIONBERT_CKPT, device)
@@ -154,9 +180,9 @@ def build_track(video, fps, data, device, tag):
 
     doc = {"file": os.path.basename(video), "backend": tag, "fps": fps,
            "w": W, "h": H, "n": n, "detected": found, "mp_names": MP_NAMES, "frames": frames_out}
-    os.makedirs(OUT, exist_ok=True)
     name = os.path.splitext(os.path.basename(video))[0]
-    path = os.path.join(OUT, f"{name}.{tag}.track.json")
+    path = out_path or os.path.join(OUT, f"{name}.{tag}.track.json")
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, separators=(",", ":"))
     print(f"  pose found in {found}/{n} frames -> {path}")
@@ -173,15 +199,20 @@ def main():
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--limit", type=int, default=None, help="only process first N sampled frames (debug)")
+    ap.add_argument("--out", default=None, help="track.json path (default out/<name>.<backend>.track.json)")
+    ap.add_argument("--ranges", default=None, help="JSON file [[start,end),...]: only track these frames")
     args = ap.parse_args()
     assert torch.cuda.is_available(), "CUDA required"
     tag = BACKENDS[args.backend]["tag"]
     name = os.path.splitext(os.path.basename(args.video))[0]
     print(f"  {name}: 2D ({args.backend}) ...")
+    print("@@stage 2d pose", flush=True)
     pose = make_pose(args.backend, args.device)
-    data = run_2d(args.video, args.fps, args.batch, args.device, pose, args.limit)
+    ranges = json.load(open(args.ranges)) if args.ranges else None
+    data = run_2d(args.video, args.fps, args.batch, args.device, pose, args.limit, ranges)
     print(f"  lifting 3D (MotionBERT) over {data['n']} frames ...")
-    build_track(args.video, args.fps, data, args.device, tag)
+    print("@@stage 3d lift", flush=True)
+    build_track(args.video, args.fps, data, args.device, tag, args.out)
 
 
 if __name__ == "__main__":

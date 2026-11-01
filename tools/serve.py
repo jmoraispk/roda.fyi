@@ -4,12 +4,15 @@
 """Static file server for the repo root, with HTTP Range support.
 
   uv run tools/serve.py            # serve repo root on http://localhost:8137
-  uv run tools/serve.py 9000       # custom port
+  uv run tools/serve.py 8140       # custom port (the capture tool runs on 8140)
 
 Python's stdlib `http.server` ignores Range requests and streams whole files,
 which makes a large video (ours is ~1 GB) effectively non-seekable in a
 <video> element. This adds 206 Partial Content so the segment tool can stream
 and frame-step the video straight from the server.
+
+Also mounts the capture-session API (tools/capture_api.py): /api/capture/* and
+/captures/* for tools/segment/capture.html. Localhost only, no auth.
 """
 import json
 import os
@@ -20,6 +23,9 @@ import sys
 import threading
 import urllib.parse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import capture_api  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 CLIPS = os.path.join(ROOT, "tools", "mocap", "clips")
@@ -96,24 +102,51 @@ class RangeHandler(SimpleHTTPRequestHandler):
             with RangeHandler._lock:
                 RangeHandler._downloading.discard(name)
 
+    def do_POST(self):
+        if not capture_api.handle(self, "POST"):
+            self._json(404, {"error": "unknown endpoint"})
+
+    def do_PUT(self):
+        if not capture_api.handle(self, "PUT"):
+            self._json(404, {"error": "unknown endpoint"})
+
+    def do_HEAD(self):
+        if capture_api.handle(self, "HEAD"):
+            return
+        return super().do_HEAD()
+
     def do_GET(self):
         if self.path.startswith("/api/clip"):
             return self.handle_clip()
+        if capture_api.handle(self, "GET"):
+            return
         parsed = urllib.parse.urlsplit(self.path)
         clean_path = self.translate_path(parsed.path)
         if not os.path.isfile(clean_path) and os.path.isfile(clean_path + ".html"):
             self.path = parsed.path + ".html"
             if parsed.query:
                 self.path += "?" + parsed.query
-        rng = self.headers.get("Range")
         path = self.translate_path(self.path)
-        if rng is None or not os.path.isfile(path):
+        if self.headers.get("Range") is None or not os.path.isfile(path):
             return super().do_GET()
+        return self.send_file(path)
 
+    def send_file(self, path, head=False):
+        """Serve a file, honouring a single-range `Range` header (206)."""
         size = os.path.getsize(path)
-        m = _RANGE.match(rng.strip())
+        m = _RANGE.match((self.headers.get("Range") or "").strip())
         if not m or (m.group(1) == "" and m.group(2) == ""):
-            return super().do_GET()
+            self.send_response(200)
+            self.send_header("Content-Type", self.guess_type(path))
+            self.send_header("Content-Length", str(size))
+            self.end_headers()
+            if not head:
+                with open(path, "rb") as f:
+                    try:
+                        shutil.copyfileobj(f, self.wfile, 256 * 1024)
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass
+            return
 
         if m.group(1) == "":                       # suffix range: last N bytes
             start, end = max(0, size - int(m.group(2))), size - 1
@@ -135,6 +168,8 @@ class RangeHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
         self.send_header("Content-Length", str(length))
         self.end_headers()
+        if head:
+            return
 
         with open(path, "rb") as f:
             f.seek(start)
@@ -154,7 +189,8 @@ if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8137
     os.chdir(ROOT)
     httpd = ThreadingHTTPServer(("127.0.0.1", port), RangeHandler)
-    print(f"serving {ROOT}\n  http://localhost:{port}  (Range-enabled)")
+    print(f"serving {ROOT}\n  http://localhost:{port}  (Range-enabled)\n"
+          f"  capture data: {capture_api.CAPTURE_DIR}  pose GPUs: {','.join(capture_api.GPUS)}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
