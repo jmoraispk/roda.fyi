@@ -23,8 +23,20 @@ function plain(subscription) {
   return { endpoint, p256dh: keys.p256dh, auth: keys.auth };
 }
 
-export function createPushDevice({ window, navigator, vapidPublicKey }) {
-  const pushManager = async () => (await navigator.serviceWorker.ready).pushManager;
+export function createPushDevice({ window, navigator, vapidPublicKey, readyTimeoutMs = 4000 }) {
+  // A service worker that failed to install never becomes ready; give up rather
+  // than leave Settings (and Sign out) waiting forever.
+  const pushManager = async () => {
+    let timer;
+    const gaveUp = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('service_worker_unavailable')), readyTimeoutMs);
+    });
+    try {
+      return (await Promise.race([navigator.serviceWorker.ready, gaveUp])).pushManager;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
   return {
     support: () => pushSupport({ window, navigator }),
     permission: () => window.Notification?.permission ?? 'default',

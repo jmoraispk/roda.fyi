@@ -463,8 +463,9 @@ npx supabase db push
 ```
 
 The dry run must list exactly `202611010001_notifications.sql`,
-`202611010002_notification_claims.sql`, and
-`202611010003_notification_results.sql`. Afterwards, open Supabase → Advisors →
+`202611010002_notification_claims.sql`,
+`202611010003_notification_results.sql`, and
+`202611010004_notification_timing.sql`. Afterwards, open Supabase → Advisors →
 Security and confirm there is no new unexplained finding.
 
 **3. Set the function secrets** from a file outside the repository, then delete it:

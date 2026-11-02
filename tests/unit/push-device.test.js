@@ -65,3 +65,13 @@ describe('push device', () => {
     expect(await createPushDevice({ ...browser(), vapidPublicKey: KEY }).unsubscribe()).toBeNull();
   });
 });
+
+describe('push device without a working service worker', () => {
+  it('gives up instead of waiting forever, so Settings still opens', async () => {
+    const env = browser();
+    const device = createPushDevice({
+      ...env, navigator: { ...env.navigator, serviceWorker: { ready: new Promise(() => {}) } }, vapidPublicKey: KEY, readyTimeoutMs: 20,
+    });
+    await expect(device.subscription()).rejects.toThrow('service_worker_unavailable');
+  });
+});
