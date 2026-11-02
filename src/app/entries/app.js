@@ -4,7 +4,7 @@ import { publicConfig } from '../config.js';
 import { createServices } from '../create-services.js';
 import { clearLegacyDashboardKeys } from '../local-data.js';
 import { E2E_TILES, OSM_TILES } from '../map-tiles.js';
-import { forgetDevice, notificationLink, refreshSubscription } from '../notifications.js';
+import { forgetDevice, notificationLink, refreshSubscription, turnOn } from '../notifications.js';
 import { createPushDevice } from '../push-device.js';
 import { createLeafletMap } from '../screens/discover-map.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
@@ -32,6 +32,7 @@ import { renderTraining } from '../screens/training.js';
 import { modeOf, plusActions, redirectFor } from '../shell/access.js';
 import { openPlusMenu } from '../screens/plus-menu.js';
 import { renderRecordClass } from '../screens/record-class.js';
+import { renderRemindersCard } from '../screens/reminders-card.js';
 import { createLayout } from '../shell/layout.js';
 import { runEntryLinks, takeEntryLinks } from '../shell/entry-links.js';
 import { installMode, renderInstallHint } from '../shell/install-hint.js';
@@ -148,6 +149,10 @@ async function main() {
         canPrompt: Boolean(installOffer),
         touchPoints: navigator.maxTouchPoints ?? 0,
       }),
+    }),
+    remindersCard: () => renderRemindersCard({
+      document, i18n, storage: localStorage, device: pushDevice,
+      onTurnOn: () => turnOn(notificationLink(ctx)),
     }),
     createMap: (options) => createLeafletMap({ document, tiles, ...options }),
     openSheet: (options) => openSheet({ document, closeLabel: i18n.t('app.close'), ...options }),

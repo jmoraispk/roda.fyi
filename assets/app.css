@@ -363,3 +363,7 @@ input, select, textarea { font-size: 16px; }
 .notification-pair .notification-row { flex: 1 1 100%; }
 .notification-pair .field-input { width: auto; flex: 1 1 120px; }
 .notification-preferences .button-primary { margin-top: 8px; }
+
+/* "Turn on reminders" on Today */
+.reminders-card { margin: 0 0 14px; border-color: var(--gold); }
+.reminders-card p { margin: 0 0 8px; color: var(--sand); }

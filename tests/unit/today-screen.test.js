@@ -57,4 +57,15 @@ describe('today screen', () => {
     expect(view.textContent).toContain('offline');
     expect(view.querySelector('button[data-action="retry"]')).not.toBeNull();
   });
+
+  it('fills the setup slot with one card: reminders first, the install hint last', async () => {
+    const training = { listMyCalendar: vi.fn().mockResolvedValue([]), listRecentTrainings: vi.fn().mockResolvedValue([]) };
+    const card = (className) => Object.assign(document.createElement('section'), { className });
+    const view = await renderToday({ ...ctx(training), remindersCard: () => card('reminders-card'), installHint: () => card('install-hint') });
+    await vi.waitFor(() => expect(view.querySelector('.reminders-card')).not.toBeNull());
+    expect(view.querySelector('.install-hint')).toBeNull();
+    const later = await renderToday({ ...ctx(training), remindersCard: () => null, installHint: () => card('install-hint') });
+    await vi.waitFor(() => expect(later.querySelector('.install-hint')).not.toBeNull());
+    expect(later.querySelector('.reminders-card')).toBeNull();
+  });
 });

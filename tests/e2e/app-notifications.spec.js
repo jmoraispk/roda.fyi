@@ -78,3 +78,29 @@ test('signing out turns this device off, so the next person on the phone gets no
   expect((await stored(page, 'roda.e2e.push')).subscribed).toBe(false);
   expect((await stored(page, 'roda.e2e.notificationState')).subscriptions).toEqual([]);
 });
+
+test('Today offers reminders once, and Turn on subscribes this device', async ({ page }) => {
+  await seedAccount(page, { extra: { 'roda.e2e.push': { support: 'supported', permission: 'default', answer: 'granted' } } });
+  await page.goto('/app');
+  const card = page.getByRole('region', { name: 'Turn on reminders' });
+  await expect(card).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Finish setting up' })).toHaveCount(0);
+  await card.getByRole('button', { name: 'Turn on' }).click();
+  await expect(card).toBeHidden();
+  expect(await events(page)).toContainEqual(expect.objectContaining({ type: 'push-subscribe', locale: 'en' }));
+  await page.reload();
+  await expect(page.locator('.week-day').first()).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Finish setting up' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Turn on reminders' })).toHaveCount(0);
+});
+
+test('Not now on the reminders card is remembered on this device', async ({ page }) => {
+  await seedAccount(page, { extra: { 'roda.e2e.push': { support: 'supported', permission: 'default' } } });
+  await page.goto('/app');
+  const card = page.getByRole('region', { name: 'Turn on reminders' });
+  await card.getByRole('button', { name: 'Not now' }).click();
+  await expect(card).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole('region', { name: 'Finish setting up' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Turn on reminders' })).toHaveCount(0);
+});

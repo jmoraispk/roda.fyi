@@ -62,8 +62,9 @@ export async function renderToday(ctx) {
   const screen = el(document, 'section', { className: 'screen screen-today' });
   const avatar = el(document, 'a', { className: 'me-avatar small', text: initials(profile.display_name), attrs: { href: '#/me', 'aria-label': i18n.t('app.me') } });
   screen.append(pageHeader({ document, title: i18n.t('app.today'), actions: [avatar] }));
-  // "Finish setting up" (or, once that is done, the install hint) fills this
-  // slot when its data arrives, so Today never waits for it.
+  // One card fills this slot when its data arrives, so Today never waits for it
+  // (Ruling 17 of the notifications plan): "Turn on reminders", then
+  // "Finish setting up", then the install hint.
   const setupSlot = el(document, 'div', { className: 'setup-slot' });
   screen.append(setupSlot);
   let calendarItems;
@@ -81,7 +82,7 @@ export async function renderToday(ctx) {
     return screen;
   }
   loadSetupChecklist(ctx, { hasTraining: recent.length > 0 }).catch(() => null).then((checklist) => {
-    const card = checklist ?? ctx.installHint?.() ?? null;
+    const card = ctx.remindersCard?.() ?? checklist ?? ctx.installHint?.() ?? null;
     if (card) setupSlot.replaceWith(card);
     else setupSlot.remove();
   });
