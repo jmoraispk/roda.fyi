@@ -2,6 +2,7 @@
 import { listsTeaching, modeOf } from '../shell/access.js';
 import { el, initials, pageHeader } from '../shell/page.js';
 import { renderDiscoverSettings } from './discover-settings.js';
+import { renderNotificationSettings } from './notification-settings.js';
 import { createModeSlider } from './mode-slider.js';
 import { createProfileForm, saveProfile } from './profile-form.js';
 
@@ -106,6 +107,7 @@ export async function renderSettings(ctx, { onLocaleChange, onSignOut, onProfile
     el(document, 'h2', { className: 'section-label', text: i18n.t('profileForm.title') }),
     form.element, save, status,
     await renderDiscoverSettings(ctx),
+    await renderNotificationSettings(ctx),
     el(document, 'h2', { className: 'section-label', text: i18n.t('app.language') }),
     languages,
     el(document, 'a', { className: 'button-secondary', text: i18n.t('install.settings'), attrs: { href: '/install' } }),

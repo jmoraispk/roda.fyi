@@ -4,7 +4,7 @@ import { publicConfig } from '../config.js';
 import { createServices } from '../create-services.js';
 import { clearLegacyDashboardKeys } from '../local-data.js';
 import { E2E_TILES, OSM_TILES } from '../map-tiles.js';
-import { notificationLink, refreshSubscription } from '../notifications.js';
+import { forgetDevice, notificationLink, refreshSubscription } from '../notifications.js';
 import { createPushDevice } from '../push-device.js';
 import { createLeafletMap } from '../screens/discover-map.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
@@ -165,9 +165,19 @@ async function main() {
     const { section } = route.params;
     if (section === 'settings') {
       return renderSettings(ctx, {
-        onLocaleChange: () => { layout.refreshCopy(); show(route); },
+        onLocaleChange: () => {
+          layout.refreshCopy();
+          // The spec: the device's language is updated when the language changes.
+          refreshSubscription(notificationLink(ctx)).catch(() => {});
+          show(route);
+        },
         onSignOut: () => signOutSafely(ctx, {
-          signOut: async () => { await services.auth.signOut(); location.replace('/'); },
+          signOut: async () => {
+            // Ruling 13: the next person on this phone never gets this person's notifications.
+            await forgetDevice(notificationLink(ctx));
+            await services.auth.signOut();
+            location.replace('/');
+          },
         }),
         onProfileSaved: profileSaved,
       });
