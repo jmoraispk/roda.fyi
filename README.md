@@ -53,6 +53,12 @@ keeps the rest of the link, so older bookmarks, invitation links, and group
 links keep working. Times are shown in your own time zone; a class recorded in
 another zone also shows its local time, for example "07:00 PM in Lisbon".
 
+Phone notifications are turned on per device in Me → Settings → Notifications
+(on iPhone, once roda runs from the home screen). People choose which kinds
+they get (Finish setting up, Before a class, After a class, Coach requests),
+when, and their quiet hours. A Supabase Edge Function sends them; see "Phone
+notifications" in `docs/auth-and-database-operations.md`.
+
 ## Local browser development
 
 Use Node.js 22.22.2 from `.nvmrc`:

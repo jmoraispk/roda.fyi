@@ -27,8 +27,11 @@ or pull request; do not check an item based only on dashboard appearance.
 
 ## Browser and secret boundary
 
-- [ ] The production build contains only the exact Supabase project URL and
-  `sb_publishable_...` key.
+- [ ] The production build contains only the exact Supabase project URL, the
+  `sb_publishable_...` key, and the VAPID public key (committed in
+  `scripts/build.mjs`).
+- [ ] The VAPID private key and the notifications cron secret exist only in
+  Supabase function secrets and Vault; never in Vercel, git, chat, or logs.
 - [ ] No Supabase access token, database password, secret/service-role key,
   Google secret, SMTP password, invitation token, or local environment file is
   tracked or bundled.
@@ -54,6 +57,11 @@ or pull request; do not check an item based only on dashboard appearance.
   authorization server-side; hidden buttons are never treated as security.
 - [ ] No security-definer function exists in an exposed schema. Every approved
   private definer has an empty `search_path` and fully qualified object names.
+- [ ] `claim_due_notifications` and `report_notification_results` are executable
+  only by `service_role`; `send-notifications` answers 401 without the
+  `x-roda-cron-secret` header, and the cron job reads that secret from Vault.
+- [ ] Push endpoints are limited to the known push services (FCM, Mozilla,
+  Apple, Windows) both when a device is saved and when the sender posts.
 - [ ] Invitation and discovery tokens are cryptographically random and stored
   only as hashes; expiry, one-time acceptance, rotation, and revocation pass.
 - [ ] Group relationships reject self-links, cycles, and a second active parent.
@@ -126,6 +134,10 @@ or pull request; do not check an item based only on dashboard appearance.
   third-party responses.
 - [ ] Signing out sends every resource still waiting to sync first; if one
   cannot be sent, the person stays signed in and nothing is deleted.
+- [ ] Notifications follow each person's kinds, timings, and quiet hours in
+  their own time zone; a class hidden from students never notifies them; a
+  notification only opens a screen under `/app`; signing out turns the device
+  off so the next person on a shared phone receives nothing.
 
 ## Incident drill
 
@@ -163,7 +175,7 @@ Then verify the production bundles contain none of the forbidden operator or
 test values:
 
 ```bash
-rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test" assets/generated
+rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test|VAPID_PRIVATE_KEY|NOTIFICATIONS_CRON_SECRET" assets/generated
 ```
 
 Demo mode ships the browser-only fake services on purpose, so their `__RODA_E2E_*` hooks are expected in production bundles; a test build is caught by `sb_publishable_e2e_test` instead. `tests/unit/release-scan.test.js` runs this exact pattern against a production build.

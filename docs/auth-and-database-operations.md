@@ -11,6 +11,7 @@ configuration from privileged credentials.
 | Static site, callback, the app at /app, service worker, browser bundles | Vercel | Yes, from GitHub |
 | User registration, Google/email sign-in, sessions | Supabase Auth | Code yes; provider settings no |
 | Application data and authorization | Supabase Postgres + RLS | Yes, through migrations |
+| Phone notifications sender (Edge Function, pg_cron, Vault) | Supabase | Code yes; secrets and the cron job no |
 | Profile/group pictures | Supabase Storage + RLS | Yes, through migrations |
 | Google OAuth client and consent screen | Google Auth Platform | No |
 | Passwordless-email delivery | External SMTP through Supabase | No |
@@ -60,6 +61,7 @@ Only these public values may be embedded in browser JavaScript:
 ```text
 RODA_SUPABASE_URL=https://PROJECT_REF.supabase.co
 RODA_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+RODA_VAPID_PUBLIC_KEY=B...   (optional: the production key is committed in scripts/build.mjs)
 ```
 
 The publishable key identifies a browser client; it is not an authorization
@@ -73,9 +75,12 @@ Never commit, paste into chat, or include in a browser build:
 - a Supabase secret/service-role key
 - a Google OAuth client secret
 - SMTP credentials
+- the VAPID private key and the notifications cron secret
 
-roda.fyi currently needs no Supabase secret/service-role key. If privileged
-server code is added later, it belongs only in that server's secret store.
+The only privileged server code is the `send-notifications` Edge Function. It
+uses the secret key Supabase injects into Edge Functions (`SUPABASE_SECRET_KEYS`)
+and needs no key copied anywhere. Its own secrets (`VAPID_PRIVATE_KEY`,
+`NOTIFICATIONS_CRON_SECRET`) live only in Supabase function secrets and Vault.
 
 ## Exact Auth URL configuration
 
@@ -167,7 +172,9 @@ RODA_SUPABASE_URL
 RODA_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Redeploy after changing either value. Do not configure the database password,
+Redeploy after changing either value. The notifications public key needs no
+Vercel variable: it is committed in `scripts/build.mjs`, and
+`RODA_VAPID_PUBLIC_KEY` only overrides it. Do not configure the database password,
 Supabase access token, Google secret, SMTP password, or any service-role/secret
 API key in a static Vercel build. `vercel.json` already runs `npm ci`,
 `npm run build`, and serves this repository root with clean URLs.
@@ -411,7 +418,7 @@ HTTPS preview:
 6. Inspect the generated bundles before promoting:
 
    ```bash
-   rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test" assets/generated
+   rg -n "service_role|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|sb_publishable_e2e_test|VAPID_PRIVATE_KEY|NOTIFICATIONS_CRON_SECRET" assets/generated
    ```
 
    The command must print nothing after the final production build.
@@ -422,6 +429,141 @@ required by the recovery policy, apply migrations before deploying code that
 depends on them, then repeat the smoke checks on `https://roda.fyi`. Rollback is
 always a new forward migration plus an application redeploy; never reset or
 rewrite production history.
+
+## Phone notifications (2026-11)
+
+Every minute, `pg_cron` calls the `send-notifications` Edge Function through
+`pg_net`, with the function URL and a shared secret read from Vault. The
+function claims what is due (`claim_due_notifications`), sends Web Push
+messages signed with the VAPID key, and reports the results
+(`report_notification_results`). Nothing in git starts the job or holds a
+secret; the steps below are done once by an owner, in order. Never paste a
+secret into chat or commit it. Run them from a checkout linked once with
+`npx supabase link --project-ref "$RODA_SUPABASE_PROJECT_REF"`.
+
+A run that finds nothing due is two small queries. To make fewer calls, schedule
+`*/5 * * * *` instead of `* * * * *` in step 5: class reminders have a 10-minute
+window, so they still arrive, up to five minutes later.
+
+**1. Keys.** The VAPID key pair was generated on 2026-11-01. Its public half is
+committed in `scripts/build.mjs` (`PRODUCTION_VAPID_PUBLIC_KEY`); its private
+half is kept in the owner's private notes, outside the repository. Generate the
+cron secret once and keep it in the password manager:
+
+```bash
+node -e "console.log('NOTIFICATIONS_CRON_SECRET='+require('node:crypto').randomBytes(32).toString('base64url'))"
+```
+
+**2. Apply the migrations:**
+
+```bash
+npx supabase migration list
+npx supabase db push --dry-run
+npx supabase db push
+```
+
+The dry run must list exactly `202611010001_notifications.sql`,
+`202611010002_notification_claims.sql`, and
+`202611010003_notification_results.sql`. Afterwards, open Supabase → Advisors →
+Security and confirm there is no new unexplained finding.
+
+**3. Set the function secrets** from a file outside the repository, then delete it:
+
+```bash
+umask 077
+printf '%s\n' \
+  'VAPID_PUBLIC_KEY=PASTE_PUBLIC_KEY' \
+  'VAPID_PRIVATE_KEY=PASTE_PRIVATE_KEY' \
+  'VAPID_SUBJECT=mailto:support@roda.fyi' \
+  'NOTIFICATIONS_CRON_SECRET=PASTE_CRON_SECRET' > ~/roda-notifications.env
+"${EDITOR:-nano}" ~/roda-notifications.env   # replace the three PASTE_ values
+npx supabase secrets set --env-file ~/roda-notifications.env
+npx supabase secrets list                    # shows the four names
+rm ~/roda-notifications.env
+```
+
+**4. Deploy the function and check that it refuses strangers:**
+
+```bash
+npx supabase functions deploy send-notifications --no-verify-jwt
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "https://$RODA_SUPABASE_PROJECT_REF.supabase.co/functions/v1/send-notifications"
+read -rs NOTIFICATIONS_CRON_SECRET   # paste the cron secret; nothing is echoed or kept in history
+curl -s -X POST -H "x-roda-cron-secret: $NOTIFICATIONS_CRON_SECRET" "https://$RODA_SUPABASE_PROJECT_REF.supabase.co/functions/v1/send-notifications"
+unset NOTIFICATIONS_CRON_SECRET
+```
+
+Expected: `401`, then `{"deliveries":0,"sent":0,"gone":0,"failed":0}`. A `500` means a secret is missing or malformed; check the function's logs in the dashboard.
+
+**5. Store the Vault secrets and schedule the job.** In Supabase → SQL Editor (production project), replace `PROJECT_REF` and `PASTE_CRON_SECRET`, then run:
+
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select vault.create_secret('https://PROJECT_REF.supabase.co/functions/v1/send-notifications', 'notifications_sender_url');
+select vault.create_secret('PASTE_CRON_SECRET', 'notifications_cron_secret');
+
+select cron.schedule(
+  'send-notifications',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name = 'notifications_sender_url'),
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-roda-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'notifications_cron_secret')
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 55000
+  ) as request_id;
+  $$
+);
+```
+
+After two minutes, check it:
+
+```sql
+select jobid, schedule, active from cron.job where jobname = 'send-notifications';
+select status, return_message, start_time
+  from cron.job_run_details
+ where jobid = (select jobid from cron.job where jobname = 'send-notifications')
+ order by start_time desc limit 3;
+select status_code, content::text, created from net._http_response order by created desc limit 3;
+```
+
+Expected: `active = true`, recent runs `succeeded`, and responses `200` with the JSON totals.
+
+**6. Deploy the app.** Merge to `main`. Open `https://roda.fyi/app` and check
+that Me → Settings shows Notifications.
+
+**7. Test send to the owner's iPhone.** Open roda from the Home Screen → Me → Settings → Notifications → Turn on notifications → Allow. Then, in the SQL Editor, replace `YOUR_EMAIL` and run:
+
+```sql
+-- A pending delivery claimed 16 minutes ago is retried by the next run.
+insert into public.notification_deliveries (profile_id, kind, subject_key, due_at, payload, claimed_at, attempts)
+select profile.id, 'setup', 'test:' || to_char(now(), 'YYYYMMDDHH24MISS'), now(),
+       '{"url": "/app#/", "round": 1, "zone": "UTC"}'::jsonb, now() - interval '16 minutes', 1
+  from auth.users account
+  join public.profiles profile on profile.id = account.id
+ where account.email = 'YOUR_EMAIL';
+```
+
+Within a minute the phone shows "Finish setting up roda", or the Portuguese text if the app language is Portuguese. Tapping it opens Today in the installed app. Confirm the delivery, then remove it, because it would otherwise count as one of the three setup rounds:
+
+```sql
+select subject_key, status, attempts, sent_at from public.notification_deliveries where subject_key like 'test:%';
+delete from public.notification_deliveries where subject_key like 'test:%';
+```
+
+Expected: `status = 'sent'`. If it says `pending`, read `net._http_response` and the function logs. If the logs show the push library failing, only `push()` in `supabase/functions/send-notifications/index.ts` needs to change.
+
+**8. Roll back, or rotate.**
+
+- Stop all sending at once, leaving data and the app untouched: `select cron.unschedule('send-notifications');`
+- Remove the sender completely: run the step above, then `npx supabase functions delete send-notifications`, `npx supabase secrets unset VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT NOTIFICATIONS_CRON_SECRET`, and in SQL `delete from vault.secrets where name in ('notifications_sender_url', 'notifications_cron_secret');`. People can still turn notifications on in the app; nothing is sent.
+- Database changes roll back only through a new forward migration; never reset production.
+- Rotate the cron secret: generate a new one (step 1), set it with `npx supabase secrets set` from a file as in step 3, then run `select vault.update_secret((select id from vault.secrets where name = 'notifications_cron_secret'), 'NEW_SECRET');`. Runs in the minute between the two changes get 401 and are harmless.
+- Rotate the VAPID keys only after a private-key leak. Every device must turn notifications on again, because push services reject the old subscriptions. Commit the new public key in `scripts/build.mjs`, set the new function secrets, then deploy the app.
 
 ## Rotation and incident response
 
