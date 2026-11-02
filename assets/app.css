@@ -332,3 +332,15 @@ input, select, textarea { font-size: 16px; }
 .install-hint p { margin: 0 0 8px; color: var(--sand); }
 .install-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .install-actions > * { margin: 0; }
+/* "Finish setting up" on Today */
+.setup-checklist { margin: 0 0 14px; border-color: var(--gold); }
+.setup-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.setup-title { font: 800 1rem/1.2 var(--display); margin: 0; }
+.setup-steps { list-style: none; margin: 0 0 4px; padding: 0; }
+.setup-step { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); text-decoration: none; }
+.setup-steps li:last-child .setup-step { border-bottom: 0; }
+.setup-step > span:nth-child(2) { flex: 1; }
+.setup-mark { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--muted); display: grid; place-items: center; font-size: .75rem; flex: none; }
+.setup-step.done { color: var(--muted); text-decoration: line-through; }
+.setup-step.done .setup-mark { background: var(--green); border-color: var(--green); color: #102010; text-decoration: none; }
+.setup-checklist .quiet-button { margin: 4px 0 0; }

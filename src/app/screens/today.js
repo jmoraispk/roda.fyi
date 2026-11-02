@@ -1,6 +1,7 @@
 // src/app/screens/today.js
 import { modeOf } from '../shell/access.js';
 import { el, initials, pageHeader } from '../shell/page.js';
+import { loadSetupChecklist } from './setup-checklist.js';
 import { resourceIcons } from '../ui/resource-view.js';
 import { clipText, kindLabel, nowNextCard, weekDays, weekRange } from './today-state.js';
 
@@ -61,8 +62,10 @@ export async function renderToday(ctx) {
   const screen = el(document, 'section', { className: 'screen screen-today' });
   const avatar = el(document, 'a', { className: 'me-avatar small', text: initials(profile.display_name), attrs: { href: '#/me', 'aria-label': i18n.t('app.me') } });
   screen.append(pageHeader({ document, title: i18n.t('app.today'), actions: [avatar] }));
-  const installHint = ctx.installHint?.();
-  if (installHint) screen.append(installHint);
+  // "Finish setting up" (or, once that is done, the install hint) fills this
+  // slot when its data arrives, so Today never waits for it.
+  const setupSlot = el(document, 'div', { className: 'setup-slot' });
+  screen.append(setupSlot);
   let calendarItems;
   let recent;
   try {
@@ -77,6 +80,11 @@ export async function renderToday(ctx) {
         on: { click: async () => screen.replaceWith(await renderToday(ctx)) } }));
     return screen;
   }
+  loadSetupChecklist(ctx, { hasTraining: recent.length > 0 }).catch(() => null).then((checklist) => {
+    const card = checklist ?? ctx.installHint?.() ?? null;
+    if (card) setupSlot.replaceWith(card);
+    else setupSlot.remove();
+  });
   const trainedDays = new Set(calendarItems.filter(({ item_type: type }) => type === 'completed').map(({ local_date: date }) => date));
   screen.append(el(document, 'div', { className: 'week-strip' }, weekDays(todayIso).map((day) => el(document, 'button', {
     className: 'week-day', attrs: { type: 'button', 'aria-current': day.isToday ? 'date' : null,

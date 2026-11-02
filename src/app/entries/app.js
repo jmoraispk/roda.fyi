@@ -127,6 +127,10 @@ async function main() {
     refreshTermMappings,
     isCoach: () => isCoach,
     markCoach: () => { isCoach = true; },
+    device: () => ({
+      installed: Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true),
+      onPhone: /iPhone|iPad|iPod|Android/.test(navigator.userAgent) || (navigator.maxTouchPoints ?? 0) > 1,
+    }),
     installHint: () => renderInstallHint({
       document, i18n, storage: localStorage, installPrompt: installOffer,
       mode: installMode({
