@@ -4,9 +4,16 @@ import { rm } from 'node:fs/promises';
 import { config as loadDotEnv } from 'dotenv';
 import { build } from 'esbuild';
 
+// Phone notifications: the browser subscribes with this VAPID public key. It is
+// public by design; its private half lives only in Supabase function secrets.
+export const PRODUCTION_VAPID_PUBLIC_KEY = 'BEy75wUCQVWuxyPczKsS-GpTeo7DNkuhcyQpuQ0G3UN2zbdNY7xlBwVmJfluz98PdJ7ypjPxeIfNqW0tItyFmL0';
+// A well-known example key: browser tests never reach a push service.
+export const TEST_VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+
 const TEST_CONFIG = Object.freeze({
   RODA_SUPABASE_URL: 'http://127.0.0.1:54321',
   RODA_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_e2e_test',
+  RODA_VAPID_PUBLIC_KEY: TEST_VAPID_PUBLIC_KEY,
 });
 
 export function readPublicConfig(env) {
@@ -33,7 +40,13 @@ export function readPublicConfig(env) {
     throw new Error('RODA_SUPABASE_PUBLISHABLE_KEY must start with sb_publishable_');
   }
 
-  return { supabaseUrl, supabasePublishableKey };
+  const vapidPublicKey = env.RODA_VAPID_PUBLIC_KEY?.trim() || PRODUCTION_VAPID_PUBLIC_KEY;
+  const point = /^[A-Za-z0-9_-]+$/.test(vapidPublicKey) ? Buffer.from(vapidPublicKey, 'base64url') : Buffer.alloc(0);
+  if (point.length !== 65 || point[0] !== 4) {
+    throw new Error('RODA_VAPID_PUBLIC_KEY must be a base64url P-256 public key');
+  }
+
+  return { supabaseUrl, supabasePublishableKey, vapidPublicKey };
 }
 
 export const ENTRY_POINTS = Object.freeze({
@@ -77,6 +90,7 @@ export async function buildBrowserBundles({
       __RODA_E2E__: JSON.stringify(test),
       __RODA_SUPABASE_URL__: JSON.stringify(publicConfig.supabaseUrl),
       __RODA_SUPABASE_PUBLISHABLE_KEY__: JSON.stringify(publicConfig.supabasePublishableKey),
+      __RODA_VAPID_PUBLIC_KEY__: JSON.stringify(publicConfig.vapidPublicKey),
     },
   });
 

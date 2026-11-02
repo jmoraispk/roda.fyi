@@ -11,6 +11,7 @@ const DEFINE = {
   __RODA_E2E__: 'false',
   __RODA_SUPABASE_URL__: '"http://127.0.0.1:54321"',
   __RODA_SUPABASE_PUBLISHABLE_KEY__: '"sb_publishable_graph"',
+  __RODA_VAPID_PUBLIC_KEY__: '"BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U"',
   __RODA_SW_VERSION__: '"graph"',
 };
 

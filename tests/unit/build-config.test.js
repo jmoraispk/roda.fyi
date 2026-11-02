@@ -4,7 +4,9 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { buildBrowserBundles, readPublicConfig } from '../../scripts/build.mjs';
+import {
+  PRODUCTION_VAPID_PUBLIC_KEY, TEST_VAPID_PUBLIC_KEY, buildBrowserBundles, readPublicConfig,
+} from '../../scripts/build.mjs';
 
 describe('readPublicConfig', () => {
   it('rejects a build that omits either public Supabase value', () => {
@@ -30,10 +32,30 @@ describe('readPublicConfig', () => {
     expect(readPublicConfig({
       RODA_SUPABASE_URL: '  http://127.0.0.1:54321  ',
       RODA_SUPABASE_PUBLISHABLE_KEY: '  sb_publishable_local_test  ',
+      RODA_VAPID_PUBLIC_KEY: `  ${TEST_VAPID_PUBLIC_KEY}  `,
     })).toEqual({
       supabaseUrl: 'http://127.0.0.1:54321',
       supabasePublishableKey: 'sb_publishable_local_test',
+      vapidPublicKey: TEST_VAPID_PUBLIC_KEY,
     });
+  });
+
+  it('uses the committed notification public key unless one is given', () => {
+    const base = { RODA_SUPABASE_URL: 'https://example.supabase.co', RODA_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test' };
+    expect(readPublicConfig(base).vapidPublicKey).toBe(PRODUCTION_VAPID_PUBLIC_KEY);
+    expect(() => readPublicConfig({ ...base, RODA_VAPID_PUBLIC_KEY: 'not a key' }))
+      .toThrow('RODA_VAPID_PUBLIC_KEY must be a base64url P-256 public key');
+    // 65 bytes, but not an uncompressed point (first byte is not 0x04).
+    expect(() => readPublicConfig({ ...base, RODA_VAPID_PUBLIC_KEY: Buffer.alloc(65, 1).toString('base64url') }))
+      .toThrow('RODA_VAPID_PUBLIC_KEY must be a base64url P-256 public key');
+  });
+
+  it('ships valid uncompressed P-256 public keys', () => {
+    for (const key of [PRODUCTION_VAPID_PUBLIC_KEY, TEST_VAPID_PUBLIC_KEY]) {
+      const raw = Buffer.from(key, 'base64url');
+      expect(raw).toHaveLength(65);
+      expect(raw[0]).toBe(4);
+    }
   });
 });
 
