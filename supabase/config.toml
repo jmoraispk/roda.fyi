@@ -387,6 +387,12 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Ruling 3: started only by pg_cron, which sends the x-roda-cron-secret header
+# instead of a user's JWT.
+[functions.send-notifications]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
