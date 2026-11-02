@@ -15,6 +15,7 @@ import { renderClass } from '../screens/class.js';
 import { renderPerson } from '../screens/discover-cards.js';
 import { releaseDiscoverMap, renderDiscover } from '../screens/discover.js';
 import { renderGroup } from '../screens/group.js';
+import { renderImport } from '../screens/import-trainings.js';
 import { renderGroups } from '../screens/groups.js';
 import { renderLog } from '../screens/log.js';
 import { renderMe, renderSettings } from '../screens/me.js';
@@ -165,6 +166,7 @@ async function main() {
     if (section === 'progress') return renderProgress(ctx, route);
     if (section === 'repertoire') return renderRepertoire(ctx, route);
     if (section === 'groups') return renderGroups(ctx, route);
+    if (section === 'import') return renderImport(ctx, route);
     if (section === 'catalog') {
       let curator = false;
       try {

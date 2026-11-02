@@ -109,6 +109,7 @@ export async function renderSettings(ctx, { onLocaleChange, onSignOut, onProfile
     el(document, 'h2', { className: 'section-label', text: i18n.t('app.language') }),
     languages,
     el(document, 'a', { className: 'button-secondary', text: i18n.t('install.settings'), attrs: { href: '/install' } }),
+    el(document, 'a', { className: 'button-secondary', text: i18n.t('import.settings'), attrs: { href: '#/me/import' } }),
     el(document, 'button', {
       className: 'button-danger', text: i18n.t('app.signOut'), attrs: { type: 'button' }, dataset: { action: 'sign-out' },
       on: { click: () => onSignOut() },

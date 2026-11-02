@@ -345,3 +345,9 @@ input, select, textarea { font-size: 16px; }
 .setup-step.done .setup-mark { background: var(--green); border-color: var(--green); color: #102010; text-decoration: none; }
 .setup-checklist .quiet-button { margin: 4px 0 0; }
 .chapter-time { margin-left: auto; padding-left: 8px; white-space: nowrap; font-size: .8rem; }
+/* Import trainings */
+.import-file { width: 100%; font: 13px/1.4 var(--mono); margin: 10px 0; }
+.import-list, .import-errors { list-style: none; margin: 0 0 10px; padding: 0; }
+.import-list li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.import-errors li { color: var(--clay); padding: 4px 0; }
+.import-status { white-space: nowrap; flex: none; }

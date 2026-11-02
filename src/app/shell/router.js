@@ -10,7 +10,7 @@ const ROUTES = [
   ['person', new RegExp(`^/person/${ID}$`), ['id']],
   ['group', new RegExp(`^/group/${ID}$`), ['id']],
   ['me', /^\/me$/, []],
-  ['me-section', /^\/me\/(progress|repertoire|groups|catalog|settings|teaching)$/, ['section']],
+  ['me-section', /^\/me\/(progress|repertoire|groups|catalog|settings|teaching|import)$/, ['section']],
   ['teaching-record', /^\/me\/teaching\/record$/, []],
   ['teaching-plan', new RegExp(`^/me/teaching/plans/${ID}$`), ['id']],
   ['teaching-student', new RegExp(`^/me/teaching/students/${ID}$`), ['id']],
