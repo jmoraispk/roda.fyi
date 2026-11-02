@@ -144,14 +144,16 @@ async function preferencesForm(ctx) {
     }
   });
 
-  return el(document, 'div', { className: 'notification-preferences' }, [
+  return el(document, 'div', { className: 'card notification-preferences' }, [
     el(document, 'h3', { className: 'notification-heading', text: i18n.t('notifications.what') }),
     el(document, 'p', { className: 'muted', text: i18n.t('notifications.whatHelp') }),
     setup.row,
     el(document, 'div', { className: 'notification-pair' }, [before.row, beforeWhen]),
     el(document, 'div', { className: 'notification-pair' }, [after.row, afterWhen]),
     coach?.row ?? null,
-    el(document, 'div', { className: 'notification-pair' }, [quiet.row, quietFrom, quietTo]),
+    el(document, 'div', { className: 'notification-pair' }, [
+      quiet.row, quietFrom, el(document, 'span', { className: 'muted', text: i18n.t('notifications.until') }), quietTo,
+    ]),
     save,
     status,
   ]);
