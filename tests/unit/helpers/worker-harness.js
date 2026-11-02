@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 
 export const ORIGIN = 'https://roda.fyi';
 
-export async function loadWorker(load, { cacheKeys = [] } = {}) {
+export async function loadWorker(load, { cacheKeys = [], windowClients = [] } = {}) {
   vi.resetModules();
   const handlers = {};
   const stored = new Map();
@@ -27,8 +27,12 @@ export async function loadWorker(load, { cacheKeys = [] } = {}) {
     location: { origin: ORIGIN },
     addEventListener: (type, handler) => { handlers[type] = handler; },
     skipWaiting: vi.fn(async () => {}),
-    clients: { claim: vi.fn(async () => {}) },
-    registration: { unregister: vi.fn(async () => true) },
+    clients: {
+      claim: vi.fn(async () => {}),
+      matchAll: vi.fn(async () => windowClients),
+      openWindow: vi.fn(async () => null),
+    },
+    registration: { unregister: vi.fn(async () => true), showNotification: vi.fn(async () => {}) },
   };
   vi.stubGlobal('__RODA_SW_VERSION__', 'test');
   vi.stubGlobal('caches', cacheStorage);
@@ -47,5 +51,12 @@ export async function respond(handlers, request) {
 export async function lifecycle(handlers, type) {
   let done;
   handlers[type]({ waitUntil: (promise) => { done = promise; } });
+  await done;
+}
+
+// Runs a handler that finishes through waitUntil, such as push or notificationclick.
+export async function dispatch(handlers, type, event = {}) {
+  let done;
+  handlers[type]({ ...event, waitUntil: (promise) => { done = promise; } });
   await done;
 }

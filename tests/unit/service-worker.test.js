@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SHELL_PATH } from '../../src/app/sw/cache-policy.js';
-import { ORIGIN, lifecycle, loadWorker as load, respond } from './helpers/worker-harness.js';
+import { ORIGIN, dispatch, lifecycle, loadWorker as load, respond } from './helpers/worker-harness.js';
 
 const loadWorker = (options) => load(() => import('../../src/app/sw/service-worker.js'), options);
 const settle = () => new Promise((resolve) => { setTimeout(resolve, 0); });
@@ -57,5 +57,56 @@ describe('service worker', () => {
   it('leaves data requests to the network', async () => {
     const worker = await loadWorker();
     expect(await respond(worker.handlers, { url: 'https://example.supabase.co/rest/v1/rpc/get_training', method: 'POST', mode: 'cors' })).toBeUndefined();
+  });
+});
+
+describe('service worker notifications', () => {
+  const push = (message) => ({ data: { json: () => message } });
+
+  it('shows each push as a notification that remembers its link', async () => {
+    const worker = await loadWorker();
+    await dispatch(worker.handlers, 'push', push({ title: 'Class in 1 hour', body: 'Group class · Grupo Lua at 7:00 PM', url: '/app#/class/s1', tag: 'd1' }));
+    expect(worker.self.registration.showNotification).toHaveBeenCalledWith('Class in 1 hour', {
+      body: 'Group class · Grupo Lua at 7:00 PM', icon: '/assets/icons/app-192.png', badge: '/assets/icons/app-192.png',
+      tag: 'd1', data: { url: '/app#/class/s1' },
+    });
+  });
+
+  it('still shows something for a push it cannot read', async () => {
+    const worker = await loadWorker();
+    await dispatch(worker.handlers, 'push', { data: { json: () => { throw new SyntaxError('bad'); } } });
+    await dispatch(worker.handlers, 'push', { data: null });
+    expect(worker.self.registration.showNotification).toHaveBeenCalledTimes(2);
+    expect(worker.self.registration.showNotification).toHaveBeenLastCalledWith('roda', expect.objectContaining({ body: '', data: { url: '/app' } }));
+  });
+
+  it('never links outside the app', async () => {
+    const worker = await loadWorker();
+    await dispatch(worker.handlers, 'push', push({ title: 'x', url: 'https://attacker.example/app#/' }));
+    await dispatch(worker.handlers, 'push', push({ title: 'x', url: 'javascript:alert(1)' }));
+    expect(worker.self.registration.showNotification.mock.calls.map(([, options]) => options.data.url)).toEqual(['/app', '/app']);
+  });
+
+  it('a tap moves an open app to the right screen', async () => {
+    const open = { url: `${ORIGIN}/app#/`, focus: vi.fn(async () => open), navigate: vi.fn(async () => open) };
+    const worker = await loadWorker({ windowClients: [{ url: `${ORIGIN}/install`, focus: vi.fn() }, open] });
+    const notification = { data: { url: '/app#/training/o1' }, close: vi.fn() };
+    await dispatch(worker.handlers, 'notificationclick', { notification });
+    expect(notification.close).toHaveBeenCalled();
+    expect(open.focus).toHaveBeenCalled();
+    expect(open.navigate).toHaveBeenCalledWith(`${ORIGIN}/app#/training/o1`);
+    expect(worker.self.clients.openWindow).not.toHaveBeenCalled();
+  });
+
+  it('a tap opens the app when it is closed', async () => {
+    const worker = await loadWorker();
+    await dispatch(worker.handlers, 'notificationclick', { notification: { data: { url: '/app#/me/teaching' }, close: vi.fn() } });
+    expect(worker.self.clients.openWindow).toHaveBeenCalledWith('/app#/me/teaching');
+  });
+
+  it('a tap on a notification with a strange link opens Today', async () => {
+    const worker = await loadWorker();
+    await dispatch(worker.handlers, 'notificationclick', { notification: { data: { url: '//attacker.example' }, close: vi.fn() } });
+    expect(worker.self.clients.openWindow).toHaveBeenCalledWith('/app');
   });
 });

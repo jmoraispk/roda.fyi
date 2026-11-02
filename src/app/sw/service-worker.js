@@ -1,5 +1,6 @@
 // src/app/sw/service-worker.js
 import { APP_SHELL, SHELL_PATH, cacheName, shouldCache, strategyFor } from './cache-policy.js';
+import { appLink, notificationFromPush } from './push-policy.js';
 
 const CACHE = cacheName(__RODA_SW_VERSION__);
 
@@ -36,5 +37,25 @@ self.addEventListener('fetch', (event) => {
       return response;
     }).catch(() => cached);
     return cached ?? network;
+  }));
+});
+
+self.addEventListener('push', (event) => {
+  const { title, options } = notificationFromPush(event.data);
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = appLink(event.notification.data?.url);
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windows) => {
+    const open = windows.find((client) => new URL(client.url).pathname === SHELL_PATH);
+    if (!open) {
+      await self.clients.openWindow(target);
+      return;
+    }
+    await open.focus();
+    // If the browser refuses to move the open app, it is at least in front.
+    await open.navigate(new URL(target, self.location.origin).href).catch(() => null);
   }));
 });
