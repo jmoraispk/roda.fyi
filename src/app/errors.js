@@ -13,6 +13,8 @@ const SAFE_MESSAGES = Object.freeze({
   duplicate_completion: 'This training was already completed.',
   edit_conflict: 'This plan changed elsewhere. Reload it before saving again.',
   invalid_email: 'Enter a valid email address.',
+  invalid_preferences: 'Those notification settings are not allowed. Quiet hours need two different times.',
+  invalid_subscription: 'This device could not be set up for notifications.',
   invalid_attendee: 'One or more attendees are not active group members.',
   invitation_expired: 'This invitation has expired.',
   missing_code: 'The sign-in response did not include a code.',

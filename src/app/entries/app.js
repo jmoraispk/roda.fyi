@@ -1,8 +1,11 @@
 // src/app/entries/app.js
 import { loadStartup } from '../app-startup.js';
+import { publicConfig } from '../config.js';
 import { createServices } from '../create-services.js';
 import { clearLegacyDashboardKeys } from '../local-data.js';
 import { E2E_TILES, OSM_TILES } from '../map-tiles.js';
+import { notificationLink, refreshSubscription } from '../notifications.js';
+import { createPushDevice } from '../push-device.js';
 import { createLeafletMap } from '../screens/discover-map.js';
 import { createDashboardI18n } from '../dashboard-i18n.js';
 import { useErrorTranslations } from '../errors.js';
@@ -35,6 +38,7 @@ import { installMode, renderInstallHint } from '../shell/install-hint.js';
 import { el } from '../shell/page.js';
 import { createRouter, isDetail, tabFor } from '../shell/router.js';
 import { closeSheet, openSheet } from '../shell/sheet.js';
+import { createE2EPushDevice } from '../testing/fake-services.js';
 
 function localIsoDate(date, timezone) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
@@ -67,6 +71,10 @@ async function main() {
   const i18n = createDashboardI18n({ document, storage: localStorage, navigator });
   useErrorTranslations(i18n);
   const services = createServices({ window, localMode, e2e: __RODA_E2E__, language: () => i18n.locale() });
+  // Ruling 14: browser tests drive a fake device; the demo has no account to send to.
+  const pushDevice = __RODA_E2E__
+    ? createE2EPushDevice({ window })
+    : (demoMode ? null : createPushDevice({ window, navigator, vapidPublicKey: publicConfig.vapidPublicKey }));
   const root = document.querySelector('#appRoot');
 
   const toSignIn = () => location.replace(`/?next=${encodeURIComponent(`${location.pathname}${location.search}${location.hash}`)}`);
@@ -118,7 +126,7 @@ async function main() {
 
   const tiles = __RODA_E2E__ ? E2E_TILES : OSM_TILES;
   const ctx = {
-    document, window, i18n, services, profile, timezone: zoneFor(profile), user: session.user,
+    document, window, i18n, services, pushDevice, profile, timezone: zoneFor(profile), user: session.user,
     navigate: (path) => router.navigate(path),
     replace: (path) => router.replace(path),
     back: (fallback = '/') => router.back(fallback),
@@ -144,6 +152,8 @@ async function main() {
     createMap: (options) => createLeafletMap({ document, tiles, ...options }),
     openSheet: (options) => openSheet({ document, closeLabel: i18n.t('app.close'), ...options }),
   };
+  // Ruling 7: a device that is on tells the server its current language and zone.
+  refreshSubscription(notificationLink(ctx)).catch(() => {});
 
   function profileSaved(fresh) {
     Object.assign(profile, fresh);

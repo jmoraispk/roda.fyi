@@ -6,6 +6,7 @@ import { createDiscoverService } from './discover-service.js';
 import { publicConfig } from './config.js';
 import { createNominatimGeocoder } from './geocoder.js';
 import { createGroupService } from './group-service.js';
+import { createNotificationService } from './notification-service.js';
 import { createProfileService } from './profile-service.js';
 import { createRepertoireService } from './repertoire-service.js';
 import { createStatisticsService } from './statistics-service.js';
@@ -14,7 +15,7 @@ import { createTrainingService } from './training-service.js';
 import {
   createE2EAuthService, createE2ECatalogService, createE2EConnectionService, createE2EDiscoverService, createE2EGeocoder,
   createE2EGroupService, createE2EProfileService, createE2ERepertoireService, createE2EStatisticsService,
-  createE2ETrainingService,
+  createE2ETrainingService, createE2ENotificationService,
 } from './testing/fake-services.js';
 
 export function createServices({ window, localMode, e2e = false, language = () => 'en' }) {
@@ -32,6 +33,7 @@ export function createServices({ window, localMode, e2e = false, language = () =
       repertoire: createE2ERepertoireService({ window }),
       catalog: createE2ECatalogService({ window }),
       discover: createE2EDiscoverService({ window }),
+      notifications: createE2ENotificationService({ window }),
       geocoder,
     };
   }
@@ -46,6 +48,7 @@ export function createServices({ window, localMode, e2e = false, language = () =
     repertoire: createRepertoireService(client),
     catalog: createCatalogService(client),
     discover: createDiscoverService(client),
+    notifications: createNotificationService(client),
     geocoder,
   };
 }

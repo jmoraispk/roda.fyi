@@ -8,6 +8,7 @@ import { AppError } from '../errors.js';
 import { normalizeSequenceInput } from '../repertoire-service.js';
 import { requireTerm } from '../catalog-service.js';
 import { normalizeResource } from '../training-service.js';
+import { DEFAULT_PREFERENCES, checkPreferences } from '../notification-service.js';
 
 const SESSION_KEY = 'roda.e2e.session';
 
@@ -1972,6 +1973,86 @@ export function createE2EGeocoder({ window }) {
       const nearest = [...E2E_CITIES]
         .sort((a, b) => Math.hypot(a.lat - lat, a.lng - lng) - Math.hypot(b.lat - lat, b.lng - lng))[0];
       return Math.hypot(nearest.lat - lat, nearest.lng - lng) < 2 ? { ...nearest } : null;
+    },
+  };
+}
+
+// Ruling 14: browser tests script this device through localStorage['roda.e2e.push'].
+// Unless a test says otherwise, notifications are unsupported, so no card appears.
+const E2E_PUSH_KEY = 'roda.e2e.push';
+const E2E_SUBSCRIPTION = Object.freeze({
+  endpoint: 'https://fcm.googleapis.com/fcm/send/e2e-device', p256dh: 'B'.repeat(87), auth: 'a'.repeat(22),
+});
+
+export function createE2EPushDevice({ window }) {
+  const { localStorage: storage } = window;
+  const read = () => {
+    try {
+      return JSON.parse(storage.getItem(E2E_PUSH_KEY)) ?? {};
+    } catch {
+      return {};
+    }
+  };
+  const write = (changes) => storage.setItem(E2E_PUSH_KEY, JSON.stringify({ ...read(), ...changes }));
+  const record = (event) => window.__RODA_E2E_EVENTS__?.push(event);
+  return {
+    support: () => read().support ?? 'unsupported',
+    // Playwright's grantPermissions sets the real permission; a test may also script it.
+    permission: () => read().permission ?? window.Notification?.permission ?? 'default',
+    async requestPermission() {
+      const answer = read().answer ?? await window.Notification?.requestPermission?.() ?? 'denied';
+      write({ permission: answer });
+      record({ type: 'push-permission', answer });
+      return answer;
+    },
+    async subscription() {
+      return read().subscribed ? { ...E2E_SUBSCRIPTION } : null;
+    },
+    async subscribe() {
+      write({ subscribed: true });
+      return { ...E2E_SUBSCRIPTION };
+    },
+    async unsubscribe() {
+      if (!read().subscribed) return null;
+      write({ subscribed: false });
+      return E2E_SUBSCRIPTION.endpoint;
+    },
+  };
+}
+
+export function createE2ENotificationService({ window }) {
+  const { localStorage: storage } = window;
+  const key = 'roda.e2e.notificationState';
+  const read = () => ({ subscriptions: [], preferences: null, ...JSON.parse(storage.getItem(key) ?? '{}') });
+  const write = (state) => storage.setItem(key, JSON.stringify(state));
+  const record = (event) => window.__RODA_E2E_EVENTS__?.push(event);
+  return {
+    async saveSubscription({ endpoint, p256dh, auth, locale, timezone = null }) {
+      if (!/^https:\/\//.test(endpoint ?? '') || !['en', 'pt'].includes(locale)) {
+        throw new AppError('validation', 'invalid_subscription');
+      }
+      const state = read();
+      state.subscriptions = [...state.subscriptions.filter((item) => item.endpoint !== endpoint), { endpoint, p256dh, auth, locale, timezone }];
+      write(state);
+      record({ type: 'push-subscribe', endpoint, locale, timezone });
+      return { status: 'saved', subscription_id: `subscription-${state.subscriptions.length}` };
+    },
+    async deleteSubscription(endpoint) {
+      const state = read();
+      const before = state.subscriptions.length;
+      state.subscriptions = state.subscriptions.filter((item) => item.endpoint !== endpoint);
+      write(state);
+      record({ type: 'push-unsubscribe', endpoint });
+      return { status: state.subscriptions.length < before ? 'deleted' : 'missing' };
+    },
+    async getPreferences() {
+      return { ...DEFAULT_PREFERENCES, ...(read().preferences ?? {}) };
+    },
+    async updatePreferences(preferences) {
+      const clean = checkPreferences(preferences);
+      write({ ...read(), preferences: clean });
+      record({ type: 'notification-preferences', preferences: clean });
+      return clean;
     },
   };
 }
