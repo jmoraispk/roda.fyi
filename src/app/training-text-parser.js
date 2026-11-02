@@ -4,6 +4,22 @@ import { matchTable, normalizeTerm, slugify } from './movement-catalog.js';
 export { slugify as slugifyTerm };
 
 const ROUND_HEADING = /^\s*(?:(?:round|rodada)\s*\d+|r\s*\d+\s*:|\d+\.)\s*[:.)-]?\s*/i;
+// A round's own length, written before its moves and followed by ':' or a dash:
+// "Round 1 · 15 min: 10x (armada, aú)", "15 min: ginga", "1h: roda". A time after
+// a move ("ginga 10 min") stays that move's duration.
+const ROUND_DURATION = /^\s*(?:(?:round|rodada)\s*\d+|r\s*\d+|\d+\.)?\s*[·:.)\-–—]?\s*(\d{1,3})\s*(h|hr|hrs|hours?|horas?|min|mins|minutes?|minutos?|m)\s*[:·\-–—]\s*/i;
+
+export function roundDuration(text) {
+  const match = ROUND_DURATION.exec(String(text ?? ''));
+  if (!match) return null;
+  const amount = Number(match[1]);
+  if (!amount) return null;
+  return /^h/i.test(match[2]) ? amount * 3600 : amount * 60;
+}
+
+function withoutRoundDuration(text) {
+  return String(text ?? '').replace(ROUND_DURATION, '');
+}
 const WORD_SEPARATORS = /\b(?:and then|e depois|then|depois)\b/gi;
 const FILLER = /^(?:and|e|then|worked on|trabalhei|treino de|treino)\b\s*/;
 const SIDES = new Map([
@@ -126,7 +142,7 @@ function assignPaths(steps, prefix = '') {
 
 export function parseRound(text, { termMappings = [] } = {}) {
   const mappings = mappingIndex(termMappings);
-  const source = String(text ?? '')
+  const source = withoutRoundDuration(text)
     .replace(/\s*(?:->|→)\s*/g, ',')
     .replace(WORD_SEPARATORS, ',')
     .replace(/\r?\n/g, ',');

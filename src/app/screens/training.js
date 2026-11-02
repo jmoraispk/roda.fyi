@@ -84,6 +84,9 @@ export async function renderTraining(ctx, route) {
     return el(document, 'li', { className: 'chapter' }, [
       el(document, 'span', { className: 'chapter-number', text: String(index + 1) }),
       el(document, 'span', { className: 'chapter-text', text: roundText(round) }),
+      round.duration_seconds
+        ? el(document, 'span', { className: 'chapter-time muted', text: i18n.formatDuration(Math.round(round.duration_seconds / 60)) })
+        : null,
       felt ? el(document, 'span', { className: 'felt', text: i18n.t('today.felt', { difficulty: i18n.t(`training.${felt.difficulty}`) }) }) : null,
     ]);
   })));

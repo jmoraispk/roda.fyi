@@ -57,3 +57,13 @@ test('a back-dated log keeps the start time it was given', async ({ page }) => {
   await expect(page).toHaveURL(/#\/training\//);
   await expect(page.locator('.training-meta')).toContainText('07:30');
 });
+
+test('a round written with its length shows that length on the training page', async ({ page }) => {
+  await page.goto('/app?demo=1#/log');
+  const box = page.getByLabel('Write a round');
+  await box.fill('Round 1 · 15 min: 10x (armada, aú)');
+  await box.press('Enter');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page).toHaveURL(/#\/training\//);
+  await expect(page.locator('.chapter').first().locator('.chapter-time')).toHaveText('15m');
+});

@@ -1,5 +1,5 @@
 // src/app/ui/round-editor.js
-import { parseRound, splitRounds } from '../training-text-parser.js';
+import { parseRound, roundDuration, splitRounds } from '../training-text-parser.js';
 import { buildSegments, toMovementRows, withoutExcluded } from '../training-sequence.js';
 import { createMovePicker } from './move-picker.js';
 import { createSegmentStrip } from './segment-strip.js';
@@ -354,6 +354,7 @@ export function createRoundEditor({
         return {
           label: null,
           source_text: card.text.trim(),
+          duration_seconds: roundDuration(card.text),
           sequence: steps,
           movements: toMovementRows(steps),
           ratings,

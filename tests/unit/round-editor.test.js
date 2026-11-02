@@ -148,4 +148,15 @@ describe('round editor', () => {
     type(text(), 'armada, au ');
     expect(editor.getRounds()[0].ratings.map(({ segment_key: key }) => key)).toEqual(['m:2']);
   });
+
+  it('saves the length written before a round', () => {
+    const editor = mount();
+    editor.setRounds([{ sourceText: '' }]);
+    type(text(), 'Round 1 · 15 min: 10x (armada, aú)');
+    expect(editor.getRounds()).toEqual([expect.objectContaining({
+      source_text: 'Round 1 · 15 min: 10x (armada, aú)', duration_seconds: 900,
+    })]);
+    type(text(), '10x armada');
+    expect(editor.getRounds()[0].duration_seconds).toBeNull();
+  });
 });

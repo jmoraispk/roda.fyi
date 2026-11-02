@@ -114,4 +114,10 @@ describe('training screen', () => {
     const view = await renderTraining(ctx({ getTraining: vi.fn().mockResolvedValue(base) }), { params: { id: 'o1' } });
     expect(view.querySelector('.training-elsewhere')).toBeNull();
   });
+
+  it('shows how long each round lasted', async () => {
+    const training = { ...base, rounds: [{ ...base.rounds[0], duration_seconds: 900 }, ...base.rounds.slice(1)] };
+    const view = await renderTraining(ctx({ getTraining: vi.fn().mockResolvedValue(training) }), { params: { id: 'o1' } });
+    expect(view.querySelector('.chapter .chapter-time').textContent).toBe('15m');
+  });
 });

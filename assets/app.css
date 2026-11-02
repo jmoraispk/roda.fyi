@@ -344,3 +344,4 @@ input, select, textarea { font-size: 16px; }
 .setup-step.done { color: var(--muted); text-decoration: line-through; }
 .setup-step.done .setup-mark { background: var(--green); border-color: var(--green); color: #102010; text-decoration: none; }
 .setup-checklist .quiet-button { margin: 4px 0 0; }
+.chapter-time { margin-left: auto; padding-left: 8px; white-space: nowrap; font-size: .8rem; }

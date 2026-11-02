@@ -1,7 +1,7 @@
 // tests/unit/training-text-parser.test.js
 import { describe, expect, it } from 'vitest';
 
-import { parseRound, splitRounds } from '../../src/app/training-text-parser.js';
+import { parseRound, roundDuration, splitRounds } from '../../src/app/training-text-parser.js';
 
 const names = (steps) => steps.map((step) => (
   step.type === 'group' ? { group: step.repeat, steps: names(step.steps) } : step.slug
@@ -96,5 +96,23 @@ describe('parseRound', () => {
     for (const text of ['((((', '))))', '10x', 'x10', '(', '0x armada', '999999999999x au']) {
       expect(() => parseRound(text)).not.toThrow();
     }
+  });
+
+  it.each([
+    ['Round 1 · 15 min: 10x (armada, aú)', 900],
+    ['15 min: ginga', 900],
+    ['Rodada 2 - 20 minutos: negativa, rolê', 1200],
+    ['1h: roda', 3600],
+    ['r3: 5 min – ginga', 300],
+    ['ginga 10 min', null],
+    ['10x (armada, aú)', null],
+  ])('reads the round duration written before %s', (text, seconds) => {
+    expect(roundDuration(text)).toBe(seconds);
+  });
+
+  it('does not read a round duration as a move', () => {
+    const round = parseRound('Round 1 · 15 min: 10x (armada, aú)');
+    expect(round.steps.map((step) => step.name ?? step.raw).join(' ')).not.toMatch(/min/i);
+    expect(parseRound('15 min: ginga').steps).toHaveLength(1);
   });
 });
